@@ -1,0 +1,22 @@
+year,round,event_name,circuit_id,circuit_ref,altitude_m,length_m,corners_count,rotation,avg_track_temp,avg_air_temp,avg_humidity
+2018,1,Australian Grand Prix,0,albert_park,10.0,5077.0,14,44.0,30.5,24.7,60.6
+2018,2,Bahrain Grand Prix,2,bahrain,7.0,5258.0,15,92.0,31.9,28.2,43.0
+2018,3,Chinese Grand Prix,16,shanghai,5.0,5441.0,16,237.0,15.5,12.8,76.1
+2018,4,Azerbaijan Grand Prix,71,baku,-7.0,5267.0,20,357.0,26.6,22.7,46.2
+2018,5,Spanish Grand Prix,3,catalunya,109.0,4585.0,16,303.0,27.1,18.7,77.3
+2018,6,Monaco Grand Prix,5,monaco,7.0,3173.0,19,315.0,47.5,26.6,49.5
+2018,7,Canadian Grand Prix,6,villeneuve,13.0,4174.0,14,62.0,43.4,23.2,20.3
+2018,8,French Grand Prix,33,ricard,432.0,5536.0,15,0.0,31.1,23.1,62.9
+2018,9,Austrian Grand Prix,69,red_bull_ring,678.0,4220.0,10,1.0,33.5,24.9,41.4
+2018,10,British Grand Prix,8,silverstone,153.0,6024.0,18,92.0,52.4,26.5,37.4
+2018,11,German Grand Prix,9,hockenheimring,103.0,4526.0,17,0.0,37.9,23.1,70.7
+2018,12,Hungarian Grand Prix,10,hungaroring,264.0,4332.0,16,40.0,30.3,23.7,78.0
+2018,13,Belgian Grand Prix,12,spa,401.0,7144.0,19,91.0,26.0,14.6,56.4
+2018,14,Italian Grand Prix,13,monza,162.0,5555.0,11,95.0,29.6,20.1,66.7
+2018,15,Singapore Grand Prix,14,marina_bay,18.0,5203.0,23,335.0,33.3,29.5,70.7
+2018,16,Russian Grand Prix,70,sochi,2.0,6037.0,18,324.0,36.6,23.5,60.8
+2018,17,Japanese Grand Prix,21,suzuka,45.0,5952.0,18,0.0,28.0,26.6,85.0
+2018,18,United States Grand Prix,68,americas,161.0,5611.0,20,0.0,21.6,19.4,74.3
+2018,19,Mexican Grand Prix,31,rodriguez,2227.0,4329.0,17,36.0,27.7,19.1,61.2
+2018,20,Brazilian Grand Prix,17,interlagos,785.0,4252.0,15,258.0,35.6,23.0,74.8
+2018,21,Abu Dhabi Grand Prix,23,yas_marina,3.0,5621.0,21,280.0,31.8,28.7,46.7

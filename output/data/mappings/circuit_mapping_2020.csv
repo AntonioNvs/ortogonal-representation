@@ -1,0 +1,18 @@
+event_name,circuit_id,race_id,round,race_name,circuit_name,circuit_ref,location,country,lat,lng,altitude_m,circuit_idx
+Austrian Grand Prix,69,1018,1,Austrian Grand Prix,Red Bull Ring,red_bull_ring,Spielberg,Austria,47.2197,14.7647,678.0,0
+Styrian Grand Prix,69,1019,2,Styrian Grand Prix,Red Bull Ring,red_bull_ring,Spielberg,Austria,47.2197,14.7647,678.0,1
+Hungarian Grand Prix,10,1020,3,Hungarian Grand Prix,Hungaroring,hungaroring,Budapest,Hungary,47.5789,19.2486,264.0,2
+British Grand Prix,8,1021,4,British Grand Prix,Silverstone Circuit,silverstone,Silverstone,UK,52.0786,-1.01694,153.0,3
+70th Anniversary Grand Prix,8,1022,5,70th Anniversary Grand Prix,Silverstone Circuit,silverstone,Silverstone,UK,52.0786,-1.01694,153.0,4
+Spanish Grand Prix,3,1023,6,Spanish Grand Prix,Circuit de Barcelona-Catalunya,catalunya,Montmeló,Spain,41.57,2.26111,109.0,5
+Belgian Grand Prix,12,1024,7,Belgian Grand Prix,Circuit de Spa-Francorchamps,spa,Spa,Belgium,50.4372,5.97139,401.0,6
+Italian Grand Prix,13,1025,8,Italian Grand Prix,Autodromo Nazionale di Monza,monza,Monza,Italy,45.6156,9.28111,162.0,7
+Tuscan Grand Prix,73,1026,9,Tuscan Grand Prix,Autodromo Internazionale del Mugello,mugello,Mugello,Italy,43.9975,11.3719,255.0,8
+Russian Grand Prix,70,1027,10,Russian Grand Prix,Sochi Autodrom,sochi,Sochi,Russia,43.4057,39.9578,2.0,9
+Eifel Grand Prix,19,1028,11,Eifel Grand Prix,Nürburgring,nurburgring,Nürburg,Germany,50.3356,6.9475,578.0,10
+Portuguese Grand Prix,72,1029,12,Portuguese Grand Prix,Autódromo Internacional do Algarve,portimao,Portimão,Portugal,37.227,-8.6267,108.0,11
+Emilia Romagna Grand Prix,20,1030,13,Emilia Romagna Grand Prix,Autodromo Enzo e Dino Ferrari,imola,Imola,Italy,44.3439,11.7167,37.0,12
+Turkish Grand Prix,4,1031,14,Turkish Grand Prix,Istanbul Park,istanbul,Istanbul,Turkey,40.9517,29.405,130.0,13
+Bahrain Grand Prix,2,1032,15,Bahrain Grand Prix,Bahrain International Circuit,bahrain,Sakhir,Bahrain,26.0325,50.5106,7.0,14
+Sakhir Grand Prix,2,1033,16,Sakhir Grand Prix,Bahrain International Circuit,bahrain,Sakhir,Bahrain,26.0325,50.5106,7.0,15
+Abu Dhabi Grand Prix,23,1034,17,Abu Dhabi Grand Prix,Yas Marina Circuit,yas_marina,Abu Dhabi,UAE,24.4672,54.6031,3.0,16

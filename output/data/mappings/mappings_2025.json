@@ -1,0 +1,186 @@
+{
+  "year": 2025,
+  "drivers": {
+    "DOO": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Jack",
+      "surname": "Doohan",
+      "name": "Jack Doohan",
+      "nationality": "",
+      "driver_idx": 5
+    },
+    "VER": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Max",
+      "surname": "Verstappen",
+      "name": "Max Verstappen",
+      "nationality": "",
+      "driver_idx": 19
+    },
+    "BEA": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Oliver",
+      "surname": "Bearman",
+      "name": "Oliver Bearman",
+      "nationality": "",
+      "driver_idx": 3
+    },
+    "GAS": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Pierre",
+      "surname": "Gasly",
+      "name": "Pierre Gasly",
+      "nationality": "",
+      "driver_idx": 6
+    },
+    "STR": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Lance",
+      "surname": "Stroll",
+      "name": "Lance Stroll",
+      "nationality": "",
+      "driver_idx": 17
+    },
+    "LAW": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Liam",
+      "surname": "Lawson",
+      "name": "Liam Lawson",
+      "nationality": "",
+      "driver_idx": 10
+    },
+    "PIA": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Oscar",
+      "surname": "Piastri",
+      "name": "Oscar Piastri",
+      "nationality": "",
+      "driver_idx": 14
+    },
+    "SAI": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Carlos",
+      "surname": "Sainz",
+      "name": "Carlos Sainz",
+      "nationality": "",
+      "driver_idx": 16
+    },
+    "TSU": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Yuki",
+      "surname": "Tsunoda",
+      "name": "Yuki Tsunoda",
+      "nationality": "",
+      "driver_idx": 18
+    },
+    "HAM": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Lewis",
+      "surname": "Hamilton",
+      "name": "Lewis Hamilton",
+      "nationality": "",
+      "driver_idx": 8
+    },
+    "ALO": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Fernando",
+      "surname": "Alonso",
+      "name": "Fernando Alonso",
+      "nationality": "",
+      "driver_idx": 1
+    },
+    "LEC": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Charles",
+      "surname": "Leclerc",
+      "name": "Charles Leclerc",
+      "nationality": "",
+      "driver_idx": 11
+    },
+    "NOR": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Lando",
+      "surname": "Norris",
+      "name": "Lando Norris",
+      "nationality": "",
+      "driver_idx": 12
+    },
+    "HUL": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Nico",
+      "surname": "Hulkenberg",
+      "name": "Nico Hulkenberg",
+      "nationality": "",
+      "driver_idx": 9
+    },
+    "ALB": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Alexander",
+      "surname": "Albon",
+      "name": "Alexander Albon",
+      "nationality": "",
+      "driver_idx": 0
+    },
+    "RUS": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "George",
+      "surname": "Russell",
+      "name": "George Russell",
+      "nationality": "",
+      "driver_idx": 15
+    },
+    "OCO": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Esteban",
+      "surname": "Ocon",
+      "name": "Esteban Ocon",
+      "nationality": "",
+      "driver_idx": 13
+    },
+    "ANT": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Andrea Kimi",
+      "surname": "Antonelli",
+      "name": "Andrea Kimi Antonelli",
+      "nationality": "",
+      "driver_idx": 2
+    },
+    "BOR": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Gabriel",
+      "surname": "Bortoleto",
+      "name": "Gabriel Bortoleto",
+      "nationality": "",
+      "driver_idx": 4
+    },
+    "HAD": {
+      "driver_id": null,
+      "driver_ref": "",
+      "forename": "Isack",
+      "surname": "Hadjar",
+      "name": "Isack Hadjar",
+      "nationality": "",
+      "driver_idx": 7
+    }
+  },
+  "circuits": {}
+}

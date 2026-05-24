@@ -1,0 +1,21 @@
+abbreviation,driver_id,driver_ref,forename,surname,name,nationality,driver_idx
+ALB,,,Alexander,Albon,Alexander Albon,,0
+ALO,,,Fernando,Alonso,Fernando Alonso,,1
+ANT,,,Andrea Kimi,Antonelli,Andrea Kimi Antonelli,,2
+BEA,,,Oliver,Bearman,Oliver Bearman,,3
+BOR,,,Gabriel,Bortoleto,Gabriel Bortoleto,,4
+DOO,,,Jack,Doohan,Jack Doohan,,5
+GAS,,,Pierre,Gasly,Pierre Gasly,,6
+HAD,,,Isack,Hadjar,Isack Hadjar,,7
+HAM,,,Lewis,Hamilton,Lewis Hamilton,,8
+HUL,,,Nico,Hulkenberg,Nico Hulkenberg,,9
+LAW,,,Liam,Lawson,Liam Lawson,,10
+LEC,,,Charles,Leclerc,Charles Leclerc,,11
+NOR,,,Lando,Norris,Lando Norris,,12
+OCO,,,Esteban,Ocon,Esteban Ocon,,13
+PIA,,,Oscar,Piastri,Oscar Piastri,,14
+RUS,,,George,Russell,George Russell,,15
+SAI,,,Carlos,Sainz,Carlos Sainz,,16
+STR,,,Lance,Stroll,Lance Stroll,,17
+TSU,,,Yuki,Tsunoda,Yuki Tsunoda,,18
+VER,,,Max,Verstappen,Max Verstappen,,19

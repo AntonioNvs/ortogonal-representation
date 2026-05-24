@@ -1,0 +1,25 @@
+abbreviation,driver_id,driver_ref,forename,surname,name,nationality,driver_idx
+ALO,3,alonso,Fernando,Alonso,Fernando Alonso,Spanish,0
+BIA,823,jules_bianchi,Jules,Bianchi,Jules Bianchi,French,1
+BOT,821,bottas,Valtteri,Bottas,Valtteri Bottas,Finnish,2
+BUT,17,button,Jenson,Button,Jenson Button,British,3
+CHI,819,chilton,Max,Chilton,Max Chilton,British,4
+ERI,827,ericsson,Marcus,Ericsson,Marcus Ericsson,Swedish,5
+GRO,153,grosjean,Romain,Grosjean,Romain Grosjean,French,6
+GUT,820,gutierrez,Esteban,Gutiérrez,Esteban Gutiérrez,Mexican,7
+HAM,0,hamilton,Lewis,Hamilton,Lewis Hamilton,British,8
+HUL,807,hulkenberg,Nico,Hülkenberg,Nico Hülkenberg,German,9
+KOB,154,kobayashi,Kamui,Kobayashi,Kamui Kobayashi,Japanese,10
+KVY,825,kvyat,Daniil,Kvyat,Daniil Kvyat,Russian,11
+LOT,826,lotterer,André,Lotterer,André Lotterer,German,12
+MAG,824,kevin_magnussen,Kevin,Magnussen,Kevin Magnussen,Danish,13
+MAL,812,maldonado,Pastor,Maldonado,Pastor Maldonado,Venezuelan,14
+MAS,12,massa,Felipe,Massa,Felipe Massa,Brazilian,15
+PER,814,perez,Sergio,Pérez,Sergio Pérez,Mexican,16
+RAI,7,raikkonen,Kimi,Räikkönen,Kimi Räikkönen,Finnish,17
+RIC,816,ricciardo,Daniel,Ricciardo,Daniel Ricciardo,Australian,18
+ROS,2,rosberg,Nico,Rosberg,Nico Rosberg,German,19
+STE,828,stevens,Will,Stevens,Will Stevens,British,20
+SUT,15,sutil,Adrian,Sutil,Adrian Sutil,German,21
+VER,817,vergne,Jean-Éric,Vergne,Jean-Éric Vergne,French,22
+VET,19,vettel,Sebastian,Vettel,Sebastian Vettel,German,23

@@ -1,0 +1,23 @@
+year,round,event_name,circuit_id,circuit_ref,altitude_m,length_m,corners_count,rotation,avg_track_temp,avg_air_temp,avg_humidity
+2023,1,Bahrain Grand Prix,2,bahrain,7.0,5192.0,15,92.0,28.1,23.9,21.7
+2023,2,Saudi Arabian Grand Prix,74,jeddah,15.0,5794.0,27,104.0,31.7,27.0,44.7
+2023,3,Australian Grand Prix,0,albert_park,10.0,4998.0,14,44.0,22.7,15.2,53.4
+2023,4,Azerbaijan Grand Prix,71,baku,-7.0,5213.0,20,357.0,33.1,19.5,80.6
+2023,5,Miami Grand Prix,76,miami,0.0,5438.0,19,2.0,43.3,28.6,59.2
+2023,6,Monaco Grand Prix,5,monaco,7.0,3097.0,19,315.0,46.5,25.6,34.7
+2023,7,Spanish Grand Prix,3,catalunya,109.0,4542.0,14,303.0,24.9,20.9,71.9
+2023,8,Canadian Grand Prix,6,villeneuve,13.0,4088.0,14,62.0,18.5,16.5,87.7
+2023,9,Austrian Grand Prix,69,red_bull_ring,678.0,4142.0,10,1.0,39.6,26.7,41.6
+2023,10,British Grand Prix,8,silverstone,153.0,5960.0,18,92.0,22.9,21.3,78.4
+2023,11,Hungarian Grand Prix,10,hungaroring,264.0,4260.0,16,40.0,43.9,26.3,34.5
+2023,12,Belgian Grand Prix,12,spa,401.0,7087.0,19,91.0,23.6,19.3,88.7
+2023,13,Dutch Grand Prix,38,zandvoort,6.0,3921.0,14,0.0,22.4,18.0,77.9
+2023,14,Italian Grand Prix,13,monza,162.0,5456.0,11,95.0,39.4,28.2,40.8
+2023,15,Singapore Grand Prix,14,marina_bay,18.0,4977.0,19,335.0,34.2,29.5,77.4
+2023,16,Japanese Grand Prix,21,suzuka,45.0,5864.0,18,49.0,36.6,26.1,47.5
+2023,17,Qatar Grand Prix,75,losail,0.0,5156.0,16,61.0,34.4,31.4,55.8
+2023,18,United States Grand Prix,68,americas,161.0,5533.0,20,0.0,41.4,35.5,12.5
+2023,19,Mexico City Grand Prix,31,rodriguez,2227.0,4274.0,17,36.0,44.1,25.8,27.1
+2023,20,São Paulo Grand Prix,17,interlagos,785.0,4196.0,15,258.0,38.3,29.4,57.3
+2023,21,Las Vegas Grand Prix,22,vegas,0.0,6281.0,17,90.0,16.9,15.1,61.1
+2023,22,Abu Dhabi Grand Prix,23,yas_marina,3.0,5297.0,16,280.0,31.8,26.7,66.3

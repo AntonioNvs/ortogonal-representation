@@ -1,0 +1,11 @@
+{
+  "year": 2023,
+  "config": {
+    "task": "driver-top3",
+    "rolling_window": 10
+  },
+  "drivers": {},
+  "circuits": {},
+  "driver_features_file": "driver/driver_features_per_race.csv",
+  "instances_file": "dataset/instances.csv"
+}

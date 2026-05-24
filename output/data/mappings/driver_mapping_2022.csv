@@ -1,0 +1,23 @@
+abbreviation,driver_id,driver_ref,forename,surname,name,nationality,driver_idx
+ALB,846,albon,Alexander,Albon,Alexander Albon,THA,0
+ALO,3,alonso,Fernando,Alonso,Fernando Alonso,ESP,1
+BOT,821,bottas,Valtteri,Bottas,Valtteri Bottas,FIN,2
+DEV,854,de_vries,Nyck,de Vries,Nyck de Vries,Dutch,3
+GAS,452,gasly,Pierre,Gasly,Pierre Gasly,FRA,4
+HAM,0,hamilton,Lewis,Hamilton,Lewis Hamilton,GBR,5
+HUL,807,hulkenberg,Nico,Hulkenberg,Nico Hulkenberg,GER,6
+LAT,847,latifi,Nicholas,Latifi,Nicholas Latifi,CAN,7
+LEC,842,leclerc,Charles,Leclerc,Charles Leclerc,MON,8
+MAG,824,kevin_magnussen,Kevin,Magnussen,Kevin Magnussen,DEN,9
+MSC,852,mick_schumacher,Mick,Schumacher,Mick Schumacher,GER,10
+NOR,844,norris,Lando,Norris,Lando Norris,GBR,11
+OCO,838,ocon,Esteban,Ocon,Esteban Ocon,FRA,12
+PER,814,perez,Sergio,Perez,Sergio Perez,MEX,13
+RIC,816,ricciardo,Daniel,Ricciardo,Daniel Ricciardo,AUS,14
+RUS,845,russell,George,Russell,George Russell,GBR,15
+SAI,831,sainz,Carlos,Sainz,Carlos Sainz,ESP,16
+STR,839,stroll,Lance,Stroll,Lance Stroll,CAN,17
+TSU,850,tsunoda,Yuki,Tsunoda,Yuki Tsunoda,JPN,18
+VER,829,max_verstappen,Max,Verstappen,Max Verstappen,NED,19
+VET,19,vettel,Sebastian,Vettel,Sebastian Vettel,German,20
+ZHO,853,zhou,Guanyu,Zhou,Guanyu Zhou,CHN,21

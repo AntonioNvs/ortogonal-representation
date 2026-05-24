@@ -1,0 +1,22 @@
+event_name,circuit_id,race_id,round,race_name,circuit_name,circuit_ref,location,country,lat,lng,altitude_m,circuit_idx
+Australian Grand Prix,0,997,1,Australian Grand Prix,Albert Park Grand Prix Circuit,albert_park,Melbourne,Australia,-37.8497,144.968,10.0,0
+Bahrain Grand Prix,2,998,2,Bahrain Grand Prix,Bahrain International Circuit,bahrain,Sakhir,Bahrain,26.0325,50.5106,7.0,1
+Chinese Grand Prix,16,999,3,Chinese Grand Prix,Shanghai International Circuit,shanghai,Shanghai,China,31.3389,121.22,5.0,2
+Azerbaijan Grand Prix,71,1000,4,Azerbaijan Grand Prix,Baku City Circuit,baku,Baku,Azerbaijan,40.3725,49.8533,-7.0,3
+Spanish Grand Prix,3,1001,5,Spanish Grand Prix,Circuit de Barcelona-Catalunya,catalunya,Montmeló,Spain,41.57,2.26111,109.0,4
+Monaco Grand Prix,5,1002,6,Monaco Grand Prix,Circuit de Monaco,monaco,Monte-Carlo,Monaco,43.7347,7.42056,7.0,5
+Canadian Grand Prix,6,1003,7,Canadian Grand Prix,Circuit Gilles Villeneuve,villeneuve,Montreal,Canada,45.5,-73.5228,13.0,6
+French Grand Prix,33,1004,8,French Grand Prix,Circuit Paul Ricard,ricard,Le Castellet,France,43.2506,5.79167,432.0,7
+Austrian Grand Prix,69,1005,9,Austrian Grand Prix,Red Bull Ring,red_bull_ring,Spielberg,Austria,47.2197,14.7647,678.0,8
+British Grand Prix,8,1006,10,British Grand Prix,Silverstone Circuit,silverstone,Silverstone,UK,52.0786,-1.01694,153.0,9
+German Grand Prix,9,1007,11,German Grand Prix,Hockenheimring,hockenheimring,Hockenheim,Germany,49.3278,8.56583,103.0,10
+Hungarian Grand Prix,10,1008,12,Hungarian Grand Prix,Hungaroring,hungaroring,Budapest,Hungary,47.5789,19.2486,264.0,11
+Belgian Grand Prix,12,1009,13,Belgian Grand Prix,Circuit de Spa-Francorchamps,spa,Spa,Belgium,50.4372,5.97139,401.0,12
+Italian Grand Prix,13,1010,14,Italian Grand Prix,Autodromo Nazionale di Monza,monza,Monza,Italy,45.6156,9.28111,162.0,13
+Singapore Grand Prix,14,1011,15,Singapore Grand Prix,Marina Bay Street Circuit,marina_bay,Marina Bay,Singapore,1.2914,103.864,18.0,14
+Russian Grand Prix,70,1012,16,Russian Grand Prix,Sochi Autodrom,sochi,Sochi,Russia,43.4057,39.9578,2.0,15
+Japanese Grand Prix,21,1013,17,Japanese Grand Prix,Suzuka Circuit,suzuka,Suzuka,Japan,34.8431,136.541,45.0,16
+Mexican Grand Prix,31,1014,18,Mexican Grand Prix,Autódromo Hermanos Rodríguez,rodriguez,Mexico City,Mexico,19.4042,-99.0907,2227.0,17
+United States Grand Prix,68,1015,19,United States Grand Prix,Circuit of the Americas,americas,Austin,USA,30.1328,-97.6411,161.0,18
+Brazilian Grand Prix,17,1016,20,Brazilian Grand Prix,Autódromo José Carlos Pace,interlagos,São Paulo,Brazil,-23.7036,-46.6997,785.0,19
+Abu Dhabi Grand Prix,23,1017,21,Abu Dhabi Grand Prix,Yas Marina Circuit,yas_marina,Abu Dhabi,UAE,24.4672,54.6031,3.0,20

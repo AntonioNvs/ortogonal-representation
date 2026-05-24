@@ -1,0 +1,24 @@
+abbreviation,driver_id,driver_ref,forename,surname,name,nationality,driver_idx
+AIT,849,aitken,Jack,Aitken,Jack Aitken,British,0
+ALB,846,albon,Alexander,Albon,Alexander Albon,Thai,1
+BOT,821,bottas,Valtteri,Bottas,Valtteri Bottas,Finnish,2
+FIT,848,pietro_fittipaldi,Pietro,Fittipaldi,Pietro Fittipaldi,Brazilian,3
+GAS,452,gasly,Pierre,Gasly,Pierre Gasly,French,4
+GIO,840,giovinazzi,Antonio,Giovinazzi,Antonio Giovinazzi,Italian,5
+GRO,153,grosjean,Romain,Grosjean,Romain Grosjean,French,6
+HAM,0,hamilton,Lewis,Hamilton,Lewis Hamilton,British,7
+HUL,807,hulkenberg,Nico,Hülkenberg,Nico Hülkenberg,German,8
+KVY,825,kvyat,Daniil,Kvyat,Daniil Kvyat,Russian,9
+LAT,847,latifi,Nicholas,Latifi,Nicholas Latifi,Canadian,10
+LEC,842,leclerc,Charles,Leclerc,Charles Leclerc,Monegasque,11
+MAG,824,kevin_magnussen,Kevin,Magnussen,Kevin Magnussen,Danish,12
+NOR,844,norris,Lando,Norris,Lando Norris,British,13
+OCO,838,ocon,Esteban,Ocon,Esteban Ocon,French,14
+PER,814,perez,Sergio,Perez,Sergio Perez,Mexican,15
+RAI,7,raikkonen,Kimi,Räikkönen,Kimi Räikkönen,Finnish,16
+RIC,816,ricciardo,Daniel,Ricciardo,Daniel Ricciardo,Australian,17
+RUS,845,russell,George,Russell,George Russell,British,18
+SAI,831,sainz,Carlos,Sainz,Carlos Sainz,Spanish,19
+STR,839,stroll,Lance,Stroll,Lance Stroll,Canadian,20
+VER,829,max_verstappen,Max,Verstappen,Max Verstappen,Dutch,21
+VET,19,vettel,Sebastian,Vettel,Sebastian Vettel,German,22

@@ -1,0 +1,22 @@
+year,round,event_name,circuit_id,circuit_ref,altitude_m,length_m,corners_count,rotation,avg_track_temp,avg_air_temp,avg_humidity
+2019,1,Australian Grand Prix,0,albert_park,10.0,5086.0,14,44.0,37.8,23.2,69.1
+2019,2,Bahrain Grand Prix,2,bahrain,7.0,5257.0,15,92.0,29.0,25.1,53.8
+2019,3,Chinese Grand Prix,16,shanghai,5.0,5419.0,16,237.0,34.0,20.6,48.4
+2019,4,Azerbaijan Grand Prix,71,baku,-7.0,5227.0,20,357.0,31.9,15.9,72.2
+2019,5,Spanish Grand Prix,3,catalunya,109.0,4566.0,16,303.0,33.8,21.1,58.3
+2019,6,Monaco Grand Prix,5,monaco,7.0,3132.0,19,315.0,42.4,21.4,63.3
+2019,7,Canadian Grand Prix,6,villeneuve,13.0,4124.0,14,62.0,48.0,22.5,22.3
+2019,8,French Grand Prix,33,ricard,432.0,5510.0,15,0.0,54.0,26.3,45.8
+2019,9,Austrian Grand Prix,69,red_bull_ring,678.0,4200.0,10,1.0,51.0,29.7,27.1
+2019,10,British Grand Prix,8,silverstone,153.0,6016.0,18,92.0,29.5,19.0,67.7
+2019,11,German Grand Prix,9,hockenheimring,103.0,4534.0,17,0.0,44.0,28.3,51.7
+2019,12,Hungarian Grand Prix,10,hungaroring,264.0,4328.0,16,40.0,42.9,23.9,51.7
+2019,13,Belgian Grand Prix,12,spa,401.0,7114.0,19,91.0,41.3,29.2,36.5
+2019,14,Italian Grand Prix,13,monza,162.0,5525.0,11,95.0,37.3,23.0,51.2
+2019,15,Singapore Grand Prix,14,marina_bay,18.0,5204.0,23,335.0,34.6,30.0,61.3
+2019,16,Russian Grand Prix,70,sochi,2.0,6048.0,18,324.0,30.8,22.1,60.3
+2019,17,Japanese Grand Prix,21,suzuka,45.0,5933.0,18,49.0,35.7,22.1,61.4
+2019,18,Mexican Grand Prix,31,rodriguez,2227.0,4318.0,17,36.0,35.0,20.6,56.8
+2019,19,United States Grand Prix,68,americas,161.0,5605.0,20,0.0,26.4,20.5,25.0
+2019,20,Brazilian Grand Prix,17,interlagos,785.0,4247.0,15,258.0,33.9,20.7,66.5
+2019,21,Abu Dhabi Grand Prix,23,yas_marina,3.0,5600.0,21,280.0,30.4,25.9,64.2

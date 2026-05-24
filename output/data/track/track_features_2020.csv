@@ -1,0 +1,18 @@
+year,round,event_name,circuit_id,circuit_ref,altitude_m,length_m,corners_count,rotation,avg_track_temp,avg_air_temp,avg_humidity
+2020,1,Austrian Grand Prix,69,red_bull_ring,678.0,4141.0,10,1.0,49.9,24.6,34.7
+2020,2,Styrian Grand Prix,69,red_bull_ring,678.0,4139.0,10,1.0,19.9,14.8,89.8
+2020,3,Hungarian Grand Prix,10,hungaroring,264.0,4273.0,16,40.0,27.3,18.8,71.5
+2020,4,British Grand Prix,8,silverstone,153.0,5968.0,18,92.0,38.9,22.5,54.4
+2020,5,70th Anniversary Grand Prix,8,silverstone,153.0,5987.0,18,92.0,41.8,26.2,53.4
+2020,6,Spanish Grand Prix,3,catalunya,109.0,4540.0,16,303.0,49.0,30.8,55.7
+2020,7,Belgian Grand Prix,12,spa,401.0,7112.0,19,91.0,24.6,16.4,62.8
+2020,8,Italian Grand Prix,13,monza,162.0,5478.0,11,95.0,45.3,29.2,43.6
+2020,9,Tuscan Grand Prix,73,mugello,255.0,5245.0,0,273.0,45.1,29.4,40.4
+2020,10,Russian Grand Prix,70,sochi,2.0,6026.0,18,324.0,32.9,25.8,56.7
+2020,11,Eifel Grand Prix,19,nurburgring,578.0,5062.0,15,327.0,18.2,9.4,56.5
+2020,12,Portuguese Grand Prix,72,portimao,108.0,4281.0,15,74.0,35.4,21.3,48.8
+2020,13,Emilia Romagna Grand Prix,20,imola,37.0,5029.0,19,0.0,25.2,19.3,65.5
+2020,14,Turkish Grand Prix,4,istanbul,130.0,5233.0,14,336.0,13.5,12.1,89.9
+2020,15,Bahrain Grand Prix,2,bahrain,7.0,5223.0,15,92.0,27.9,26.3,56.7
+2020,16,Sakhir Grand Prix,2,bahrain,7.0,5412.0,0,92.0,26.9,24.0,77.4
+2020,17,Abu Dhabi Grand Prix,23,yas_marina,3.0,5588.0,21,280.0,28.8,23.4,61.6
