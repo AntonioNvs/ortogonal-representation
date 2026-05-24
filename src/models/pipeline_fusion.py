@@ -46,17 +46,19 @@ class F1OrthogonalPipeline(nn.Module):
         return logits, logits_piloto, logits_equipe, v_piloto, v_equipe
 
 class OrthogonalSeparationLoss(nn.Module):
-    def __init__(self, lambda_orthogonal=0.01):
+    def __init__(self, lambda_orthogonal=0.01, lambda_crossdim=0.0, aux_weight=0.5):
         super(OrthogonalSeparationLoss, self).__init__()
         self.bce = nn.BCEWithLogitsLoss()
-        self.lambda_orth = lambda_orthogonal
+        self.lambda_pairwise = lambda_orthogonal
+        self.lambda_crossdim = lambda_crossdim
+        self.aux_weight = aux_weight
         
     def forward(self, logits, logits_piloto, logits_equipe, targets, v_piloto, v_equipe):
         loss_bce_main = self.bce(logits.squeeze(-1), targets.float())
         loss_bce_piloto = self.bce(logits_piloto.squeeze(-1), targets.float())
         loss_bce_equipe = self.bce(logits_equipe.squeeze(-1), targets.float())
         
-        loss_bce = loss_bce_main + 0.5 * loss_bce_piloto + 0.5 * loss_bce_equipe
+        loss_bce = loss_bce_main + self.aux_weight * loss_bce_piloto + self.aux_weight * loss_bce_equipe
         
         v_piloto_norm = F.normalize(v_piloto, p=2, dim=-1)
         v_equipe_norm = F.normalize(v_equipe, p=2, dim=-1)
@@ -64,7 +66,22 @@ class OrthogonalSeparationLoss(nn.Module):
         cosine_sim = torch.sum(v_piloto_norm * v_equipe_norm, dim=-1)
         
         loss_orthogonal = torch.mean(torch.abs(cosine_sim))
+
+        # Desacoplamento dimensão-a-dimensão no batch.
+        # Este termo é complementar ao cosseno por amostra.
+        eps = 1e-8
+        v_p_center = v_piloto - v_piloto.mean(dim=0, keepdim=True)
+        v_e_center = v_equipe - v_equipe.mean(dim=0, keepdim=True)
+        v_p_std = v_p_center / (v_p_center.std(dim=0, keepdim=True) + eps)
+        v_e_std = v_e_center / (v_e_center.std(dim=0, keepdim=True) + eps)
+        n = v_piloto.size(0)
+        cross_corr = torch.matmul(v_p_std.T, v_e_std) / max(n - 1, 1)
+        loss_crossdim = torch.mean(torch.abs(cross_corr))
         
-        total_loss = loss_bce + (self.lambda_orth * loss_orthogonal)
+        total_loss = (
+            loss_bce
+            + (self.lambda_pairwise * loss_orthogonal)
+            + (self.lambda_crossdim * loss_crossdim)
+        )
         
-        return total_loss, loss_bce_main, loss_orthogonal
+        return total_loss, loss_bce_main, loss_orthogonal, loss_crossdim
