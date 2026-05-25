@@ -286,6 +286,7 @@ def train_and_evaluate(
     lr=0.001,
     aux_weight=0.5,
     latent_dim=8,
+    include_track_pairs=False,
 ):
     print(
         f"\n--- Treinando Modelo: {name} "
@@ -307,7 +308,7 @@ def train_and_evaluate(
         lambda_crossdim=lambda_crossdim,
         lambda_hsic=lambda_hsic,
         aux_weight=aux_weight,
-        include_track_pairs=use_track_encoder,
+        include_track_pairs=include_track_pairs,
     )
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -395,6 +396,7 @@ def train_and_evaluate(
             "lr": lr,
             "epochs": epochs,
             "use_track_encoder": use_track_encoder,
+            "include_track_pairs": include_track_pairs,
         },
         "history": history,
         "test_metrics": {
@@ -436,13 +438,13 @@ def train_models(use_track_encoder=True, epochs=10, run_ablation=True,
     results.append(res_no_orth)
 
     if run_ablation:
+        # Grade focada no que vinha funcionando: cosseno e cross-corr no par
+        # (piloto, equipe). HSIC e aux-off ficam como variantes diagnosticas.
         ablation_grid = [
-            {"name": "model_ablation_p01_c01", "lambda_pairwise": 0.1, "lambda_crossdim": 0.1, "lambda_hsic": 0.0},
-            {"name": "model_ablation_p1_c01",  "lambda_pairwise": 1.0, "lambda_crossdim": 0.1, "lambda_hsic": 0.0},
-            {"name": "model_ablation_p1_c1",   "lambda_pairwise": 1.0, "lambda_crossdim": 1.0, "lambda_hsic": 0.0},
-            {"name": "model_hsic_01",          "lambda_pairwise": 0.0, "lambda_crossdim": 0.0, "lambda_hsic": 0.1},
-            {"name": "model_hsic_1",           "lambda_pairwise": 0.0, "lambda_crossdim": 0.0, "lambda_hsic": 1.0},
-            {"name": "model_combo_p1_h01",     "lambda_pairwise": 1.0, "lambda_crossdim": 0.0, "lambda_hsic": 0.1},
+            {"name": "model_ablation_p01_c01", "lambda_pairwise": 0.1, "lambda_crossdim": 0.1, "lambda_hsic": 0.0, "aux_weight": 0.5},
+            {"name": "model_ablation_p1_c01",  "lambda_pairwise": 1.0, "lambda_crossdim": 0.1, "lambda_hsic": 0.0, "aux_weight": 0.5},
+            {"name": "model_ablation_p1_c1",   "lambda_pairwise": 1.0, "lambda_crossdim": 1.0, "lambda_hsic": 0.0, "aux_weight": 0.5},
+            {"name": "model_no_aux_p1",        "lambda_pairwise": 1.0, "lambda_crossdim": 0.0, "lambda_hsic": 0.0, "aux_weight": 0.0},
         ]
 
         for cfg_row in ablation_grid:
@@ -451,6 +453,7 @@ def train_models(use_track_encoder=True, epochs=10, run_ablation=True,
                 lambda_pairwise=cfg_row["lambda_pairwise"],
                 lambda_crossdim=cfg_row["lambda_crossdim"],
                 lambda_hsic=cfg_row["lambda_hsic"],
+                aux_weight=cfg_row["aux_weight"],
                 train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
                 graph_data=graph_data, device=device,
                 use_track_encoder=use_track_encoder, epochs=epochs,

@@ -106,7 +106,7 @@ class OrthogonalSeparationLoss(nn.Module):
     """
 
     def __init__(self, lambda_orthogonal=0.0, lambda_crossdim=0.0, lambda_hsic=0.0,
-                 aux_weight=0.5, include_track_pairs=True):
+                 aux_weight=0.5, include_track_pairs=False):
         super().__init__()
         self.bce = nn.BCEWithLogitsLoss()
         self.lambda_pairwise = lambda_orthogonal
