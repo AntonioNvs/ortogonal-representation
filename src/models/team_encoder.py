@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch_geometric.nn import HeteroConv, SAGEConv
 
 class TeamGraphEncoder(nn.Module):
-    def __init__(self, num_nodes_dict, hidden_dim=32, out_dim=8):
+    def __init__(self, num_nodes_dict, hidden_dim=32, out_dim=8, dropout_prob=0.0):
         super(TeamGraphEncoder, self).__init__()
         
         self.node_emb = nn.ModuleDict()

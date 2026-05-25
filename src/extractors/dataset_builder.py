@@ -116,8 +116,10 @@ def build_dataset(data_dir: str, dataset_dir: str) -> pd.DataFrame:
         f"({100 * target_positive / len(df):.1f}% positive rate)"
     )
 
-    df["split"] = "train"
-    df.loc[df["year"] >= cfg.VALIDATION_START_YEAR, "split"] = "val"
+    df["split"] = "unused"
+    df.loc[df["year"].isin(cfg.TRAIN_YEARS), "split"] = "train"
+    df.loc[df["year"].isin(cfg.VAL_YEARS), "split"] = "val"
+    df.loc[df["year"].isin(cfg.TEST_YEARS), "split"] = "test"
 
     split_counts = df["split"].value_counts()
     logger.info(f"  Split distribution: {split_counts.to_dict()}")
@@ -128,12 +130,53 @@ def build_dataset(data_dir: str, dataset_dir: str) -> pd.DataFrame:
         "points_per_finish", "experience",
     ]
 
+    # Missingness flags BEFORE imputation. 1 = original value was missing.
+    for col in driver_feature_cols + track_feature_cols:
+        if col in df.columns:
+            df[f"{col}_missing"] = df[col].isna().astype(int)
+
+    # Driver features residualized against (constructorId, year) baseline.
+    # Subtracts the team-year average from each driver feature so that the
+    # remaining signal is, by construction, less contaminated by team strength.
+    # Baseline computed only on the train split to avoid temporal leakage.
+    train_mask_for_baseline = df["split"] == "train"
+    residual_cols: list[str] = []
+    for col in driver_feature_cols:
+        if col not in df.columns:
+            continue
+        baseline = (
+            df.loc[train_mask_for_baseline]
+            .groupby(["constructorId", "year"])[col]
+            .mean()
+            .rename("baseline")
+            .reset_index()
+        )
+        df = df.merge(baseline, on=["constructorId", "year"], how="left")
+        global_mean = df.loc[train_mask_for_baseline, col].mean()
+        df["baseline"] = df["baseline"].fillna(global_mean)
+        df[f"{col}_resid"] = df[col] - df["baseline"]
+        df = df.drop(columns=["baseline"])
+        residual_cols.append(f"{col}_resid")
+
+    # Train-only medians used for imputation. Avoids leakage from val/test.
+    train_mask = df["split"] == "train"
+    medians = df.loc[train_mask, driver_feature_cols + track_feature_cols].median(numeric_only=True)
+    for col in driver_feature_cols + track_feature_cols:
+        if col in df.columns:
+            fill_val = medians.get(col, 0.0)
+            if pd.isna(fill_val):
+                fill_val = 0.0
+            df[col] = df[col].fillna(fill_val)
+
+    missing_cols = [f"{c}_missing" for c in driver_feature_cols + track_feature_cols if c in df.columns]
+
     key_cols = ["raceId", "driverId", "constructorId", "year", "round", "date"]
     target_cols = ["top3"]
     split_cols = ["split"]
 
     final_cols = (
-        key_cols + target_cols + driver_feature_cols + track_feature_cols + split_cols
+        key_cols + target_cols + driver_feature_cols + residual_cols
+        + track_feature_cols + missing_cols + split_cols
     )
 
     final_cols = [c for c in final_cols if c in df.columns]

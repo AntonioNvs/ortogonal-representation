@@ -12,7 +12,15 @@ OUTPUT_DIR = BASE_DIR / "output"
 CACHE_DIR = BASE_DIR / "cache"
 
 HYBRID_ERA_START = 2014
-VALIDATION_START_YEAR = 2023
+
+# Single source of truth for train/val/test temporal split.
+# Both dataset_builder and train.py must consume these constants.
+TRAIN_YEARS = list(range(2018, 2022))   # 2018..2021
+VAL_YEARS = [2022]
+TEST_YEARS = [2023]
+
+# Backwards-compat alias (some old code paths still reference it).
+VALIDATION_START_YEAR = VAL_YEARS[0]
 
 SESSION_TYPE = "R"
 
