@@ -15,9 +15,9 @@ year,round,event_name,circuit_id,circuit_ref,altitude_m,length_m,corners_count,r
 2022,14,Belgian Grand Prix,12,spa,401.0,7066.0,19,91.0,20.7,15.2,84.8
 2022,15,Dutch Grand Prix,38,zandvoort,6.0,3899.0,14,0.0,39.1,26.9,30.3
 2022,16,Italian Grand Prix,13,monza,162.0,5451.0,11,95.0,40.3,27.6,34.7
-2022,17,Singapore Grand Prix,14,marina_bay,18.0,5063.0,0,0.0,,,
-2022,18,Japanese Grand Prix,21,suzuka,45.0,5807.0,0,0.0,,,
-2022,19,United States Grand Prix,68,americas,161.0,5513.0,0,0.0,,,
-2022,20,Mexico City Grand Prix,31,rodriguez,2227.0,4304.0,0,0.0,,,
-2022,21,São Paulo Grand Prix,17,interlagos,785.0,4309.0,0,0.0,,,
-2022,22,Abu Dhabi Grand Prix,23,yas_marina,3.0,5281.0,0,0.0,,,
+2022,17,Singapore Grand Prix,14,marina_bay,18.0,5093.0,19,335.0,27.8,26.8,81.4
+2022,18,Japanese Grand Prix,21,suzuka,45.0,5866.0,18,49.0,26.5,19.9,57.5
+2022,19,United States Grand Prix,68,americas,161.0,5544.0,20,0.0,35.9,30.0,36.8
+2022,20,Mexico City Grand Prix,31,rodriguez,2227.0,4263.0,17,36.0,48.5,25.6,36.3
+2022,21,São Paulo Grand Prix,17,interlagos,785.0,2508.0,15,258.0,26.7,19.2,93.6
+2022,22,Abu Dhabi Grand Prix,23,yas_marina,3.0,5275.0,16,280.0,33.9,28.8,69.7
