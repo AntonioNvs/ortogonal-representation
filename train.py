@@ -103,6 +103,53 @@ class F1AlignedDataset(Dataset):
 # Graph construction
 # ---------------------------------------------------------------------------
 
+def add_edge_year_masks(db, graph_data):
+    """
+    For each edge type whose source table contains ``raceId``, compute
+    boolean masks for train / val / test based on the race year.
+
+    The masks are derived from the source node IDs in the edge_index:
+    each source node ID corresponds to a row position in the source table,
+    whose ``raceId`` maps to a year via the races table.
+
+    Edge types that have no temporal signal (no ``raceId`` column) are
+    kept fully visible in every split.
+    """
+    races_df = db.table_dict["races"].df
+    # raceId was remapped to 0..n-1 by filter_db_by_years; build {raceId: year} dict
+    year_of_race_id = dict(zip(races_df["raceId"], races_df["year"]))
+
+    masks = {}
+    for edge_type in graph_data.edge_types:
+        src_table = edge_type[0]
+        num_edges = graph_data[edge_type].edge_index.shape[1]
+
+        all_true = np.ones(num_edges, dtype=bool)
+
+        if src_table in db.table_dict:
+            src_df = db.table_dict[src_table].df
+            if "raceId" in src_df.columns:
+                src_node_ids = graph_data[edge_type].edge_index[0].cpu().numpy()
+                race_ids = src_df.iloc[src_node_ids]["raceId"].values
+                years = np.array([year_of_race_id.get(rid, -1) for rid in race_ids])
+
+                masks[edge_type] = {
+                    "train": np.isin(years, cfg.TRAIN_YEARS),
+                    "val": np.isin(years, list(cfg.TRAIN_YEARS) + list(cfg.VAL_YEARS)),
+                    "test": all_true,
+                }
+                continue
+
+        # No temporal signal → keep all edges in every split
+        masks[edge_type] = {"train": all_true, "val": all_true, "test": all_true}
+
+    return masks
+
+
+# ---------------------------------------------------------------------------
+# Instance building from the relational graph (no CSVs, no FastF1)
+# ---------------------------------------------------------------------------
+
 def build_graph(db):
     stype_proposal = get_stype_proposal(db)
     for table_name, col_stypes in stype_proposal.items():
@@ -146,6 +193,21 @@ def prepare_data(min_year=2000, max_year=2023):
     print("-> Building heterogeneous graph...")
     graph_data, node_to_col_names_dict, node_to_col_stats = build_graph(db)
 
+    print("-> Computing edge year masks for temporal split...")
+    masks = add_edge_year_masks(db, graph_data)
+    train_edge_index_dict = {
+        et: ei[:, masks[et]["train"]].contiguous()
+        for et, ei in graph_data.edge_index_dict.items()
+    }
+    val_edge_index_dict = {
+        et: ei[:, masks[et]["val"]].contiguous()
+        for et, ei in graph_data.edge_index_dict.items()
+    }
+    test_edge_index_dict = {
+        et: ei[:, masks[et]["test"]].contiguous()
+        for et, ei in graph_data.edge_index_dict.items()
+    }
+
     print("-> Building instances from results table...")
     df = _build_instances(db)
 
@@ -164,8 +226,14 @@ def prepare_data(min_year=2000, max_year=2023):
     print(f"-> Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
     print(f"   Graph nodes: drivers={graph_data['drivers'].num_nodes}, "
           f"constructors={graph_data['constructors'].num_nodes}")
+    train_total = sum(ei.shape[1] for ei in train_edge_index_dict.values())
+    val_total = sum(ei.shape[1] for ei in val_edge_index_dict.values())
+    test_total = sum(ei.shape[1] for ei in test_edge_index_dict.values())
+    print(f"   Edges: train={train_total}, val={val_total}, test={test_total}")
 
-    return train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats
+    return (train_loader, val_loader, test_loader, graph_data,
+            node_to_col_names_dict, node_to_col_stats,
+            train_edge_index_dict, val_edge_index_dict, test_edge_index_dict)
 
 
 def prepare_data_and_graph(min_year=2000, max_year=2023):
@@ -174,7 +242,9 @@ def prepare_data_and_graph(min_year=2000, max_year=2023):
     model checkpoint exists, uses its encoder to pre-populate graph_data.x_dict.
     """
     loaders_and_data = prepare_data(min_year, max_year)
-    train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats = loaders_and_data
+    (train_loader, val_loader, test_loader, graph_data,
+     node_to_col_names_dict, node_to_col_stats,
+     train_edge_index_dict, val_edge_index_dict, test_edge_index_dict) = loaders_and_data
 
     # Attempt to load model and run encoder to pre-populate x
     meta_path = "output/models/graph_meta.pt"
@@ -197,7 +267,8 @@ def prepare_data_and_graph(min_year=2000, max_year=2023):
         except Exception as e:
             print(f"Warning: Failed to pre-populate graph x_dict in prepare_data_and_graph: {e}")
 
-    return train_loader, val_loader, test_loader, graph_data
+    return (train_loader, val_loader, test_loader, graph_data,
+            train_edge_index_dict, val_edge_index_dict, test_edge_index_dict)
 
 
 def hsic_rbf(X, Y, sigma=1.0):
@@ -233,15 +304,16 @@ def hsic_rbf(X, Y, sigma=1.0):
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def _collect_latents(model, dataloader, graph_data, device):
+def _collect_latents(model, dataloader, graph_data, device, edge_index_dict=None):
     model.eval()
     all_vp, all_ve = [], []
+    eid = edge_index_dict if edge_index_dict is not None else graph_data.edge_index_dict
     with torch.no_grad():
         for batch in dataloader:
             driver_ids, constructor_ids, _ = [b.to(device) for b in batch]
             _, _, _, vp, ve = model(
                 graph_x_dict=None,
-                graph_edge_index_dict=graph_data.edge_index_dict,
+                graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
                 graph_tf_dict=graph_data.tf_dict,
@@ -253,8 +325,9 @@ def _collect_latents(model, dataloader, graph_data, device):
     return vp, ve
 
 
-def evaluate(model, dataloader, graph_data, criterion, device):
+def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=None):
     model.eval()
+    eid = edge_index_dict if edge_index_dict is not None else graph_data.edge_index_dict
     epoch_loss = epoch_bce = epoch_orth = 0.0
     all_targets, all_preds = [], []
 
@@ -264,7 +337,7 @@ def evaluate(model, dataloader, graph_data, criterion, device):
 
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
                 graph_x_dict=None,
-                graph_edge_index_dict=graph_data.edge_index_dict,
+                graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
                 graph_tf_dict=graph_data.tf_dict,
@@ -287,7 +360,7 @@ def evaluate(model, dataloader, graph_data, criterion, device):
     if batches == 0:
         return dict(loss=0, bce=0, orth=0, auroc=0.5)
 
-    vp, ve = _collect_latents(model, dataloader, graph_data, device)
+    vp, ve = _collect_latents(model, dataloader, graph_data, device, edge_index_dict=eid)
     cos_global = float(pair_cosine(vp, ve)) if vp is not None and ve is not None else 0.0
 
     try:
@@ -322,6 +395,9 @@ def train_and_evaluate(
     lr=0.001,
     aux_weight=0.5,
     latent_dim=32,
+    train_edge_index_dict=None,
+    val_edge_index_dict=None,
+    test_edge_index_dict=None,
 ):
     print(
         f"\n--- Treinando Modelo: {name} "
@@ -355,9 +431,10 @@ def train_and_evaluate(
             driver_ids, constructor_ids, targets = [b.to(device) for b in batch]
             optimizer.zero_grad()
 
+            train_eid = train_edge_index_dict if train_edge_index_dict is not None else graph_data.edge_index_dict
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
                 graph_x_dict=None,
-                graph_edge_index_dict=graph_data.edge_index_dict,
+                graph_edge_index_dict=train_eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
                 graph_tf_dict=graph_data.tf_dict,
@@ -379,7 +456,8 @@ def train_and_evaluate(
         history["train_bce"].append(epoch_bce / n)
         history["train_orth"].append(epoch_orth / n)
 
-        val = evaluate(model, val_loader, graph_data, criterion, device)
+        val_eid = val_edge_index_dict if val_edge_index_dict is not None else graph_data.edge_index_dict
+        val = evaluate(model, val_loader, graph_data, criterion, device, edge_index_dict=val_eid)
         history["val_loss"].append(val["loss"])
         history["val_bce"].append(val["bce"])
         history["val_orth"].append(val["orth"])
@@ -391,7 +469,8 @@ def train_and_evaluate(
             f"Cos(global): {val['cos_global']:.4f}"
         )
 
-    test = evaluate(model, test_loader, graph_data, criterion, device)
+    test_eid = test_edge_index_dict if test_edge_index_dict is not None else graph_data.edge_index_dict
+    test = evaluate(model, test_loader, graph_data, criterion, device, edge_index_dict=test_eid)
     print(
         f"Test para {name} | AUROC: {test['auroc']:.4f} | "
         f"Orth: {test['orth']:.4f} | Cos(global): {test['cos_global']:.4f}"
@@ -423,10 +502,17 @@ def train_and_evaluate(
 
 
 def train_models(epochs=10, run_ablation=True):
-    train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats = prepare_data()
+    (train_loader, val_loader, test_loader, graph_data,
+     node_to_col_names_dict, node_to_col_stats,
+     train_edge_index_dict, val_edge_index_dict, test_edge_index_dict) = prepare_data()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     graph_data = graph_data.to(device)
+
+    # Move split-specific edge_index_dicts to the same device
+    train_edge_index_dict = {et: ei.to(device) for et, ei in train_edge_index_dict.items()}
+    val_edge_index_dict = {et: ei.to(device) for et, ei in val_edge_index_dict.items()}
+    test_edge_index_dict = {et: ei.to(device) for et, ei in test_edge_index_dict.items()}
 
     results = []
 
@@ -437,6 +523,9 @@ def train_models(epochs=10, run_ablation=True):
         node_to_col_names_dict=node_to_col_names_dict,
         node_to_col_stats=node_to_col_stats,
         device=device, epochs=epochs,
+        train_edge_index_dict=train_edge_index_dict,
+        val_edge_index_dict=val_edge_index_dict,
+        test_edge_index_dict=test_edge_index_dict,
     )
     results.append(res_orth)
 
@@ -447,6 +536,9 @@ def train_models(epochs=10, run_ablation=True):
         node_to_col_names_dict=node_to_col_names_dict,
         node_to_col_stats=node_to_col_stats,
         device=device, epochs=epochs,
+        train_edge_index_dict=train_edge_index_dict,
+        val_edge_index_dict=val_edge_index_dict,
+        test_edge_index_dict=test_edge_index_dict,
     )
     results.append(res_no_orth)
 
@@ -468,6 +560,9 @@ def train_models(epochs=10, run_ablation=True):
                 node_to_col_names_dict=node_to_col_names_dict,
                 node_to_col_stats=node_to_col_stats,
                 device=device, epochs=epochs,
+                train_edge_index_dict=train_edge_index_dict,
+                val_edge_index_dict=val_edge_index_dict,
+                test_edge_index_dict=test_edge_index_dict,
             )
             results.append(res_ablation)
 
