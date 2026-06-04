@@ -1,8 +1,10 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from models.graph_encoder import HeteroGraphEncoder
+from relbench.modeling.nn import HeteroEncoder
 
 
 class F1OrthogonalPipeline(nn.Module):
@@ -11,8 +13,27 @@ class F1OrthogonalPipeline(nn.Module):
     embeddings, fused via concatenation and fed into a classifier + aux heads.
     """
 
-    def __init__(self, num_nodes_dict, latent_dim=8):
+    def __init__(self, num_nodes_dict, latent_dim=8, node_to_col_names_dict=None, node_to_col_stats=None, **kwargs):
         super().__init__()
+
+        # Try loading metadata from saved cache if not passed directly
+        meta_path = "output/models/graph_meta.pt"
+        if (node_to_col_names_dict is None or node_to_col_stats is None) and os.path.exists(meta_path):
+            try:
+                meta = torch.load(meta_path, map_location="cpu")
+                node_to_col_names_dict = meta.get("node_to_col_names_dict")
+                node_to_col_stats = meta.get("node_to_col_stats")
+            except Exception as e:
+                print(f"Warning: Failed to load graph metadata from {meta_path}: {e}")
+
+        if node_to_col_names_dict is not None and node_to_col_stats is not None:
+            self.encoder = HeteroEncoder(
+                channels=latent_dim,
+                node_to_col_names_dict=node_to_col_names_dict,
+                node_to_col_stats=node_to_col_stats,
+            )
+        else:
+            self.encoder = None
 
         self.graph_encoder = HeteroGraphEncoder(
             num_nodes_dict=num_nodes_dict,
@@ -31,11 +52,14 @@ class F1OrthogonalPipeline(nn.Module):
         self.aux_equipe = nn.Linear(latent_dim, 1)
 
     def forward(self, graph_x_dict, graph_edge_index_dict,
-                target_constructor_ids, target_driver_ids):
+                target_constructor_ids, target_driver_ids, graph_tf_dict=None):
+        if (graph_x_dict is None or len(graph_x_dict) == 0) and graph_tf_dict is not None and self.encoder is not None:
+            graph_x_dict = self.encoder(graph_tf_dict)
+
         out_dict = self.graph_encoder(graph_x_dict, graph_edge_index_dict)
 
         v_equipe = out_dict["constructors"][target_constructor_ids]
-        v_piloto = out_dict["driver"][target_driver_ids]
+        v_piloto = out_dict["drivers"][target_driver_ids]
 
         v_fused = torch.cat([v_piloto, v_equipe], dim=-1)
 
@@ -81,6 +105,6 @@ class OrthogonalSeparationLoss(nn.Module):
 
         loss_orthogonal = pair_cosine(v_piloto, v_equipe)
 
-        total_loss = loss_bce_total + self.lambda_orthogonal * loss_orthogonal
+        total_loss = loss_orthogonal
 
         return total_loss, loss_bce_total, loss_orthogonal

@@ -26,20 +26,42 @@ from models.pipeline_fusion import F1OrthogonalPipeline, OrthogonalSeparationLos
 
 def filter_db_by_years(db, min_year, max_year):
     """
-    Filter a RelBench database to races in [min_year, max_year] (in place).
-
-    Reference tables (constructors, drivers, circuits, status) are kept
-    unfiltered so that entity IDs remain valid across year boundaries.
+    Filter a RelBench database to races in [min_year, max_year] (in place),
+    and remap primary/foreign keys to maintain contiguous integer ranges starting at 0.
     """
     races_df = db.table_dict["races"].df.copy()
     races_df = races_df[(races_df["year"] >= min_year) & (races_df["year"] <= max_year)]
     valid_race_ids = set(races_df["raceId"].unique())
 
+    # 1. Filter dataframes
     for name, table in list(db.table_dict.items()):
         if name == "races":
             table.df = races_df
         elif "raceId" in table.df.columns:
-            table.df = table.df[table.df["raceId"].isin(valid_race_ids)]
+            table.df = table.df[table.df["raceId"].isin(valid_race_ids)].copy()
+
+    # 2. Re-map primary keys and foreign keys for all tables to ensure they are contiguous
+    # We will build mapping dictionaries for each table that has a primary key
+    mappings = {}
+    for name, table in db.table_dict.items():
+        pkey = table.pkey_col
+        if pkey is not None:
+            old_keys = table.df[pkey].values
+            # Create mapping from old primary key to contiguous index 0..len-1
+            mapping = {old_key: i for i, old_key in enumerate(old_keys)}
+            mappings[name] = mapping
+            # Update the primary key in the table itself
+            table.df[pkey] = np.arange(len(table.df))
+
+    # 3. Update foreign keys in all tables based on the primary key mappings
+    for name, table in db.table_dict.items():
+        for fkey_col, pkey_table in table.fkey_col_to_pkey_table.items():
+            if pkey_table in mappings:
+                mapping = mappings[pkey_table]
+                table.df[fkey_col] = table.df[fkey_col].map(mapping)
+                if table.df[fkey_col].isnull().any():
+                    table.df = table.df[table.df[fkey_col].notnull()].copy()
+                table.df[fkey_col] = table.df[fkey_col].astype(np.int64)
 
     return db
 
@@ -87,8 +109,26 @@ def build_graph(db):
         for col_name, col_stype in col_stypes.items():
             if col_stype in (stype.text_embedded, stype.text_tokenized):
                 stype_proposal[table_name][col_name] = stype.categorical
-    graph_data, _ = make_pkey_fkey_graph(db, col_to_stype_dict=stype_proposal)
-    return graph_data
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Could not infer format.*")
+        graph_data, col_stats_dict = make_pkey_fkey_graph(db, col_to_stype_dict=stype_proposal)
+
+    # Extract metadata for HeteroEncoder
+    node_to_col_names_dict = {}
+    node_to_col_stats = {}
+    for node_type in graph_data.node_types:
+        tf = graph_data[node_type].tf
+        node_to_col_names_dict[node_type] = tf.col_names_dict
+        node_to_col_stats[node_type] = col_stats_dict[node_type]
+
+    # Save to disk for fallback loading (e.g. in notebooks)
+    os.makedirs("output/models", exist_ok=True)
+    torch.save({
+        "node_to_col_names_dict": node_to_col_names_dict,
+        "node_to_col_stats": node_to_col_stats,
+    }, "output/models/graph_meta.pt")
+
+    return graph_data, node_to_col_names_dict, node_to_col_stats
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +144,7 @@ def prepare_data(min_year=2000, max_year=2023):
     db = filter_db_by_years(db, min_year, max_year)
 
     print("-> Building heterogeneous graph...")
-    graph_data = build_graph(db)
+    graph_data, node_to_col_names_dict, node_to_col_stats = build_graph(db)
 
     print("-> Building instances from results table...")
     df = _build_instances(db)
@@ -122,10 +162,71 @@ def prepare_data(min_year=2000, max_year=2023):
     test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
     print(f"-> Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
-    print(f"   Graph nodes: driver={graph_data['driver'].num_nodes}, "
+    print(f"   Graph nodes: drivers={graph_data['drivers'].num_nodes}, "
           f"constructors={graph_data['constructors'].num_nodes}")
 
+    return train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats
+
+
+def prepare_data_and_graph(min_year=2000, max_year=2023):
+    """
+    Compatibility function for notebooks. Loads data, and if a trained
+    model checkpoint exists, uses its encoder to pre-populate graph_data.x_dict.
+    """
+    loaders_and_data = prepare_data(min_year, max_year)
+    train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats = loaders_and_data
+
+    # Attempt to load model and run encoder to pre-populate x
+    meta_path = "output/models/graph_meta.pt"
+    if os.path.exists(meta_path):
+        try:
+            model = F1OrthogonalPipeline(
+                num_nodes_dict={nt: graph_data[nt].num_nodes for nt in graph_data.node_types},
+                node_to_col_names_dict=node_to_col_names_dict,
+                node_to_col_stats=node_to_col_stats,
+            )
+            model_path = "output/models/model_orthogonal.pth"
+            if os.path.exists(model_path):
+                model.load_state_dict(torch.load(model_path, map_location="cpu"))
+            model.eval()
+            if model.encoder is not None:
+                with torch.no_grad():
+                    x_dict = model.encoder(graph_data.tf_dict)
+                    for node_type, x in x_dict.items():
+                        graph_data[node_type].x = x
+        except Exception as e:
+            print(f"Warning: Failed to pre-populate graph x_dict in prepare_data_and_graph: {e}")
+
     return train_loader, val_loader, test_loader, graph_data
+
+
+def hsic_rbf(X, Y, sigma=1.0):
+    """
+    Computes the Hilbert-Schmidt Independence Criterion (HSIC) with an RBF kernel in PyTorch.
+    """
+    n = X.size(0)
+    if n <= 1:
+        return torch.tensor(0.0, device=X.device)
+
+    # Pairwise distances and RBF kernel for X
+    x_norm = X.pow(2).sum(dim=1, keepdim=True)
+    dist_x = x_norm + x_norm.t() - 2 * torch.mm(X, X.t())
+    K = torch.exp(-dist_x / (2 * sigma**2))
+
+    # Pairwise distances and RBF kernel for Y
+    y_norm = Y.pow(2).sum(dim=1, keepdim=True)
+    dist_y = y_norm + y_norm.t() - 2 * torch.mm(Y, Y.t())
+    L = torch.exp(-dist_y / (2 * sigma**2))
+
+    # Centering matrix H
+    H = torch.eye(n, device=X.device) - (1.0 / n) * torch.ones((n, n), device=X.device)
+
+    # Centered kernel matrices
+    Kc = torch.mm(torch.mm(H, K), H)
+    Lc = torch.mm(torch.mm(H, L), H)
+
+    # Biased HSIC estimator
+    return torch.sum(Kc * Lc) / ((n - 1) ** 2)
 
 
 # ---------------------------------------------------------------------------
@@ -139,10 +240,11 @@ def _collect_latents(model, dataloader, graph_data, device):
         for batch in dataloader:
             driver_ids, constructor_ids, _ = [b.to(device) for b in batch]
             _, _, _, vp, ve = model(
-                graph_x_dict=graph_data.x_dict,
+                graph_x_dict=None,
                 graph_edge_index_dict=graph_data.edge_index_dict,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                graph_tf_dict=graph_data.tf_dict,
             )
             all_vp.append(vp.cpu())
             all_ve.append(ve.cpu())
@@ -161,10 +263,11 @@ def evaluate(model, dataloader, graph_data, criterion, device):
             driver_ids, constructor_ids, targets = [b.to(device) for b in batch]
 
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
-                graph_x_dict=graph_data.x_dict,
+                graph_x_dict=None,
                 graph_edge_index_dict=graph_data.edge_index_dict,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                graph_tf_dict=graph_data.tf_dict,
             )
 
             loss, loss_bce, loss_orth = criterion(
@@ -212,6 +315,8 @@ def train_and_evaluate(
     val_loader,
     test_loader,
     graph_data,
+    node_to_col_names_dict,
+    node_to_col_stats,
     device,
     epochs=10,
     lr=0.001,
@@ -226,6 +331,8 @@ def train_and_evaluate(
     num_nodes_dict = {nt: graph_data[nt].num_nodes for nt in graph_data.node_types}
     model = F1OrthogonalPipeline(
         num_nodes_dict=num_nodes_dict,
+        node_to_col_names_dict=node_to_col_names_dict,
+        node_to_col_stats=node_to_col_stats,
         latent_dim=latent_dim,
     ).to(device)
     criterion = OrthogonalSeparationLoss(
@@ -249,10 +356,11 @@ def train_and_evaluate(
             optimizer.zero_grad()
 
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
-                graph_x_dict=graph_data.x_dict,
+                graph_x_dict=None,
                 graph_edge_index_dict=graph_data.edge_index_dict,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                graph_tf_dict=graph_data.tf_dict,
             )
 
             loss, loss_bce, loss_orth = criterion(
@@ -315,7 +423,7 @@ def train_and_evaluate(
 
 
 def train_models(epochs=10, run_ablation=True):
-    train_loader, val_loader, test_loader, graph_data = prepare_data()
+    train_loader, val_loader, test_loader, graph_data, node_to_col_names_dict, node_to_col_stats = prepare_data()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     graph_data = graph_data.to(device)
@@ -325,14 +433,20 @@ def train_models(epochs=10, run_ablation=True):
     res_orth = train_and_evaluate(
         "model_orthogonal", lambda_orthogonal=1.0,
         train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-        graph_data=graph_data, device=device, epochs=epochs,
+        graph_data=graph_data,
+        node_to_col_names_dict=node_to_col_names_dict,
+        node_to_col_stats=node_to_col_stats,
+        device=device, epochs=epochs,
     )
     results.append(res_orth)
 
     res_no_orth = train_and_evaluate(
         "model_no_orthogonal", lambda_orthogonal=0.0,
         train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-        graph_data=graph_data, device=device, epochs=epochs,
+        graph_data=graph_data,
+        node_to_col_names_dict=node_to_col_names_dict,
+        node_to_col_stats=node_to_col_stats,
+        device=device, epochs=epochs,
     )
     results.append(res_no_orth)
 
@@ -350,7 +464,10 @@ def train_models(epochs=10, run_ablation=True):
                 lambda_orthogonal=cfg_row["lambda_orthogonal"],
                 aux_weight=cfg_row["aux_weight"],
                 train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-                graph_data=graph_data, device=device, epochs=epochs,
+                graph_data=graph_data,
+                node_to_col_names_dict=node_to_col_names_dict,
+                node_to_col_stats=node_to_col_stats,
+                device=device, epochs=epochs,
             )
             results.append(res_ablation)
 
