@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import warnings
 from torch_geometric.nn import HeteroConv, SAGEConv
 
 
@@ -32,21 +33,26 @@ class HeteroGraphEncoder(nn.Module):
             ("qualifying", "f2p_constructorId", "constructors"),
             ("constructor_standings", "f2p_constructorId", "constructors"),
         ]
-        # Edge types relevant to driver
+        # Edge types relevant to drivers
         driver_edges = [
-            ("results", "f2p_driverId", "driver"),
-            ("qualifying", "f2p_driverId", "driver"),
+            ("results", "f2p_driverId", "drivers"),
+            ("qualifying", "f2p_driverId", "drivers"),
         ]
         all_edges = cons_edges + driver_edges
 
-        self.conv1 = HeteroConv(
-            {et: SAGEConv((-1, -1), hidden_dim) for et in all_edges},
-            aggr="mean",
-        )
-        self.conv2 = HeteroConv(
-            {et: SAGEConv((-1, -1), out_dim) for et in all_edges},
-            aggr="max",
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", 
+                message=".*There exist node types.*whose representations do not get updated during message passing.*"
+            )
+            self.conv1 = HeteroConv(
+                {et: SAGEConv((-1, -1), hidden_dim) for et in all_edges},
+                aggr="mean",
+            )
+            self.conv2 = HeteroConv(
+                {et: SAGEConv((-1, -1), out_dim) for et in all_edges},
+                aggr="max",
+            )
 
         self.ln_cons = nn.LayerNorm(out_dim)
         self.ln_drv = nn.LayerNorm(out_dim)
@@ -78,7 +84,7 @@ class HeteroGraphEncoder(nn.Module):
         # Apply LayerNorm to our target node types
         if "constructors" in out_dict:
             out_dict["constructors"] = self.ln_cons(out_dict["constructors"])
-        if "driver" in out_dict:
-            out_dict["driver"] = self.ln_drv(out_dict["driver"])
+        if "drivers" in out_dict:
+            out_dict["drivers"] = self.ln_drv(out_dict["drivers"])
 
         return out_dict
