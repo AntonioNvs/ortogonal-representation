@@ -321,7 +321,7 @@ def train_and_evaluate(
     epochs=10,
     lr=0.001,
     aux_weight=0.5,
-    latent_dim=8,
+    latent_dim=32,
 ):
     print(
         f"\n--- Treinando Modelo: {name} "
@@ -453,9 +453,9 @@ def train_models(epochs=10, run_ablation=True):
     if run_ablation:
         ablation_grid = [
             {"name": "model_ablation_l01", "lambda_orthogonal": 0.1, "aux_weight": 0.5},
-            {"name": "model_ablation_l05", "lambda_orthogonal": 0.5, "aux_weight": 0.5},
-            {"name": "model_ablation_l2",  "lambda_orthogonal": 2.0, "aux_weight": 0.5},
-            {"name": "model_no_aux_l1",    "lambda_orthogonal": 1.0, "aux_weight": 0.0},
+            #{"name": "model_ablation_l05", "lambda_orthogonal": 0.5, "aux_weight": 0.5},
+            #{"name": "model_ablation_l2",  "lambda_orthogonal": 2.0, "aux_weight": 0.5},
+            #{"name": "model_no_aux_l1",    "lambda_orthogonal": 1.0, "aux_weight": 0.0},
         ]
 
         for cfg_row in ablation_grid:

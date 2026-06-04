@@ -105,6 +105,6 @@ class OrthogonalSeparationLoss(nn.Module):
 
         loss_orthogonal = pair_cosine(v_piloto, v_equipe)
 
-        total_loss = loss_orthogonal
+        total_loss = loss_orthogonal + loss_bce_total
 
         return total_loss, loss_bce_total, loss_orthogonal
