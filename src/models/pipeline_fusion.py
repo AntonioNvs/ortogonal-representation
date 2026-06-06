@@ -67,7 +67,11 @@ class F1OrthogonalPipeline(nn.Module):
         logits_piloto = self.aux_piloto(v_piloto)
         logits_equipe = self.aux_equipe(v_equipe)
 
-        return logits, logits_piloto, logits_equipe, v_piloto, v_equipe
+        paired_orthogonal_loss = self.graph_encoder.compute_paired_orthogonal_loss(
+            out_dict, graph_edge_index_dict
+        )
+
+        return logits, logits_piloto, logits_equipe, v_piloto, v_equipe, paired_orthogonal_loss
 
 
 def pair_cosine(a, b):
@@ -122,7 +126,7 @@ def cross_correlation_loss(a, b, eps=1e-8):
 ORTH_MODE_PAIR = "pair"
 ORTH_MODE_ALLPAIRS = "all_pairs"
 ORTH_MODE_CROSSCORR = "cross_corr"
-
+ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR = "paired_driver_constructor"
 
 class OrthogonalSeparationLoss(nn.Module):
     """
@@ -133,6 +137,7 @@ class OrthogonalSeparationLoss(nn.Module):
       - "pair" (default)     : cos(v_p[i], v_e[i]) pareado
       - "all_pairs"          : cos(v_p[i], v_e[j]) para todo par (i,j)
       - "cross_corr"         : matriz de correlacao cruzada (d, d)
+      - "paired_driver_constructor" : loss para pares de driver e constructor
     """
 
     def __init__(self, lambda_orthogonal=0.0, aux_weight=0.5, mode=ORTH_MODE_PAIR):
@@ -143,7 +148,7 @@ class OrthogonalSeparationLoss(nn.Module):
         self.mode = mode
 
     def forward(self, logits, logits_piloto, logits_equipe, targets,
-                v_piloto, v_equipe):
+                v_piloto, v_equipe, paired_orthogonal_loss=None):
         loss_bce_main = self.bce(logits.squeeze(-1), targets.float())
         loss_bce_piloto = self.bce(logits_piloto.squeeze(-1), targets.float())
         loss_bce_equipe = self.bce(logits_equipe.squeeze(-1), targets.float())
@@ -158,9 +163,16 @@ class OrthogonalSeparationLoss(nn.Module):
             loss_orthogonal = all_pairs_cosine(v_piloto, v_equipe)
         elif self.mode == ORTH_MODE_CROSSCORR:
             loss_orthogonal = cross_correlation_loss(v_piloto, v_equipe)
+        elif self.mode == ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR:
+            if paired_orthogonal_loss is None:
+                raise ValueError(
+                    "paired_orthogonal_loss must be provided when using "
+                    f"mode='{ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR}'."
+                )
+            loss_orthogonal = paired_orthogonal_loss
         else:
             loss_orthogonal = pair_cosine(v_piloto, v_equipe)
 
-        total_loss = loss_orthogonal + loss_bce_total
+        total_loss = loss_bce_total + self.lambda_orthogonal * loss_orthogonal
 
         return total_loss, loss_bce_total, loss_orthogonal

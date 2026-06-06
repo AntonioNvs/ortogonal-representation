@@ -17,7 +17,11 @@ import sys
 sys.path.append(os.path.abspath("src"))
 
 import config as cfg
-from models.pipeline_fusion import F1OrthogonalPipeline, OrthogonalSeparationLoss, pair_cosine, ORTH_MODE_PAIR, ORTH_MODE_ALLPAIRS, ORTH_MODE_CROSSCORR
+from models.pipeline_fusion import F1OrthogonalPipeline, \
+    OrthogonalSeparationLoss, \
+    pair_cosine, \
+    ORTH_MODE_CROSSCORR, \
+    ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR \
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +315,7 @@ def _collect_latents(model, dataloader, graph_data, device, edge_index_dict=None
     with torch.no_grad():
         for batch in dataloader:
             driver_ids, constructor_ids, _ = [b.to(device) for b in batch]
-            _, _, _, vp, ve = model(
+            _, _, _, vp, ve, _ = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
@@ -335,7 +339,14 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
         for batch in dataloader:
             driver_ids, constructor_ids, targets = [b.to(device) for b in batch]
 
-            logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
+            (
+                logits,
+                logits_piloto,
+                logits_equipe,
+                v_piloto,
+                v_equipe,
+                paired_orthogonal_loss,
+            ) = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
@@ -345,7 +356,7 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
 
             loss, loss_bce, loss_orth = criterion(
                 logits, logits_piloto, logits_equipe, targets,
-                v_piloto, v_equipe,
+                v_piloto, v_equipe, paired_orthogonal_loss,
             )
 
             epoch_loss += loss.item()
@@ -414,7 +425,7 @@ def train_and_evaluate(
     criterion = OrthogonalSeparationLoss(
         lambda_orthogonal=lambda_orthogonal,
         aux_weight=aux_weight,
-        mode=ORTH_MODE_CROSSCORR
+        mode=ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR
     )
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -433,7 +444,14 @@ def train_and_evaluate(
             optimizer.zero_grad()
 
             train_eid = train_edge_index_dict if train_edge_index_dict is not None else graph_data.edge_index_dict
-            logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
+            (
+                logits,
+                logits_piloto,
+                logits_equipe,
+                v_piloto,
+                v_equipe,
+                paired_orthogonal_loss,
+            ) = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=train_eid,
                 target_constructor_ids=constructor_ids,
@@ -443,7 +461,7 @@ def train_and_evaluate(
 
             loss, loss_bce, loss_orth = criterion(
                 logits, logits_piloto, logits_equipe, targets,
-                v_piloto, v_equipe,
+                v_piloto, v_equipe, paired_orthogonal_loss,
             )
             loss.backward()
             optimizer.step()

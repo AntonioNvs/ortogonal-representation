@@ -19,9 +19,6 @@ class HeteroGraphEncoder(nn.Module):
       - constructor_standings → constructors
       - results → driver
       - qualifying → driver
-
-    Uses `x_dict` node features directly (from `make_pkey_fkey_graph`),
-    NOT all-ones placeholders.
     """
 
     def __init__(self, num_nodes_dict, hidden_dim=32, out_dim=8):
@@ -88,3 +85,65 @@ class HeteroGraphEncoder(nn.Module):
             out_dict["drivers"] = self.ln_drv(out_dict["drivers"])
 
         return out_dict
+
+    def compute_paired_orthogonal_loss(self, out_dict, edge_index_dict):
+        """
+        Computes the orthogonal loss ONLY for driver-constructor pairs that 
+        participated in the exact same event (result node).
+
+        Parameters
+        ----------
+        out_dict : dict[str, Tensor]
+            The output dictionary from the forward pass.
+        edge_index_dict : dict[tuple, Tensor]
+            The graph edge indices.
+
+        Returns
+        -------
+        Tensor
+            A scalar tensor representing the paired orthogonal loss.
+        """
+        z_drv = out_dict.get("drivers")
+        z_cons = out_dict.get("constructors")
+
+        if z_drv is None or z_cons is None:
+            return torch.tensor(0.0, device=z_drv.device if z_drv is not None else torch.device('cpu'))
+
+        # 1. Extract the specific edge sets
+        res_drv = edge_index_dict.get(("results", "f2p_driverId", "drivers"))
+        res_cons = edge_index_dict.get(("results", "f2p_constructorId", "constructors"))
+
+        if res_drv is None or res_cons is None:
+            return torch.tensor(0.0, device=z_drv.device)
+
+        # 2. Vectorized Inner Join on the "results" node ID (row 0)
+        # Find the maximum result node ID to size our mapping array
+        max_res_id = max(res_drv[0].max().item(), res_cons[0].max().item()) + 1
+
+        # Initialize mapping arrays with -1 (meaning "no connection found")
+        device = z_drv.device
+        res_to_drv = torch.full((max_res_id,), -1, dtype=torch.long, device=device)
+        res_to_cons = torch.full((max_res_id,), -1, dtype=torch.long, device=device)
+
+        # Populate mappings: index is result_id, value is driver_id / constructor_id
+        res_to_drv[res_drv[0]] = res_drv[1]
+        res_to_cons[res_cons[0]] = res_cons[1]
+
+        # Filter for results that have BOTH a valid driver and a valid constructor mapping
+        valid_mask = (res_to_drv != -1) & (res_to_cons != -1)
+
+        valid_drv_indices = res_to_drv[valid_mask]
+        valid_cons_indices = res_to_cons[valid_mask]
+
+        # 3. Gather the matched embeddings
+        z_drv_paired = z_drv[valid_drv_indices]
+        z_cons_paired = z_cons[valid_cons_indices]
+
+        # 4. Compute Orthogonal Loss (dot product squared)
+        # We want the dot product between the paired vectors to be close to 0
+        dot_products = torch.sum(z_drv_paired * z_cons_paired, dim=1)
+        
+        # Mean of squared dot products across all valid pairs in the batch
+        paired_ortho_loss = torch.mean(dot_products ** 2)
+
+        return paired_ortho_loss
