@@ -17,7 +17,7 @@ import sys
 sys.path.append(os.path.abspath("src"))
 
 import config as cfg
-from models.pipeline_fusion import F1OrthogonalPipeline, OrthogonalSeparationLoss, pair_cosine
+from models.pipeline_fusion import F1OrthogonalPipeline, OrthogonalSeparationLoss, pair_cosine, ORTH_MODE_PAIR, ORTH_MODE_ALLPAIRS, ORTH_MODE_CROSSCORR
 
 
 # ---------------------------------------------------------------------------
@@ -414,6 +414,7 @@ def train_and_evaluate(
     criterion = OrthogonalSeparationLoss(
         lambda_orthogonal=lambda_orthogonal,
         aux_weight=aux_weight,
+        mode=ORTH_MODE_CROSSCORR
     )
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
