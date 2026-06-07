@@ -1,0 +1,16 @@
+model_name,model_level,run_id,seed,split_id,design,lambda_orthogonal,aux_weight,epochs,auroc,loss,bce,orth,cos_global,model_path
+model_no_orthogonal,zero,0,42,default,fixed_split_repeated_seeds,0.0,0.5,10,0.8508649899088903,0.6198356926441193,0.6198356926441193,33.87642230987549,0.1454799771308899,output/models/model_no_orthogonal.pth
+model_ablation_l01,low,0,42,default,fixed_split_repeated_seeds,0.1,0.5,10,0.8748043694768959,0.6038730561733245,0.6016891479492188,0.021838917583227157,0.004399288911372423,output/models/model_ablation_l01.pth
+model_orthogonal,high,0,42,default,fixed_split_repeated_seeds,1.0,0.5,10,0.8810882590069083,0.6138887673616409,0.6068119287490845,0.0070768342120572925,0.0023534707725048065,output/models/model_orthogonal.pth
+model_no_orthogonal,zero,1,43,default,fixed_split_repeated_seeds,0.0,0.5,10,0.8595386017884713,0.621455417573452,0.621455417573452,8.413345432281494,0.0640883520245552,output/models/model_no_orthogonal.pth
+model_ablation_l01,low,1,43,default,fixed_split_repeated_seeds,0.1,0.5,10,0.8746779012599395,0.6339904949069023,0.6324711725115776,0.015193086909130215,0.004210762679576874,output/models/model_ablation_l01.pth
+model_orthogonal,high,1,43,default,fixed_split_repeated_seeds,1.0,0.5,10,0.8797524384653082,0.6639067500829696,0.6165025636553765,0.047404184378683566,0.006340839434415102,output/models/model_orthogonal.pth
+model_no_orthogonal,zero,2,44,default,fixed_split_repeated_seeds,0.0,0.5,10,0.868602157337001,0.6151058226823807,0.6151058226823807,20.43016834259033,0.09655359387397766,output/models/model_no_orthogonal.pth
+model_ablation_l01,low,2,44,default,fixed_split_repeated_seeds,0.1,0.5,10,0.875536831233434,0.617627601325512,0.6125807583332061,0.050468352437019345,0.007090055849403143,output/models/model_ablation_l01.pth
+model_orthogonal,high,2,44,default,fixed_split_repeated_seeds,1.0,0.5,10,0.8806087336842827,0.6134503781795502,0.6074316799640656,0.006018704897724092,0.001939675072208047,output/models/model_orthogonal.pth
+model_no_orthogonal,zero,3,45,default,fixed_split_repeated_seeds,0.0,0.5,10,0.8655774591481311,0.6093062296509743,0.6093062296509743,14.596377611160278,0.08963117748498917,output/models/model_no_orthogonal.pth
+model_ablation_l01,low,3,45,default,fixed_split_repeated_seeds,0.1,0.5,10,0.8680172418335784,0.6163412868976593,0.614792400598526,0.015488880500197411,0.004131692927330732,output/models/model_ablation_l01.pth
+model_orthogonal,high,3,45,default,fixed_split_repeated_seeds,1.0,0.5,10,0.88471631598084,0.6275113105773926,0.6240602612495423,0.0034510442288592457,0.0016910146223381162,output/models/model_orthogonal.pth
+model_no_orthogonal,zero,4,46,default,fixed_split_repeated_seeds,0.0,0.5,10,0.8783639228333096,0.603582800924778,0.603582800924778,31.281849098205566,0.13860611617565155,output/models/model_no_orthogonal.pth
+model_ablation_l01,low,4,46,default,fixed_split_repeated_seeds,0.1,0.5,10,0.8860942925947589,0.6088471069931984,0.6063716068863869,0.024754900857806204,0.0061035118997097015,output/models/model_ablation_l01.pth
+model_orthogonal,high,4,46,default,fixed_split_repeated_seeds,1.0,0.5,10,0.8903388821263523,0.603111881017685,0.5915424883365631,0.011569398595020175,0.002289345720782876,output/models/model_orthogonal.pth
