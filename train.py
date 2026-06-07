@@ -5,6 +5,8 @@ import numpy as np
 import warnings
 import json
 import os
+import random
+import argparse
 
 from sklearn.metrics import roc_auc_score
 
@@ -17,7 +19,54 @@ import sys
 sys.path.append(os.path.abspath("src"))
 
 import config as cfg
-from models.pipeline_fusion import F1OrthogonalPipeline, OrthogonalSeparationLoss, pair_cosine
+from models.pipeline_fusion import F1OrthogonalPipeline, \
+    OrthogonalSeparationLoss, \
+    pair_cosine, \
+    ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR \
+
+DEFAULT_MODEL_CONFIGS = {
+    "zero": {"name": "model_no_orthogonal", "lambda_orthogonal": 0.0, "aux_weight": 0.5},
+    "low": {"name": "model_ablation_l01", "lambda_orthogonal": 0.1, "aux_weight": 0.5},
+    "high": {"name": "model_orthogonal", "lambda_orthogonal": 1.0, "aux_weight": 0.5},
+}
+
+
+def set_global_seed(seed, deterministic=True):
+    if seed is None:
+        return
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+    if deterministic:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
+def parse_model_grid(model_grid):
+    if isinstance(model_grid, (list, tuple)):
+        keys = [str(item).strip().lower() for item in model_grid if str(item).strip()]
+    else:
+        keys = [item.strip().lower() for item in str(model_grid).split(",") if item.strip()]
+
+    if not keys:
+        raise ValueError("Model grid cannot be empty.")
+
+    invalid = sorted(set(keys) - set(DEFAULT_MODEL_CONFIGS.keys()))
+    if invalid:
+        raise ValueError(
+            f"Unknown model grid entries: {invalid}. "
+            f"Valid options: {sorted(DEFAULT_MODEL_CONFIGS.keys())}."
+        )
+
+    # Keep input order while de-duplicating.
+    unique_keys = list(dict.fromkeys(keys))
+    return [dict(DEFAULT_MODEL_CONFIGS[key], model_level=key) for key in unique_keys]
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +360,7 @@ def _collect_latents(model, dataloader, graph_data, device, edge_index_dict=None
     with torch.no_grad():
         for batch in dataloader:
             driver_ids, constructor_ids, _ = [b.to(device) for b in batch]
-            _, _, _, vp, ve = model(
+            _, _, _, vp, ve, _ = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
@@ -335,7 +384,14 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
         for batch in dataloader:
             driver_ids, constructor_ids, targets = [b.to(device) for b in batch]
 
-            logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
+            (
+                logits,
+                logits_piloto,
+                logits_equipe,
+                v_piloto,
+                v_equipe,
+                paired_orthogonal_loss,
+            ) = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
@@ -345,7 +401,7 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
 
             loss, loss_bce, loss_orth = criterion(
                 logits, logits_piloto, logits_equipe, targets,
-                v_piloto, v_equipe,
+                v_piloto, v_equipe, paired_orthogonal_loss,
             )
 
             epoch_loss += loss.item()
@@ -414,6 +470,7 @@ def train_and_evaluate(
     criterion = OrthogonalSeparationLoss(
         lambda_orthogonal=lambda_orthogonal,
         aux_weight=aux_weight,
+        mode=ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR
     )
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
@@ -432,7 +489,14 @@ def train_and_evaluate(
             optimizer.zero_grad()
 
             train_eid = train_edge_index_dict if train_edge_index_dict is not None else graph_data.edge_index_dict
-            logits, logits_piloto, logits_equipe, v_piloto, v_equipe = model(
+            (
+                logits,
+                logits_piloto,
+                logits_equipe,
+                v_piloto,
+                v_equipe,
+                paired_orthogonal_loss,
+            ) = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=train_eid,
                 target_constructor_ids=constructor_ids,
@@ -442,7 +506,7 @@ def train_and_evaluate(
 
             loss, loss_bce, loss_orth = criterion(
                 logits, logits_piloto, logits_equipe, targets,
-                v_piloto, v_equipe,
+                v_piloto, v_equipe, paired_orthogonal_loss,
             )
             loss.backward()
             optimizer.step()
@@ -501,7 +565,14 @@ def train_and_evaluate(
     }
 
 
-def train_models(epochs=10, run_ablation=True):
+def train_models(
+    epochs=10,
+    run_ablation=True,
+    model_grid=None,
+    output_file="output/models/training_results.json",
+    run_metadata=None,
+    write_output=True,
+):
     (train_loader, val_loader, test_loader, graph_data,
      node_to_col_names_dict, node_to_col_stats,
      train_edge_index_dict, val_edge_index_dict, test_edge_index_dict) = prepare_data()
@@ -514,85 +585,100 @@ def train_models(epochs=10, run_ablation=True):
     val_edge_index_dict = {et: ei.to(device) for et, ei in val_edge_index_dict.items()}
     test_edge_index_dict = {et: ei.to(device) for et, ei in test_edge_index_dict.items()}
 
+    if model_grid is None:
+        model_grid = "high,zero,low" if run_ablation else "high,zero"
+    selected_configs = parse_model_grid(model_grid)
+
     results = []
-
-    res_orth = train_and_evaluate(
-        "model_orthogonal", lambda_orthogonal=1.0,
-        train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-        graph_data=graph_data,
-        node_to_col_names_dict=node_to_col_names_dict,
-        node_to_col_stats=node_to_col_stats,
-        device=device, epochs=epochs,
-        train_edge_index_dict=train_edge_index_dict,
-        val_edge_index_dict=val_edge_index_dict,
-        test_edge_index_dict=test_edge_index_dict,
-    )
-    results.append(res_orth)
-
-    res_no_orth = train_and_evaluate(
-        "model_no_orthogonal", lambda_orthogonal=0.0,
-        train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-        graph_data=graph_data,
-        node_to_col_names_dict=node_to_col_names_dict,
-        node_to_col_stats=node_to_col_stats,
-        device=device, epochs=epochs,
-        train_edge_index_dict=train_edge_index_dict,
-        val_edge_index_dict=val_edge_index_dict,
-        test_edge_index_dict=test_edge_index_dict,
-    )
-    results.append(res_no_orth)
-
-    if run_ablation:
-        ablation_grid = [
-            {"name": "model_ablation_l01", "lambda_orthogonal": 0.1, "aux_weight": 0.5},
-            #{"name": "model_ablation_l05", "lambda_orthogonal": 0.5, "aux_weight": 0.5},
-            #{"name": "model_ablation_l2",  "lambda_orthogonal": 2.0, "aux_weight": 0.5},
-            #{"name": "model_no_aux_l1",    "lambda_orthogonal": 1.0, "aux_weight": 0.0},
-        ]
-
-        for cfg_row in ablation_grid:
-            res_ablation = train_and_evaluate(
-                cfg_row["name"],
-                lambda_orthogonal=cfg_row["lambda_orthogonal"],
-                aux_weight=cfg_row["aux_weight"],
-                train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
-                graph_data=graph_data,
-                node_to_col_names_dict=node_to_col_names_dict,
-                node_to_col_stats=node_to_col_stats,
-                device=device, epochs=epochs,
-                train_edge_index_dict=train_edge_index_dict,
-                val_edge_index_dict=val_edge_index_dict,
-                test_edge_index_dict=test_edge_index_dict,
-            )
-            results.append(res_ablation)
-
-        best_model = sorted(
-            results,
-            key=lambda r: (-r["test_metrics"]["auroc"], r["test_metrics"]["orth"]),
-        )[0]
-        print(
-            f"\nMelhor modelo (criterio: AUROC desc, orth asc): "
-            f"{best_model['model_name']}"
+    for cfg_row in selected_configs:
+        res = train_and_evaluate(
+            cfg_row["name"],
+            lambda_orthogonal=cfg_row["lambda_orthogonal"],
+            aux_weight=cfg_row.get("aux_weight", 0.5),
+            train_loader=train_loader, val_loader=val_loader, test_loader=test_loader,
+            graph_data=graph_data,
+            node_to_col_names_dict=node_to_col_names_dict,
+            node_to_col_stats=node_to_col_stats,
+            device=device, epochs=epochs,
+            train_edge_index_dict=train_edge_index_dict,
+            val_edge_index_dict=val_edge_index_dict,
+            test_edge_index_dict=test_edge_index_dict,
         )
-        print(f"Metricas: {best_model['test_metrics']}")
+        res["model_level"] = cfg_row["model_level"]
+        if run_metadata:
+            res["run_metadata"] = dict(run_metadata)
+        results.append(res)
 
-    os.makedirs("output/models", exist_ok=True)
-    with open("output/models/training_results.json", "w") as f:
-        json.dump(results, f, indent=4)
+    best_model = sorted(
+        results,
+        key=lambda r: (-r["test_metrics"]["auroc"], r["test_metrics"]["orth"]),
+    )[0]
+    print(
+        f"\nMelhor modelo (criterio: AUROC desc, orth asc): "
+        f"{best_model['model_name']}"
+    )
+    print(f"Metricas: {best_model['test_metrics']}")
 
-    print("\nResultados salvos em output/models/training_results.json e modelos em output/models/")
+    if write_output:
+        os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=4)
+        print(f"\nResultados salvos em {output_file} e modelos em output/models/")
+    return results
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser(description="Train F1 Pipeline (graph-only, cosine orthogonality)")
     parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--skip_ablation", action="store_true",
                         help="Skip lambda ablation models")
+    parser.add_argument("--n_runs", type=int, default=1,
+                        help="Number of repeated runs for fixed split experiment")
+    parser.add_argument("--seed_start", type=int, default=42,
+                        help="Initial seed used for repeated runs")
+    parser.add_argument(
+        "--design",
+        type=str,
+        default="fixed_split_repeated_seeds",
+        choices=["fixed_split_repeated_seeds"],
+        help="Experimental design to execute from this script",
+    )
+    parser.add_argument(
+        "--model_grid",
+        type=str,
+        default="zero,low,high",
+        help="Comma-separated model levels. Valid: zero, low, high",
+    )
+    parser.add_argument(
+        "--output_file",
+        type=str,
+        default="output/models/training_results.json",
+        help="Path to write run results JSON",
+    )
+    parser.add_argument(
+        "--deterministic",
+        action="store_true",
+        help="Force deterministic torch backend behavior when seeding",
+    )
     args = parser.parse_args()
 
-    train_models(
-        epochs=args.epochs,
-        run_ablation=not args.skip_ablation,
-    )
+    all_results = []
+    for run_idx in range(args.n_runs):
+        seed = args.seed_start + run_idx
+        print(f"\n=== Run {run_idx + 1}/{args.n_runs} | seed={seed} ===")
+        set_global_seed(seed, deterministic=args.deterministic)
+        run_results = train_models(
+            epochs=args.epochs,
+            run_ablation=not args.skip_ablation,
+            model_grid=args.model_grid,
+            output_file=args.output_file,
+            run_metadata={"run_id": run_idx, "seed": seed, "design": args.design, "split_id": "default"},
+            write_output=args.n_runs == 1,
+        )
+        all_results.extend(run_results)
+
+    if args.n_runs > 1:
+        os.makedirs(os.path.dirname(args.output_file) or ".", exist_ok=True)
+        with open(args.output_file, "w", encoding="utf-8") as f:
+            json.dump(all_results, f, indent=4)
+        print(f"\nResultados agregados salvos em {args.output_file}")
