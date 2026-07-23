@@ -24,3 +24,33 @@
 
 - [X] Marcar conversa com Pedro para alinhar direção
 - [ ] Definir conferência foco + deadline
+
+
+
+
+
+## Related-Work
+
+- Related-Work: Padrão é ter 30 referências - trabalhar nisso
+- Onde mais foi aplicado a orthogonality constrained?
+- Isso já é meu POC II, estender para um artigo científico (então fica muito forte para o poc já)
+- Não precisa colocar std ou IC nas tabelas - espaço é algo bom
+- Como fica a eficácia da predição conforme a temporada percorre (o quanto útil é os dados da temporada passada) - eixo X: número de corridas transcorridas na temporada, eixo Y: aucroc
+  - Desempenho médio do modelo (pega o range de temporadas de teste)
+- Como fica o modelo que só olha para equipe/piloto
+- Como validar isso? Olha a carreira deles - mudou para uma equipe melhor/pior? desempenho de pontos nas próximas temporadas (montar os rótulos)
+- Como rankear as equipes: ferrari é um outlier de todas, definir categorias de equipe (tier 1, 2 e 3), fica mais estável, começar simples e depois mudar, mas o importante é criar o framework de ranqueamento
+- Como definir que o sinal é um bom ou ruim? Uma heurística direta no espaço latente? SHAP já dá isso - analisar sobre
+
+[www.sloansportsconference.com/research-paper-competition](https://www.sloansportsconference.com/research-paper-competition)
+
+Olhar esse artigo
+Deep Reinforcement Learning for NBA Player Valuation: A Temporal Difference Approach with Shapley Attribution
+
+Focar legal nele
+
+Abstract em outubro
+
+[docs.google.com/document/d/12zoFMnFujCkQcYCD-c14W5C9tJjXa2T8cqWHk9sNkM4/edit?tab=t.0](https://docs.google.com/document/d/12zoFMnFujCkQcYCD-c14W5C9tJjXa2T8cqWHk9sNkM4/edit?tab=t.0)
+
+Framework ser quantitativo, análise de múltiplas temporadas, related work para comparar caracterização de piloto
