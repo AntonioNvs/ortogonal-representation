@@ -25,10 +25,6 @@
 - [X] Marcar conversa com Pedro para alinhar direção
 - [ ] Definir conferência foco + deadline
 
-
-
-
-
 ## Related-Work
 
 - Related-Work: Padrão é ter 30 referências - trabalhar nisso
@@ -54,3 +50,9 @@ Abstract em outubro
 [docs.google.com/document/d/12zoFMnFujCkQcYCD-c14W5C9tJjXa2T8cqWHk9sNkM4/edit?tab=t.0](https://docs.google.com/document/d/12zoFMnFujCkQcYCD-c14W5C9tJjXa2T8cqWHk9sNkM4/edit?tab=t.0)
 
 Framework ser quantitativo, análise de múltiplas temporadas, related work para comparar caracterização de piloto
+
+[ieeexplore.ieee.org/abstract/document/10932140](https://ieeexplore.ieee.org/abstract/document/10932140)
+
+[ieeexplore.ieee.org/abstract/document/11134599](https://ieeexplore.ieee.org/abstract/document/11134599)
+
+[dl.acm.org/doi/abs/10.1145/3672608.3707766](https://dl.acm.org/doi/abs/10.1145/3672608.3707766)
