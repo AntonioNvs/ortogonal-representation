@@ -21,6 +21,17 @@ from experiments.significance_stats import build_significance_summary
 
 @contextmanager
 def patched_temporal_split(train_years, val_years, test_years):
+    """Temporarily overrides cfg.TRAIN_YEARS/VAL_YEARS/TEST_YEARS.
+
+    NOTE: since train.prepare_data() now assigns train/val/test membership
+    from the active RelBench task's own timestamp-based splits (see
+    train._build_instances_from_task), these year lists only affect graph
+    *edge* visibility (train.add_edge_year_masks), not which rows end up in
+    which DataLoader. This makes "rolling_temporal_splits_repeated_seeds"
+    a graph-edge-only rolling window, not a true rolling train/val/test
+    split; "fixed_split_repeated_seeds" (the default) is unaffected since it
+    just restates cfg's existing active window.
+    """
     old_train = list(cfg.TRAIN_YEARS)
     old_val = list(cfg.VAL_YEARS)
     old_test = list(cfg.TEST_YEARS)
@@ -81,9 +92,13 @@ def flatten_run_row(row: Dict) -> Dict:
         "lambda_orthogonal": config_data.get("lambda_orthogonal"),
         "aux_weight": config_data.get("aux_weight"),
         "epochs": config_data.get("epochs"),
-        "auroc": metrics.get("auroc"),
+        "mae": metrics.get("mae"),
+        "rmse": metrics.get("rmse"),
+        "r2": metrics.get("r2"),
+        "spearman": metrics.get("spearman"),
+        "auroc_top3": metrics.get("auroc_top3"),
         "loss": metrics.get("loss"),
-        "bce": metrics.get("bce"),
+        "main": metrics.get("main"),
         "orth": metrics.get("orth"),
         "cos_global": metrics.get("cos_global"),
         "model_path": row.get("model_path"),
@@ -112,7 +127,7 @@ def render_markdown_report(summary: Dict, output_path: str):
     lines.append(f"- Generated at: `{datetime.now(timezone.utc).isoformat()}`")
     lines.append(f"- Metric: `{summary['metric']}`")
     lines.append("")
-    lines.append("## AUROC Per Model")
+    lines.append(f"## {summary['metric'].upper()} Per Model")
     lines.append("")
     lines.append("| Model | Mean | Std | 95% CI | n |")
     lines.append("|---|---:|---:|---:|---:|")
@@ -188,7 +203,7 @@ def run_experiment(args):
     summary = build_significance_summary(
         run_rows=all_results,
         model_levels=model_levels,
-        metric="auroc",
+        metric=args.metric,
         n_bootstrap=args.n_bootstrap,
         n_permutations=args.n_permutations,
         ci=0.95,
@@ -236,6 +251,13 @@ def parse_args():
         type=str,
         default="output/significance/run_results.json",
         help="Path to write raw run-level JSON results.",
+    )
+    parser.add_argument(
+        "--metric",
+        type=str,
+        default="mae",
+        choices=["mae", "rmse", "r2", "spearman", "auroc_top3", "loss", "main", "orth"],
+        help="test_metrics key used for the significance comparison (default: mae, lower is better).",
     )
     parser.add_argument(
         "--n_bootstrap",

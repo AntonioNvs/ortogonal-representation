@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import torch
@@ -7,8 +8,8 @@ from torch.utils.data import DataLoader
 
 sys.path.append(os.path.abspath("src"))
 
-from relbench.datasets import get_dataset
-from train import prepare_data, F1AlignedDataset
+import config as cfg
+from train import prepare_data, F1AlignedDataset, get_active_task, _build_instances_from_task
 from models.pipeline_fusion import F1OrthogonalPipeline
 
 def patch_state_dict(model, checkpoint_path, device):
@@ -39,7 +40,7 @@ def patch_state_dict(model, checkpoint_path, device):
     model.load_state_dict(patched, strict=False)
     print("Model loaded successfully with patched state_dict!")
 
-def analyze():
+def analyze(target_year=None):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     print("Preparing data and graph...")
@@ -52,25 +53,25 @@ def analyze():
         return original_save(obj, f, *args, **kwargs)
     torch.save = safe_save
 
-    loaders_and_data = prepare_data(2000, 2023)
+    loaders_and_data = prepare_data()
     (train_loader, val_loader, test_loader, graph_data,
      node_to_col_names_dict, node_to_col_stats,
-     train_edge_index_dict, val_edge_index_dict, test_edge_index_dict) = loaders_and_data
-     
+     train_edge_index_dict, val_edge_index_dict, test_edge_index_dict,
+     task) = loaders_and_data
+
     print("Loading DB for instance matching...")
-    dataset = get_dataset("rel-f1", download=False)
-    db = dataset.get_db(upto_test_timestamp=False)
-    
-    from train import filter_db_by_years, _build_instances
-    db = filter_db_by_years(db, 2000, 2023)
-    df_all = _build_instances(db)
-    
-    df_2023 = df_all[df_all["year"] == 2023].copy()
-    if len(df_2023) == 0:
-        print("No data for 2023, falling back to 2022.")
-        df_2023 = df_all[df_all["year"] == 2022].copy()
-        
-    eval_dataset = F1AlignedDataset(df_2023)
+    _, outcome_lookup = get_active_task()
+    db = task.dataset.get_db(upto_test_timestamp=False)
+    df_all = _build_instances_from_task(task, outcome_lookup)
+
+    year = target_year if target_year is not None else int(df_all["year"].max())
+    df_target = df_all[df_all["year"] == year].copy()
+    if len(df_target) == 0:
+        print(f"No data for {year}, falling back to {year - 1}.")
+        year -= 1
+        df_target = df_all[df_all["year"] == year].copy()
+
+    eval_dataset = F1AlignedDataset(df_target)
     eval_loader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
     
     # Load model
@@ -110,7 +111,7 @@ def analyze():
     print("Running inference...")
     with torch.no_grad():
         for batch in eval_loader:
-            driver_ids, constructor_ids, targets = [b.to(device) for b in batch]
+            driver_ids, constructor_ids, targets, _top3 = [b.to(device) for b in batch]
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe, _ = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=test_edge_index_dict,
@@ -160,9 +161,15 @@ def analyze():
     driver_agg["impact_ratio_d_vs_t"] = driver_agg["impact_driver"] / driver_agg["impact_team"]
     
     os.makedirs("output", exist_ok=True)
-    out_path = "output/impact_analysis_2023.csv"
+    out_path = f"output/impact_analysis_{year}.csv"
     driver_agg.to_csv(out_path, index=False)
     print(f"\nSaved results to {out_path}")
 
 if __name__ == "__main__":
-    analyze()
+    parser = argparse.ArgumentParser(description="Feature-impact analysis for a given season")
+    parser.add_argument(
+        "--year", type=int, default=None,
+        help="Season to analyze (default: latest year available for the active split mode)",
+    )
+    args = parser.parse_args()
+    analyze(target_year=args.year)

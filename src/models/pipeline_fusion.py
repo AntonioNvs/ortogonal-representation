@@ -128,10 +128,24 @@ ORTH_MODE_ALLPAIRS = "all_pairs"
 ORTH_MODE_CROSSCORR = "cross_corr"
 ORTH_MODE_PAIRED_DRIVER_CONSTRUCTOR = "paired_driver_constructor"
 
+TASK_KIND_CLASSIFICATION = "classification"
+TASK_KIND_REGRESSION = "regression"
+
+
 class OrthogonalSeparationLoss(nn.Module):
     """
-    Total loss = BCE + aux_weight * (BCE_piloto + BCE_equipe)
+    Total loss = L_main + aux_weight * (L_piloto + L_equipe)
                  + lambda_orthogonal * loss_orthogonal
+
+    ``task`` selects the per-head criterion L:
+      - "classification" (default): BCEWithLogitsLoss, targets in {0, 1}
+        (e.g. driver-top3).
+      - "regression": SmoothL1Loss (Huber), targets are continuous/ordinal
+        (e.g. results-position, results-positionorder, results-points).
+        SmoothL1 is used instead of plain MSE because finishing
+        position/points targets have occasional large outliers (DNFs coded
+        as a high positionOrder, retirements at points=0 after a strong
+        grid slot) that would otherwise dominate the gradient.
 
     Modos de ortogonalidade (parametro mode):
       - "pair" (default)     : cos(v_p[i], v_e[i]) pareado
@@ -140,23 +154,27 @@ class OrthogonalSeparationLoss(nn.Module):
       - "paired_driver_constructor" : loss para pares de driver e constructor
     """
 
-    def __init__(self, lambda_orthogonal=0.0, aux_weight=0.5, mode=ORTH_MODE_PAIR):
+    def __init__(self, lambda_orthogonal=0.0, aux_weight=0.5, mode=ORTH_MODE_PAIR, task=TASK_KIND_CLASSIFICATION):
         super().__init__()
-        self.bce = nn.BCEWithLogitsLoss()
+        self.task = task
+        if task == TASK_KIND_REGRESSION:
+            self.criterion = nn.SmoothL1Loss()
+        else:
+            self.criterion = nn.BCEWithLogitsLoss()
         self.lambda_orthogonal = lambda_orthogonal
         self.aux_weight = aux_weight
         self.mode = mode
 
     def forward(self, logits, logits_piloto, logits_equipe, targets,
                 v_piloto, v_equipe, paired_orthogonal_loss=None):
-        loss_bce_main = self.bce(logits.squeeze(-1), targets.float())
-        loss_bce_piloto = self.bce(logits_piloto.squeeze(-1), targets.float())
-        loss_bce_equipe = self.bce(logits_equipe.squeeze(-1), targets.float())
+        loss_main = self.criterion(logits.squeeze(-1), targets.float())
+        loss_piloto = self.criterion(logits_piloto.squeeze(-1), targets.float())
+        loss_equipe = self.criterion(logits_equipe.squeeze(-1), targets.float())
 
-        loss_bce_total = (
-            loss_bce_main
-            + self.aux_weight * loss_bce_piloto
-            + self.aux_weight * loss_bce_equipe
+        loss_total = (
+            loss_main
+            + self.aux_weight * loss_piloto
+            + self.aux_weight * loss_equipe
         )
 
         if self.mode == ORTH_MODE_ALLPAIRS:
@@ -173,6 +191,6 @@ class OrthogonalSeparationLoss(nn.Module):
         else:
             loss_orthogonal = pair_cosine(v_piloto, v_equipe)
 
-        total_loss = loss_bce_total + self.lambda_orthogonal * loss_orthogonal
+        total_loss = loss_total + self.lambda_orthogonal * loss_orthogonal
 
-        return total_loss, loss_bce_total, loss_orthogonal
+        return total_loss, loss_total, loss_orthogonal
