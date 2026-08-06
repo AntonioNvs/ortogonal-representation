@@ -119,7 +119,7 @@ def _extract_metric(run_row: Dict, metric: str) -> float:
 
 def summarize_models(
     run_rows: Iterable[Dict],
-    metric: str = "auroc",
+    metric: str = "mae",
     n_bootstrap: int = 5000,
     ci: float = 0.95,
     seed: int = 0,
@@ -144,7 +144,7 @@ def _paired_metric_vectors(
     run_rows: Iterable[Dict],
     model_a: str,
     model_b: str,
-    metric: str = "auroc",
+    metric: str = "mae",
 ) -> Tuple[np.ndarray, np.ndarray]:
     grouped: Dict[Tuple[str, str], Dict[str, float]] = {}
     for row in run_rows:
@@ -169,7 +169,7 @@ def _paired_metric_vectors(
 def pairwise_significance(
     run_rows: Iterable[Dict],
     model_levels: Sequence[str],
-    metric: str = "auroc",
+    metric: str = "mae",
     n_bootstrap: int = 5000,
     n_permutations: int = 20000,
     ci: float = 0.95,
@@ -211,7 +211,7 @@ def pairwise_significance(
 def build_significance_summary(
     run_rows: Iterable[Dict],
     model_levels: Sequence[str],
-    metric: str = "auroc",
+    metric: str = "mae",
     n_bootstrap: int = 5000,
     n_permutations: int = 20000,
     ci: float = 0.95,

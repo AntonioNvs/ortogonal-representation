@@ -1,0 +1,55 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-28T02:35:07.757737+00:00",
+    "target_years": [
+      2021
+    ],
+    "epochs": 2,
+    "seed": 42,
+    "gpu_id": 7,
+    "model_config": {
+      "name": "model_orthogonal",
+      "lambda_orthogonal": 1.0,
+      "aux_weight": 0.5
+    },
+    "max_k": 3
+  },
+  "results": [
+    {
+      "target_year": 2021,
+      "k": 1,
+      "eval_round": 2,
+      "n_train": 7120,
+      "n_eval": 20,
+      "auroc": 0.8235294117647058,
+      "loss": 0.8402358889579773,
+      "bce": 0.8341919183731079,
+      "orth": 0.006043967325240374,
+      "cos_global": 0.0038595213554799557
+    },
+    {
+      "target_year": 2021,
+      "k": 2,
+      "eval_round": 3,
+      "n_train": 7140,
+      "n_eval": 20,
+      "auroc": 0.9607843137254902,
+      "loss": 0.9288380146026611,
+      "bce": 0.8255517482757568,
+      "orth": 0.1032862663269043,
+      "cos_global": 0.007692606188356876
+    },
+    {
+      "target_year": 2021,
+      "k": 3,
+      "eval_round": 4,
+      "n_train": 7160,
+      "n_eval": 20,
+      "auroc": 0.9607843137254901,
+      "loss": 0.859190821647644,
+      "bce": 0.8257034420967102,
+      "orth": 0.033487364649772644,
+      "cos_global": 0.006815677974373102
+    }
+  ]
+}

@@ -138,3 +138,10 @@
 | 03-04 Ago | Buffer / refinamento / integração | - |
 
 **Total estimado:** ~15-20 horas em 12 dias.
+Framework ser quantitativo, análise de múltiplas temporadas, related work para comparar caracterização de piloto
+
+[ieeexplore.ieee.org/abstract/document/10932140](https://ieeexplore.ieee.org/abstract/document/10932140)
+
+[ieeexplore.ieee.org/abstract/document/11134599](https://ieeexplore.ieee.org/abstract/document/11134599)
+
+[dl.acm.org/doi/abs/10.1145/3672608.3707766](https://dl.acm.org/doi/abs/10.1145/3672608.3707766)
