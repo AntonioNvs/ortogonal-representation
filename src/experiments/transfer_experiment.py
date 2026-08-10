@@ -34,7 +34,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config as cfg
 from train import (
@@ -128,17 +128,21 @@ def detect_driver_transfers(
 # ---------------------------------------------------------------------------
 
 def compute_naive_baselines(
-    results_df: pd.DataFrame,
-    races_df: pd.DataFrame,
+    instances_df: pd.DataFrame,
+    outcome_lookup: pd.DataFrame,
     transfers_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Compute driver and constructor average positionOrder in the prior season.
 
+    Uses ``instances_df`` (which has ``driverId``, ``constructorId``, ``year``,
+    ``resultId``) merged with ``outcome_lookup`` (which has ``positionOrder``
+    per ``resultId``, captured before the task removed outcome columns).
+
     Returns transfers_df augmented with baseline_driver_mean and
     baseline_constructor_mean columns.
     """
-    merged = results_df[["driverId", "constructorId", "positionOrder", "raceId"]].merge(
-        races_df[["raceId", "year"]], on="raceId", how="inner"
+    merged = instances_df[["driverId", "constructorId", "year", "resultId"]].merge(
+        outcome_lookup[["resultId", "positionOrder"]], on="resultId", how="inner"
     )
 
     driver_means = (
@@ -392,6 +396,10 @@ def run_transfer_experiment(
         load_db_and_graph()
     )
 
+    # outcome_lookup (captured before task removes outcome columns) gives us
+    # positionOrder for baseline computation
+    _, outcome_lookup = get_active_task()
+
     results_df = db.table_dict["results"].df
     races_df = db.table_dict["races"].df
     drivers_df = db.table_dict["drivers"].df
@@ -436,7 +444,7 @@ def run_transfer_experiment(
     print(f"Found {len(transfers_df)} genuine transfers ({n_rebrand} rebrandings excluded).")
 
     # --- Compute naive baselines ---
-    transfers_df = compute_naive_baselines(results_df, races_df, transfers_df)
+    transfers_df = compute_naive_baselines(instances_df, outcome_lookup, transfers_df)
 
     # --- Build edge mask (2000-2021 only) ---
     print("Building train-only edge mask...")
