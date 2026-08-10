@@ -17,8 +17,11 @@ class HeteroGraphEncoder(nn.Module):
       - results → constructors
       - qualifying → constructors
       - constructor_standings → constructors
+      - constructor_results → constructors
       - results → driver
       - qualifying → driver
+      - standings → driver
+      - races → circuit
     """
 
     def __init__(self, num_nodes_dict, hidden_dim=32, out_dim=8):
@@ -29,17 +32,23 @@ class HeteroGraphEncoder(nn.Module):
             ("results", "f2p_constructorId", "constructors"),
             ("qualifying", "f2p_constructorId", "constructors"),
             ("constructor_standings", "f2p_constructorId", "constructors"),
+            ("constructor_results", "f2p_constructorId", "constructors"),
         ]
         # Edge types relevant to drivers
         driver_edges = [
             ("results", "f2p_driverId", "drivers"),
             ("qualifying", "f2p_driverId", "drivers"),
+            ("standings", "f2p_driverId", "drivers"),
         ]
-        all_edges = cons_edges + driver_edges
+        # Edge types relevant to circuits
+        circuit_edges = [
+            ("races", "f2p_circuitId", "circuits"),
+        ]
+        all_edges = cons_edges + driver_edges + circuit_edges
 
         with warnings.catch_warnings():
             warnings.filterwarnings(
-                "ignore", 
+                "ignore",
                 message=".*There exist node types.*whose representations do not get updated during message passing.*"
             )
             self.conv1 = HeteroConv(
@@ -88,7 +97,7 @@ class HeteroGraphEncoder(nn.Module):
 
     def compute_paired_orthogonal_loss(self, out_dict, edge_index_dict):
         """
-        Computes the orthogonal loss ONLY for driver-constructor pairs that 
+        Computes the orthogonal loss ONLY for driver-constructor pairs that
         participated in the exact same event (result node).
 
         Parameters
@@ -142,7 +151,7 @@ class HeteroGraphEncoder(nn.Module):
         # 4. Compute Orthogonal Loss (dot product squared)
         # We want the dot product between the paired vectors to be close to 0
         dot_products = torch.sum(z_drv_paired * z_cons_paired, dim=1)
-        
+
         # Mean of squared dot products across all valid pairs in the batch
         paired_ortho_loss = torch.mean(dot_products ** 2)
 

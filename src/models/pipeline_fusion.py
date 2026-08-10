@@ -11,6 +11,11 @@ class F1OrthogonalPipeline(nn.Module):
     """
     Pipeline with a single HeteroGraphEncoder producing both driver and team
     embeddings, fused via concatenation and fed into a classifier + aux heads.
+
+    Pre-race features (qualifying_position, grid) are concatenated with the
+    fused [driver || constructor] embedding before the classifier, so the
+    model learns: given qualifying position X, grid position G, driver D,
+    constructor C → predicted race finishing position.
     """
 
     def __init__(self, num_nodes_dict, latent_dim=8, node_to_col_names_dict=None, node_to_col_stats=None, **kwargs):
@@ -40,7 +45,8 @@ class F1OrthogonalPipeline(nn.Module):
             out_dim=latent_dim,
         )
 
-        classifier_input_dim = latent_dim * 2  # v_piloto + v_equipe
+        # 2 extra dims for qualifying_position + grid (pre-race features)
+        classifier_input_dim = latent_dim * 2 + 2
 
         self.classifier = nn.Sequential(
             nn.Linear(classifier_input_dim, 32),
@@ -52,7 +58,9 @@ class F1OrthogonalPipeline(nn.Module):
         self.aux_equipe = nn.Linear(latent_dim, 1)
 
     def forward(self, graph_x_dict, graph_edge_index_dict,
-                target_constructor_ids, target_driver_ids, graph_tf_dict=None):
+                target_constructor_ids, target_driver_ids,
+                qualifying_position=None, grid=None,
+                graph_tf_dict=None):
         if (graph_x_dict is None or len(graph_x_dict) == 0) and graph_tf_dict is not None and self.encoder is not None:
             graph_x_dict = self.encoder(graph_tf_dict)
 
@@ -62,6 +70,14 @@ class F1OrthogonalPipeline(nn.Module):
         v_piloto = out_dict["drivers"][target_driver_ids]
 
         v_fused = torch.cat([v_piloto, v_equipe], dim=-1)
+
+        # Concatenate pre-race features (qualifying position + grid)
+        if qualifying_position is not None:
+            qualifying_position = qualifying_position.unsqueeze(-1)  # (B, 1)
+            v_fused = torch.cat([v_fused, qualifying_position], dim=-1)
+        if grid is not None:
+            grid = grid.unsqueeze(-1)  # (B, 1)
+            v_fused = torch.cat([v_fused, grid], dim=-1)
 
         logits = self.classifier(v_fused)
         logits_piloto = self.aux_piloto(v_piloto)

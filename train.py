@@ -154,18 +154,28 @@ def _build_instances_from_task(task, outcome_lookup):
     and temporal metadata, plus an auxiliary ``top3`` label reconstructed
     from ``outcome_lookup`` (never fed to the model).
 
+    Also joins ``qualifying.position`` (qualifying grid) as the primary
+    pre-race input signal and ``results.grid`` (actual starting grid) as
+    an auxiliary pre-race feature.
+
     Columns: driverId, constructorId, y (target), top3, year, round,
-    raceId, resultId, split.
+    raceId, resultId, split, qualifying_position, grid.
     """
     db = task.dataset.get_db(upto_test_timestamp=False)
-    results_lookup = db.table_dict["results"].df[["resultId", "raceId", "driverId", "constructorId"]]
+    results_lookup = db.table_dict["results"].df[["resultId", "raceId", "driverId", "constructorId", "grid"]]
     races_lookup = db.table_dict["races"].df[["raceId", "year", "round"]]
+
+    # Join qualifying position (pre-race signal) on (driverId, raceId)
+    qual_lookup = db.table_dict["qualifying"].df[["driverId", "raceId", "position"]].rename(
+        columns={"position": "qualifying_position"}
+    )
 
     frames = []
     for split in ("train", "val", "test"):
         split_df = task.get_table(split, mask_input_cols=False).df
         merged = split_df.merge(results_lookup, on=task.entity_col, how="inner")
         merged = merged.merge(races_lookup, on="raceId", how="inner")
+        merged = merged.merge(qual_lookup, on=["driverId", "raceId"], how="left")
         merged = merged.rename(columns={task.target_col: "y"})
         merged["split"] = split
         frames.append(merged)
@@ -182,7 +192,8 @@ def _build_instances_from_task(task, outcome_lookup):
         combined["top3"] = 0
 
     combined = combined[
-        ["driverId", "constructorId", "y", "top3", "year", "round", "raceId", "resultId", "split"]
+        ["driverId", "constructorId", "y", "top3", "year", "round", "raceId", "resultId",
+         "split", "qualifying_position", "grid"]
     ].dropna(subset=["y"])
     combined = combined.drop_duplicates(subset=["driverId", "raceId"]).reset_index(drop=True)
     return combined
@@ -230,7 +241,11 @@ def filter_curve_train_instances(df, target_year, k):
 
 
 class F1AlignedDataset(Dataset):
-    """Each sample: (driverId, constructorId, y, top3).
+    """Each sample: (driverId, constructorId, qualifying_position, grid, y, top3).
+
+    ``qualifying_position`` is the primary pre-race input signal (qualifying
+    grid). ``grid`` is the actual starting grid position (may differ from
+    qualifying due to penalties). Both are pre-race features.
 
     ``y`` is the active regression target (position / positionOrder /
     points, per ``cfg.TASK_NAME``); ``top3`` is an auxiliary binary label
@@ -249,9 +264,11 @@ class F1AlignedDataset(Dataset):
         row = self.data.iloc[idx]
         driver_id = torch.tensor(int(row["driverId"]), dtype=torch.long)
         constructor_id = torch.tensor(int(row["constructorId"]), dtype=torch.long)
+        qualifying_position = torch.tensor(float(row["qualifying_position"]) if pd.notna(row["qualifying_position"]) else 0.0, dtype=torch.float32)
+        grid = torch.tensor(float(row["grid"]) if pd.notna(row["grid"]) else 0.0, dtype=torch.float32)
         target = torch.tensor(float(row["y"]), dtype=torch.float32)
         top3 = torch.tensor(float(row["top3"]), dtype=torch.float32)
-        return driver_id, constructor_id, target, top3
+        return driver_id, constructor_id, qualifying_position, grid, target, top3
 
 
 # ---------------------------------------------------------------------------
@@ -540,12 +557,14 @@ def _collect_latents(model, dataloader, graph_data, device, edge_index_dict=None
     eid = edge_index_dict if edge_index_dict is not None else graph_data.edge_index_dict
     with torch.no_grad():
         for batch in dataloader:
-            driver_ids, constructor_ids, _, _ = [b.to(device) for b in batch]
+            driver_ids, constructor_ids, qualifying_pos, grid_pos, _, _ = [b.to(device) for b in batch]
             _, _, _, vp, ve, _ = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                qualifying_position=qualifying_pos,
+                grid=grid_pos,
                 graph_tf_dict=graph_data.tf_dict,
             )
             all_vp.append(vp.cpu())
@@ -568,7 +587,7 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
 
     with torch.no_grad():
         for batch in dataloader:
-            driver_ids, constructor_ids, targets, top3 = [b.to(device) for b in batch]
+            driver_ids, constructor_ids, qualifying_pos, grid_pos, targets, top3 = [b.to(device) for b in batch]
 
             (
                 logits,
@@ -582,6 +601,8 @@ def evaluate(model, dataloader, graph_data, criterion, device, edge_index_dict=N
                 graph_edge_index_dict=eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                qualifying_position=qualifying_pos,
+                grid=grid_pos,
                 graph_tf_dict=graph_data.tf_dict,
             )
 
@@ -698,7 +719,7 @@ def train_and_evaluate(
         epoch_loss = epoch_main = epoch_orth = 0.0
 
         for batch in train_loader:
-            driver_ids, constructor_ids, targets, _top3 = [b.to(device) for b in batch]
+            driver_ids, constructor_ids, qualifying_pos, grid_pos, targets, _top3 = [b.to(device) for b in batch]
             optimizer.zero_grad()
 
             train_eid = train_edge_index_dict if train_edge_index_dict is not None else graph_data.edge_index_dict
@@ -714,6 +735,8 @@ def train_and_evaluate(
                 graph_edge_index_dict=train_eid,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                qualifying_position=qualifying_pos,
+                grid=grid_pos,
                 graph_tf_dict=graph_data.tf_dict,
             )
 

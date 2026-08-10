@@ -111,12 +111,14 @@ def analyze(target_year=None):
     print("Running inference...")
     with torch.no_grad():
         for batch in eval_loader:
-            driver_ids, constructor_ids, targets, _top3 = [b.to(device) for b in batch]
+            driver_ids, constructor_ids, qualifying_pos, grid_pos, targets, _top3 = [b.to(device) for b in batch]
             logits, logits_piloto, logits_equipe, v_piloto, v_equipe, _ = model(
                 graph_x_dict=None,
                 graph_edge_index_dict=test_edge_index_dict,
                 target_constructor_ids=constructor_ids,
                 target_driver_ids=driver_ids,
+                qualifying_position=qualifying_pos,
+                grid=grid_pos,
                 graph_tf_dict=graph_data.tf_dict,
             )
             
