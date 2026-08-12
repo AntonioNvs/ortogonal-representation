@@ -104,7 +104,7 @@ def detect_driver_transfers(
             if (
                 row_t["year"] + 1 == row_t1["year"]
                 and row_t["constructorId"] != row_t1["constructorId"]
-                and min_year <= row_t["year"] <= max_year
+                and min_year <= row_t1["year"] <= max_year
             ):
                 transfers.append({
                     "driverId": int(driver_id),
