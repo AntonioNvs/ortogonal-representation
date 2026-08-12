@@ -44,6 +44,7 @@ from data.kalman_dataset import (
 from models.kalman_gnn import KalmanGNNPipeline
 from models.kalman_losses import KalmanLossManager
 from train import (
+    get_active_task,
     get_device,
     load_db_and_graph,
     set_global_seed,
@@ -413,6 +414,10 @@ def main():
     print(f"Device: {device}")
 
     # --- Load data ---
+    # Capture outcome_lookup BEFORE load_db_and_graph (which calls get_active_task
+    # internally and modifies the DB).  We need positionOrder for teammate labels.
+    _, outcome_lookup = get_active_task()
+
     print("Loading database and building graph...")
     db, graph_data, node_to_col_names_dict, node_to_col_stats, instances_df, task = (
         load_db_and_graph()
@@ -420,11 +425,15 @@ def main():
 
     results_df = db.table_dict["results"].df
 
-    # Merge qualifying position into results for teammate extraction
+    # Merge qualifying position and positionOrder into results
     qual_df = db.table_dict["qualifying"].df[["driverId", "raceId", "position"]].rename(
         columns={"position": "qualifying_position"}
     )
     results_df = results_df.merge(qual_df, on=["driverId", "raceId"], how="left")
+    if "positionOrder" in outcome_lookup.columns:
+        results_df = results_df.merge(
+            outcome_lookup[["resultId", "positionOrder"]], on="resultId", how="left"
+        )
 
     # --- Build chronological race list ---
     print("Building chronological race list...")
