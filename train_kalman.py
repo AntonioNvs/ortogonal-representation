@@ -468,6 +468,19 @@ def main():
         except Exception:
             static_x_dict = {}
 
+    # Initialize lazy GNN parameters with a dummy forward pass
+    print("Initializing GNN lazy parameters...")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            # Use a minimal edge dict (just one edge type) to trigger lazy init
+            dummy_edge = list(graph_data.edge_index_dict.items())[:1]
+            dummy_edge_dict = dict(dummy_edge)
+            dummy_edge_dict = {et: ei.to(device) for et, ei in dummy_edge_dict.items()}
+            model.graph_encoder(static_x_dict, dummy_edge_dict)
+        except Exception:
+            pass
+
     n_params = sum(p.numel() for p in model.parameters())
     print(f"  Parameters: {n_params:,}")
 
