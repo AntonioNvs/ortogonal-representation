@@ -36,7 +36,7 @@ for _p in (ROOT_DIR, SRC_DIR):
 import config as cfg
 from data.enriched_dataset import EnrichedF1Dataset
 from validation.career_labels import driver_season_constructor, forward_tier_outcome
-from validation.team_tiers import calibrate_thresholds, compute_constructor_season_points, compute_team_tiers
+from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
 
 def load_raw_db() -> object:
@@ -105,9 +105,10 @@ def run_career_validation(
     print("Computing deterministic team tiers...")
     points_df = compute_constructor_season_points(db)
     points_df = points_df[points_df["season"] >= min_year]
-    theta_S, theta_A = calibrate_thresholds(points_df, window=window)
-    team_tier = compute_team_tiers(points_df, window=window, theta_S=theta_S, theta_A=theta_A)
-    print(f"  Thresholds: theta_S={theta_S:.4f}, theta_A={theta_A:.4f}")
+    p_S = cfg.TIER_S_FRAC
+    p_A = cfg.TIER_A_FRAC
+    team_tier = compute_team_tiers(points_df, window=window, p_S=p_S, p_A=p_A)
+    print(f"  Tier proportions: S={p_S:.0%}, A={p_A:.0%}, B=remainder")
 
     # Ferrari sanity check (deterministic framework smoke signal).
     ferrari = team_tier[team_tier["constructorRef"].astype(str).str.lower() == "ferrari"]
@@ -167,8 +168,8 @@ def run_career_validation(
         "window": window,
         "horizon": horizon,
         "min_year": min_year,
-        "theta_S": theta_S,
-        "theta_A": theta_A,
+        "tier_s_frac": p_S,
+        "tier_a_frac": p_A,
         "n_rows": int(len(merged)),
         "n_drivers": int(merged["driverId"].nunique()),
         "spearman_rho": float(rho),
@@ -201,7 +202,7 @@ def render_report(summary: dict, per_season_df: pd.DataFrame, output_dir: str):
         f"- Skill source: `{summary['skill_source']}`",
         f"- Tier window: `{summary['window']}` seasons (trailing)",
         f"- Forward horizon: `{summary['horizon']}` seasons",
-        f"- Tier thresholds: theta_S=`{summary['theta_S']:.4f}`, theta_A=`{summary['theta_A']:.4f}`",
+        f"- Tier proportions: S=`{summary['tier_s_frac']:.0%}`, A=`{summary['tier_a_frac']:.0%}`, B=remainder",
         f"- Joined (driver, season) rows: `{summary['n_rows']}` across `{summary['n_drivers']}` drivers",
         "",
         "## Overall Correlation (skill vs. forward outcome)",

@@ -1,18 +1,16 @@
 """Deterministic team-tier assignment (pure data, model-agnostic).
 
-A team's tier in a season is computed from its *points share* of that season,
-smoothed by a trailing moving average (so the tier at T only uses data <= T),
-then cut by fixed thresholds calibrated once over the whole history:
+A team's tier in a season is assigned by ranking teams on their *smoothed
+points share* (a trailing moving average, so the tier at T uses only data <= T)
+and cutting each season into fixed proportions:
 
-    score(team, season) = trailing mean of share over the last ``window`` seasons
-    tier = S if score >= theta_S
-           A if theta_A <= score < theta_S
-           B otherwise
+    S = top ~30% of teams (by smoothed share) in that season
+    A = next ~35%
+    B = the remainder (>= 35%, absorbing any rounding leftover)
 
-``theta_S`` is the median score of the constructors' champions; ``theta_A`` is
-the median score of top-3 finishers. Because both thresholds are global
-constants, tiers are comparable across eras, and historically dominant teams
-(e.g. Ferrari) land in S almost every season without any manual rule.
+Proportions are fixed, so "S" always means "roughly the best third of the
+grid", which keeps a historically dominant team (e.g. Ferrari) in S in almost
+every season while staying deterministic and leak-free.
 """
 
 from __future__ import annotations
@@ -22,6 +20,11 @@ import pandas as pd
 # Tier label -> scalar score used for ranking/correlation. Mirrors
 # ``config.TIER_TO_SCORE`` (single small stable constant, kept in both places).
 TIER_TO_SCORE = {"S": 3, "A": 2, "B": 1}
+
+# Fixed per-season proportions (share of the grid in each tier). Remainder of
+# the integer split goes to B.
+P_S = 0.30
+P_A = 0.35
 
 
 def compute_constructor_season_points(db) -> pd.DataFrame:
@@ -65,40 +68,37 @@ def _add_score(points_df: pd.DataFrame, window: int) -> pd.DataFrame:
     return df
 
 
-def calibrate_thresholds(points_df: pd.DataFrame, window: int = 3) -> tuple[float, float]:
-    """Return (theta_S, theta_A) as medians of champion / top-3 smoothed scores."""
-    df = _add_score(points_df, window)
-    champions = df[df["position"] == 1.0]["score"].dropna()
-    top3 = df[df["position"].isin([1.0, 2.0, 3.0])]["score"].dropna()
-
-    if champions.empty or top3.empty:
-        raise ValueError("Cannot calibrate tier thresholds: no champion/top-3 rows found.")
-
-    theta_S = float(champions.median())
-    theta_A = float(top3.median())
-    if theta_A > theta_S:
-        # Guarantee S is strictly the top band.
-        theta_S, theta_A = theta_A, theta_S
-    return theta_S, theta_A
-
-
 def compute_team_tiers(
     points_df: pd.DataFrame,
     window: int = 3,
-    theta_S: float | None = None,
-    theta_A: float | None = None,
+    p_S: float = P_S,
+    p_A: float = P_A,
 ) -> pd.DataFrame:
-    """Assign S/A/B tiers per (constructor, season).
+    """Assign S/A/B tiers per (constructor, season) by fixed proportions.
+
+    Within each season, teams are ranked by their smoothed share (descending),
+    then the top ``floor(p_S * n)`` are S, the next ``floor(p_A * n)`` are A,
+    and the rest are B (absorbing the integer rounding leftover).
 
     Returns columns: [constructorId, constructorRef, season, score, tier].
     """
-    if theta_S is None or theta_A is None:
-        theta_S, theta_A = calibrate_thresholds(points_df, window)
+    df = _add_score(points_df, window).copy()
 
-    df = _add_score(points_df, window)
-    df["tier"] = df["score"].apply(
-        lambda s: "S" if s >= theta_S else ("A" if s >= theta_A else "B")
-    )
+    # Deterministic rank within season: score desc, then points desc, then id.
+    df = df.sort_values(
+        ["season", "score", "points", "constructorId"],
+        ascending=[True, False, False, True],
+    ).reset_index(drop=True)
+
+    tier_labels = []
+    for _, grp in df.groupby("season", sort=True):
+        n = len(grp)
+        n_s = int(p_S * n)
+        n_a = int(p_A * n)
+        n_b = n - n_s - n_a
+        tier_labels.extend(["S"] * n_s + ["A"] * n_a + ["B"] * n_b)
+
+    df["tier"] = tier_labels
     return df[["constructorId", "constructorRef", "season", "score", "tier"]].reset_index(
         drop=True
     )
