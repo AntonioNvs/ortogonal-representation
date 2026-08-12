@@ -108,3 +108,41 @@ TEMPORAL_CURVE_MODEL = "high"  # lambda_orthogonal = 1.0
 
 # Default GPU for all training and experiment scripts.
 DEFAULT_GPU_ID = 7
+
+# ---------------------------------------------------------------------------
+# Kalman-GNN configuration
+# ---------------------------------------------------------------------------
+
+# Sliding window
+KALMAN_WINDOW_SIZE = 20       # K: number of recent races in GNN sliding window
+KALMAN_WARMUP_RACES = 20      # minimum races before computing losses
+
+# Model dimensions
+KALMAN_STATE_DIM = 32         # dimension of driver/constructor state embedding v
+KALMAN_MSG_DIM = 8            # dimension of GNN output h_r
+
+# Training
+KALMAN_LR = 0.001             # learning rate
+KALMAN_WEIGHT_DECAY = 1e-5    # AdamW weight decay
+KALMAN_EPOCHS = 5             # epochs (fewer needed since sequence is ~500 races)
+KALMAN_ACCUMULATION_STEPS = 4 # gradient accumulation across N races
+KALMAN_GRAD_CLIP = 1.0        # gradient norm clipping
+
+# Loss weights
+KALMAN_LAMBDA_PRED = 1.0      # beat-teammate BCE
+KALMAN_LAMBDA_SMOOTH = 0.1    # temporal smoothness ||v_r - v_{r-1}||²
+KALMAN_LAMBDA_CONTRAST = 0.05 # InfoNCE temporal contrast
+KALMAN_LAMBDA_SKILL = 0.05    # skill forward consistency
+
+# Contrastive loss
+KALMAN_CONTRAST_GAP_MIN = 1   # minimum race gap for positive pairs
+KALMAN_CONTRAST_GAP_MAX = 5   # maximum race gap for positive pairs
+KALMAN_CONTRAST_TEMP = 0.1    # InfoNCE temperature
+KALMAN_CONTRAST_EVERY = 5     # compute contrastive loss every N races
+
+# Smoke test overrides
+KALMAN_SMOKE_WINDOW_SIZE = 5
+KALMAN_SMOKE_STATE_DIM = 8
+KALMAN_SMOKE_MSG_DIM = 4
+KALMAN_SMOKE_EPOCHS = 1
+KALMAN_SMOKE_WARMUP = 5
