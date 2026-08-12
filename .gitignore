@@ -5,6 +5,7 @@ __pycache__/
 *.pyo
 .env
 .claude
+CLAUDE.md
 *.parquet
 
 

@@ -146,3 +146,25 @@ KALMAN_SMOKE_STATE_DIM = 8
 KALMAN_SMOKE_MSG_DIM = 4
 KALMAN_SMOKE_EPOCHS = 1
 KALMAN_SMOKE_WARMUP = 5
+
+# ---------------------------------------------------------------------------
+# Career validation framework (deterministic team tiers + forward outcome)
+# ---------------------------------------------------------------------------
+
+# Window (in seasons) of the trailing moving average used to smooth a team's
+# points share before tier assignment. Trailing (data <= T) keeps it leak-free.
+TIER_WINDOW = 3
+
+# Forward horizon (in seasons): a driver's career outcome at time T is the mean
+# tier of the teams they drive for in seasons T+1 .. T+TIER_HORIZON.
+TIER_HORIZON = 3
+
+# Mapping from tier label to a scalar score for ranking/correlation.
+TIER_TO_SCORE = {"S": 3, "A": 2, "B": 1}
+
+# Earliest season considered by the career-validation framework. The upper
+# bound is derived from the data (currently ~2026).
+CAREER_VALIDATION_MIN_YEAR = 2000
+
+# Default output directory for career-validation artifacts.
+CAREER_VALIDATION_OUTPUT_DIR = "output/career_validation"
