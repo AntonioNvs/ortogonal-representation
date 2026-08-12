@@ -155,6 +155,11 @@ KALMAN_SMOKE_WARMUP = 5
 # points share before tier assignment. Trailing (data <= T) keeps it leak-free.
 TIER_WINDOW = 3
 
+# Fixed per-season tier proportions (share of the grid). The remainder of the
+# integer split goes to tier B. Kept here so the runner can pass them through.
+TIER_S_FRAC = 0.30
+TIER_A_FRAC = 0.35
+
 # Forward horizon (in seasons): a driver's career outcome at time T is the mean
 # tier of the teams they drive for in seasons T+1 .. T+TIER_HORIZON.
 TIER_HORIZON = 3
