@@ -59,13 +59,27 @@ def compute_constructor_season_points(db) -> pd.DataFrame:
     return season_end[cols].reset_index(drop=True)
 
 
-def _add_score(points_df: pd.DataFrame, window: int) -> pd.DataFrame:
-    """Add a trailing moving-average ``score`` column (per constructor)."""
-    df = points_df.sort_values(["constructorId", "season"]).copy()
-    df["score"] = df.groupby("constructorId")["share"].transform(
+def _add_score(
+    points_df: pd.DataFrame,
+    window: int,
+    lineage: dict | None = None,
+) -> pd.DataFrame:
+    """Add a trailing moving-average ``score`` column.
+
+    Grouped by constructor, unless ``lineage`` (a ``constructorId -> lineage_id``
+    mapping) is given, in which case the average is computed per lineage so a
+    rebranded/acquired team carries its score across the boundary.
+    """
+    df = points_df.copy()
+    if lineage is not None:
+        df["_group"] = df["constructorId"].map(lineage).fillna(df["constructorId"])
+    else:
+        df["_group"] = df["constructorId"]
+    df = df.sort_values(["_group", "season"])
+    df["score"] = df.groupby("_group")["share"].transform(
         lambda s: s.rolling(window=window, min_periods=1).mean()
     )
-    return df
+    return df.drop(columns=["_group"])
 
 
 def compute_team_tiers(
@@ -73,6 +87,7 @@ def compute_team_tiers(
     window: int = 3,
     p_S: float = P_S,
     p_A: float = P_A,
+    lineage: dict | None = None,
 ) -> pd.DataFrame:
     """Assign S/A/B tiers per (constructor, season) by fixed proportions.
 
@@ -80,9 +95,12 @@ def compute_team_tiers(
     then the top ``floor(p_S * n)`` are S, the next ``floor(p_A * n)`` are A,
     and the rest are B (absorbing the integer rounding leftover).
 
+    ``lineage`` optionally makes the smoothing lineage-aware (see
+    ``validation.team_lineage``) so a rebranded team keeps its rank.
+
     Returns columns: [constructorId, constructorRef, season, score, tier].
     """
-    df = _add_score(points_df, window).copy()
+    df = _add_score(points_df, window, lineage=lineage).copy()
 
     # Deterministic rank within season: score desc, then points desc, then id.
     df = df.sort_values(

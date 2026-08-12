@@ -2,7 +2,9 @@
 
 Complement to ``plot_team_evolution``: instead of a line per team, this shows
 the *tier* each team landed in per season (same deterministic assignment used by
-the career-validation framework). Teams are ordered strongest-first.
+the career-validation framework). Teams are lineage-aware: acquisitions/renames
+are merged into a single row labelled ``X/Y``, and the tier assignment carries
+the previous team's rank across the rebrand (see ``validation.team_lineage``).
 
 Optionally (``--skill-source kalman``) a second panel overlays the model: a
 boxplot of driver ``skill_score`` grouped by the team tier they drove for. If the
@@ -33,6 +35,7 @@ for _p in (ROOT_DIR, SRC_DIR):
 import config as cfg
 from data.enriched_dataset import EnrichedF1Dataset
 from validation.career_labels import driver_season_constructor
+from validation.team_lineage import build_lineage_map, lineage_id_by_constructor, lineage_label
 from validation.team_tiers import (
     TIER_TO_SCORE,
     compute_constructor_season_points,
@@ -55,23 +58,29 @@ def _tier_color(tier) -> str:
 
 
 def build_tier_df(db, min_year: int, max_year: int, window: int) -> pd.DataFrame:
-    """Deterministic S/A/B tier per (constructor, season), with names."""
+    """Lineage-aware S/A/B tier per (constructor, season), with names."""
+    constructors = db.table_dict["constructors"].df
     points = compute_constructor_season_points(db)
     points = points[(points["season"] >= min_year) & (points["season"] <= max_year)]
+
+    lid_map = lineage_id_by_constructor(constructors)
     tiers = compute_team_tiers(
-        points, window=window, p_S=cfg.TIER_S_FRAC, p_A=cfg.TIER_A_FRAC
+        points, window=window, p_S=cfg.TIER_S_FRAC, p_A=cfg.TIER_A_FRAC, lineage=lid_map
     )
-    names = db.table_dict["constructors"].df[["constructorId", "name"]]
-    tiers = tiers.merge(names, on="constructorId", how="left")
+
+    lineage = build_lineage_map(constructors)
+    tiers = tiers.merge(
+        lineage[["constructorId", "name", "lineage_id"]], on="constructorId", how="left"
+    )
     return tiers
 
 
-def _team_order(tiers: pd.DataFrame) -> list[str]:
-    """Teams ordered strongest-first: mean tier-scalar desc, ties by total points."""
-    tiers = tiers.copy()
-    tiers["_v"] = tiers["tier"].map(TIER_TO_SCORE).astype(float)
+def _lineage_order(tiers: pd.DataFrame) -> list[str]:
+    """Lineages ordered strongest-first: mean tier-scalar desc, ties by count."""
+    t = tiers.copy()
+    t["_v"] = t["tier"].map(TIER_TO_SCORE).astype(float)
     agg = (
-        tiers.groupby("name")
+        t.groupby("lineage_id")
         .agg(_v=("_v", "mean"), _n=("season", "count"))
         .sort_values(["_v", "_n"], ascending=[False, False])
     )
@@ -94,27 +103,38 @@ def plot_team_tiers(
     tiers = build_tier_df(db, min_year, max_year, window)
 
     seasons = sorted(tiers["season"].unique())
-    teams = _team_order(tiers)
+    lineages = _lineage_order(tiers)
     if top_k is not None:
-        teams = teams[:top_k]
+        lineages = lineages[:top_k]
 
-    # Build a matrix of tier values (NaN -> team absent that season).
+    # One row per lineage; label = "X/Y" of names observed in the window.
+    labels = {}
+    for lid in lineages:
+        labels[lid] = lineage_label(tiers[tiers["lineage_id"] == lid])
+    tiers["_label"] = tiers["lineage_id"].map(labels)
+
+    # Matrix of tier values (NaN -> lineage absent that season).
     tier_value = tiers.pivot_table(
-        index="name", columns="season", values="tier", aggfunc="first"
-    ).reindex(index=teams, columns=seasons)
+        index="_label", columns="season", values="tier", aggfunc="first"
+    )
+    ordered_labels = [labels[lid] for lid in lineages]
+    tier_value = tier_value.reindex(index=ordered_labels, columns=seasons)
 
     has_skill = skill_source is not None
     nrows = 2 if has_skill else 1
     if figsize is None:
-        figsize = (max(10, 0.6 * len(seasons) + 4), 0.35 * len(teams) + (4 if has_skill else 3))
-    fig, axes = plt.subplots(nrows=nrows, ncols=1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1.6] if has_skill else [1]})
+        figsize = (max(10, 0.6 * len(seasons) + 4), 0.35 * len(lineages) + (4 if has_skill else 3))
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=1, figsize=figsize,
+        gridspec_kw={"height_ratios": [3, 1.6] if has_skill else [1]},
+    )
 
     ax = axes[0] if has_skill else axes
 
     # --- Heatmap ---
     n_rows, n_cols = tier_value.shape
     img = np.zeros((n_rows, n_cols, 3))
-    for i, team in enumerate(teams):
+    for i in range(n_rows):
         for j, season in enumerate(seasons):
             tier = tier_value.iloc[i, j]
             if pd.isna(tier):
@@ -126,7 +146,7 @@ def plot_team_tiers(
     ax.imshow(img, aspect="auto", interpolation="nearest")
 
     # Overlay tier letters.
-    for i, team in enumerate(teams):
+    for i in range(n_rows):
         for j, season in enumerate(seasons):
             tier = tier_value.iloc[i, j]
             if not pd.isna(tier):
@@ -135,10 +155,10 @@ def plot_team_tiers(
     ax.set_xticks(range(n_cols))
     ax.set_xticklabels([str(s) for s in seasons], rotation=45, ha="right")
     ax.set_yticks(range(n_rows))
-    ax.set_yticklabels(teams, fontsize=9)
+    ax.set_yticklabels(ordered_labels, fontsize=9)
     ax.set_xlim(-0.5, n_cols - 0.5)
     ax.set_ylim(n_rows - 0.5, -0.5)
-    ax.set_title(f"Team tiers by season ({min_year}–{max_year})  —  S/A/B, strongest on top")
+    ax.set_title(f"Team tiers by season ({min_year}–{max_year})  —  S/A/B, strongest on top (lineage X/Y)")
     # Light grid so absent cells (white) still read as "not competing".
     ax.set_xticks(np.arange(-0.5, n_cols, 1), minor=True)
     ax.set_yticks(np.arange(-0.5, n_rows, 1), minor=True)
@@ -150,9 +170,7 @@ def plot_team_tiers(
         ax_skill = axes[1]
         from validation.kalman_skill import load_kalman_skill
 
-        skill = load_kalman_skill(
-            checkpoint_path=checkpoint, device=device
-        )
+        skill = load_kalman_skill(checkpoint_path=checkpoint, device=device)
         driver_season = driver_season_constructor(db)
         # Map each (driver, season) to the tier of their team that season.
         ds_tier = driver_season.merge(
@@ -170,35 +188,37 @@ def plot_team_tiers(
             patch.set_facecolor(_tier_color(t))
             patch.set_alpha(0.55)
         ax_skill.set_ylabel("Driver skill score")
-        ax_skill.set_title(
-            f"Driver skill vs. team tier (model source: {skill_source})"
-        )
+        ax_skill.set_title(f"Driver skill vs. team tier (model source: {skill_source})")
         ax_skill.grid(True, axis="y", alpha=0.3)
 
         # Medians printed for a quick S>A>B check.
         medians = {
-            t: (float(np.median(g)) if len(g) else float("nan")) for t, g in zip(TIER_ORDER, groups)
+            t: (float(np.median(g)) if len(g) else float("nan"))
+            for t, g in zip(TIER_ORDER, groups)
         }
         counts = {t: int(len(g)) for t, g in zip(TIER_ORDER, groups)}
-        print(f"  skill-by-tier medians: " + "  ".join(f"{t}={medians[t]:+.3f}(n={counts[t]})" for t in TIER_ORDER))
+        print(
+            "  skill-by-tier medians: "
+            + "  ".join(f"{t}={medians[t]:+.3f}(n={counts[t]})" for t in TIER_ORDER)
+        )
 
     fig.tight_layout()
     os.makedirs(os.path.dirname(output) or ".", exist_ok=True)
     fig.savefig(output, dpi=220, bbox_inches="tight")
     plt.close(fig)
-    print(f"Plot saved to {output} ({len(teams)} teams, {len(seasons)} seasons)")
+    print(f"Plot saved to {output} ({len(lineages)} lineages, {len(seasons)} seasons)")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Plot team tiers as a heatmap (optionally vs. driver skill).",
+        description="Plot team tiers as a heatmap (lineage-aware, optionally vs. driver skill).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
     parser.add_argument("--min-year", type=int, default=2010)
     parser.add_argument("--max-year", type=int, default=2020)
     parser.add_argument("--window", type=int, default=None, help="Tier moving-average window (default: cfg.TIER_WINDOW).")
-    parser.add_argument("--top-k", type=int, default=None, help="Only show the k strongest teams.")
+    parser.add_argument("--top-k", type=int, default=None, help="Only show the k strongest lineages.")
     parser.add_argument("--skill-source", type=str, default=None, help="e.g. 'kalman' to add the skill-vs-tier panel.")
     parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint path (for --skill-source kalman).")
     parser.add_argument("--device", type=str, default=None, help="Device override (e.g. 'cuda:7', 'cpu').")

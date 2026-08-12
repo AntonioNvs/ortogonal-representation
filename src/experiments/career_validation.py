@@ -36,6 +36,7 @@ for _p in (ROOT_DIR, SRC_DIR):
 import config as cfg
 from data.enriched_dataset import EnrichedF1Dataset
 from validation.career_labels import driver_season_constructor, forward_tier_outcome
+from validation.team_lineage import lineage_id_by_constructor
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
 
@@ -93,6 +94,7 @@ def run_career_validation(
     output_dir: str | None = None,
     min_year: int | None = None,
     n_bootstrap: int = 5000,
+    lineage: bool = False,
 ):
     horizon = horizon or cfg.TIER_HORIZON
     window = window or cfg.TIER_WINDOW
@@ -107,8 +109,10 @@ def run_career_validation(
     points_df = points_df[points_df["season"] >= min_year]
     p_S = cfg.TIER_S_FRAC
     p_A = cfg.TIER_A_FRAC
-    team_tier = compute_team_tiers(points_df, window=window, p_S=p_S, p_A=p_A)
+    lid_map = lineage_id_by_constructor(db.table_dict["constructors"].df) if lineage else None
+    team_tier = compute_team_tiers(points_df, window=window, p_S=p_S, p_A=p_A, lineage=lid_map)
     print(f"  Tier proportions: S={p_S:.0%}, A={p_A:.0%}, B=remainder")
+    print(f"  Lineage-aware tiers: {'yes' if lineage else 'no'}")
 
     # Ferrari sanity check (deterministic framework smoke signal).
     ferrari = team_tier[team_tier["constructorRef"].astype(str).str.lower() == "ferrari"]
@@ -168,6 +172,7 @@ def run_career_validation(
         "window": window,
         "horizon": horizon,
         "min_year": min_year,
+        "lineage": lineage,
         "tier_s_frac": p_S,
         "tier_a_frac": p_A,
         "n_rows": int(len(merged)),
@@ -243,6 +248,7 @@ def main():
     parser.add_argument("--device", type=str, default=None, help="Device override (e.g. 'cuda:7', 'cpu').")
     parser.add_argument("--output-dir", type=str, default=None, help="Output directory (default: cfg.CAREER_VALIDATION_OUTPUT_DIR).")
     parser.add_argument("--n-bootstrap", type=int, default=5000, help="Bootstrap resamples for rho CI.")
+    parser.add_argument("--lineage", action="store_true", help="Make team tiers lineage-aware (rebrands carry their rank).")
     args = parser.parse_args()
 
     run_career_validation(
@@ -253,6 +259,7 @@ def main():
         output_dir=args.output_dir,
         min_year=args.min_year,
         n_bootstrap=args.n_bootstrap,
+        lineage=args.lineage,
     )
 
 
