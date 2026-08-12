@@ -84,7 +84,7 @@ def train_kalman(
 
     # History tracking
     history = {
-        "train_loss": [], "train_pred": [], "train_smooth": [],
+        "train_total": [], "train_pred": [], "train_smooth": [],
         "train_contrast": [], "train_skill": [],
         "val_auroc": [], "val_accuracy": [],
     }
