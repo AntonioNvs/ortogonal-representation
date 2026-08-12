@@ -468,16 +468,27 @@ def main():
         except Exception:
             static_x_dict = {}
 
-    # Initialize lazy GNN parameters with a dummy forward pass
+    # Initialize lazy GNN parameters (SAGEConv((-1, -1), ...)) with a dummy
+    # forward pass.  Must use ALL edge types and provide x_dict entries for
+    # every node type so every lazy layer is triggered.
     print("Initializing GNN lazy parameters...")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
-            # Use a minimal edge dict (just one edge type) to trigger lazy init
-            dummy_edge = list(graph_data.edge_index_dict.items())[:1]
-            dummy_edge_dict = dict(dummy_edge)
-            dummy_edge_dict = {et: ei.to(device) for et, ei in dummy_edge_dict.items()}
-            model.graph_encoder(static_x_dict, dummy_edge_dict)
+            full_edge_dict = {
+                et: ei.to(device)
+                for et, ei in graph_data.edge_index_dict.items()
+            }
+            # Ensure x_dict has entries for ALL node types (static encoder
+            # may only produce features for a subset).
+            dummy_x = {}
+            for nt in graph_data.node_types:
+                n = graph_data[nt].num_nodes
+                if nt in static_x_dict:
+                    dummy_x[nt] = static_x_dict[nt]
+                else:
+                    dummy_x[nt] = torch.randn(n, 1, device=device)
+            model.graph_encoder(dummy_x, full_edge_dict)
         except Exception:
             pass
 
