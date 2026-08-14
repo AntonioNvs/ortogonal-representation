@@ -382,7 +382,7 @@ def run_transfer_tier_alignment(
                     "delta_mean": float(g["delta"].mean()),
                     "pred_new_mean": float(g["pred_new"].mean()),
                     "pred_old_mean": float(g["pred_old"].mean()),
-                    "actual_mean": float(g["actual"].mean()),
+                    "actual_mean": float(g["y"].mean()),
                     "n_races": int(len(g)),
                 })
 
