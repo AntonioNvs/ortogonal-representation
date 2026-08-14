@@ -173,3 +173,7 @@ CAREER_VALIDATION_MIN_YEAR = 2000
 
 # Default output directory for career-validation artifacts.
 CAREER_VALIDATION_OUTPUT_DIR = "output/career_validation"
+
+# Default output directory for the transfer tier-alignment experiment (does the
+# counterfactual car-effect point the same direction as the market's team tier?).
+TRANSFER_TIER_ALIGNMENT_OUTPUT_DIR = "output/transfer_tier_alignment"
