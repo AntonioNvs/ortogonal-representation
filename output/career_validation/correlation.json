@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-08-12T21:27:21.491375+00:00",
+  "skill_source": "kalman",
+  "window": 3,
+  "horizon": 3,
+  "min_year": 2000,
+  "tier_s_frac": 0.3,
+  "tier_a_frac": 0.35,
+  "n_rows": 503,
+  "n_drivers": 104,
+  "spearman_rho": 0.17094608256947336,
+  "spearman_p": 0.000116785367204898,
+  "kendall_tau": 0.12516754786889367,
+  "kendall_p": 0.00011530541267882614,
+  "spearman_bootstrap": {
+    "rho": 0.17054465215450107,
+    "ci_low": 0.08165378027258037,
+    "ci_high": 0.259168339938913,
+    "n": 503
+  }
+}

@@ -1,0 +1,4 @@
+model,model_level,lambda_orthogonal,n_transfers,spearman_rho,spearman_p,n_promotions,promotion_mean_delta,promotion_agree_frac,n_lateral,lateral_mean_delta,n_demotions,demotion_mean_delta,demotion_agree_frac,overall_agree_frac
+model_no_orthogonal,zero,0.0,14,0.06068948293061783,0.8367157423079185,5,0.5880741176722145,0.2,4,-0.3148264957798852,5,0.38629659930022914,0.8,0.5
+model_ablation_l01,low,0.1,14,-0.2854653456366098,0.322506512957642,5,-0.41804980220935456,0.6,4,0.4007503728988388,5,-0.9462325443215818,0.0,0.3
+model_orthogonal,high,1.0,14,0.20005051780833286,0.49289223601244014,5,1.0420505072160668,0.6,4,-0.06412442605646829,5,0.4990822302880639,0.8,0.7
