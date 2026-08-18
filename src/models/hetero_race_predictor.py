@@ -77,11 +77,15 @@ class HeteroRacePredictor(nn.Module):
             nn.Linear(race_feat_dim, state_dim), nn.ReLU()
         )
 
-        # Message passing stack.
+        # Message passing stack. All node types are projected to ``state_dim``
+        # (see ``node_features``), so we use explicit in_channels rather than
+        # the lazy ``(-1, -1)`` form — lazy SAGEConv would leave parameters
+        # uninitialised until the first forward, and any parameter *counting*
+        # before that (e.g. logging n_params) would raise.
         self.convs = nn.ModuleList(
             [
                 HeteroConv(
-                    {et: SAGEConv((-1, -1), state_dim) for et in EDGE_TYPES},
+                    {et: SAGEConv(state_dim, state_dim) for et in EDGE_TYPES},
                     aggr="mean",
                 )
                 for _ in range(num_layers)
