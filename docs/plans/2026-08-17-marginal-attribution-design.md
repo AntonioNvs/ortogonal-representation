@@ -3,7 +3,7 @@
 **Branch:** `marginal-attribution` (from `master`)
 **Date:** 2026-08-17
 **Sibling design:** `2026-08-17-counterfactual-swap-design.md`
-**Motivating question (MIT Sloan Sports 2027):** "For each race, how much of the outcome came from the driver, the constructor, the engine, and the circuit?"
+**Motivating question (MIT Sloan Sports 2027):** "For each race, how much of the outcome came from the driver, the constructor, and the circuit?"
 
 ---
 
@@ -18,13 +18,13 @@ Where **counterfactual-swap** answers *"what if the driver were someone else"* (
 For every race prediction:
 
 ```
-y_hat = f(driver@T, constructor@T, engine@T, circuit)
+y_hat = f(driver@T, constructor@T, circuit)
 ```
 
 Decompose into additive per-node contributions using Shapley values:
 
 ```
-y_hat  ≈  y_baseline + phi_driver + phi_constructor + phi_engine + phi_circuit
+y_hat  ≈  y_baseline + phi_driver + phi_constructor + phi_circuit
 ```
 
 `phi_i` is the average marginal contribution of node `i` over all coalitions of the other nodes, satisfying the Shapley axioms (efficiency, symmetry, dummy, linearity).
@@ -37,20 +37,25 @@ skill(X, T) = mean over races r in T of phi_driver(X, r)
 
 — the average "amount the driver contributed" across the season.
 
+> **Three players, not four.** The enriched Ergast/Jolpica schema has no engine
+> table — engine supplier is folded into the constructor entry. The Shapley
+> player set is `{driver, constructor, circuit}`. Engine-level decomposition
+> is a possible follow-up if an external engine-supplier mapping is added.
+
 ## Base model — shared with sibling branch
 
 The **graph schema and prediction model are identical** to `counterfactual-swap`:
 
-- Meta-nodes `driver_season`, `constructor_season`, `engine_season`, plus static `circuit` and per-race `race`.
-- Edges `drives_for`, `same_driver`, `same_constructor`, `raced_in`, `held_at`, `uses_engine`.
-- HeteroGNN with 2–3 SAGE/GAT layers.
-- Readout: MLP over `[emb(driver_season), emb(constructor_season), emb(engine_season), emb(race), emb(circuit)]` predicting `positionOrder / n_racers`.
+- Meta-nodes `driver_season`, `constructor_season`, plus static `circuit` and per-race `race`.
+- Edges `drives_for`, `same_driver`, `same_constructor`, `raced_in`, `held_at`.
+- HeteroGNN with 2–3 SAGE layers.
+- Readout: MLP over `[emb(driver_season), emb(constructor_season), emb(race), emb(circuit)]` predicting `positionOrder / n_racers`.
 
 **Discipline**: this component is implemented and stabilised first in `counterfactual-swap`, then cherry-picked into `marginal-attribution`. We do not maintain a shared branch — synchronisation cost is not worth the reuse gain at this scale.
 
 ## Attribution — primary method (Shapley Monte Carlo)
 
-**Players**: `N = {driver, constructor, engine, circuit}`. Four players is small — Monte Carlo Shapley converges fast.
+**Players**: `N = {driver, constructor, circuit}`. Three players is small — Monte Carlo Shapley converges fast.
 
 **Coalition semantics — what does "remove node i" mean?**
 Replace `emb(i)` with the **marginal-mean embedding of its type** (the average of all `driver_season` embeddings in the training pool for a driver, etc.). This is the standard SHAP baseline (Lundberg & Lee, 2017) applied to graph embeddings. A "removed" node contributes the type-average signal, not zero — that would bias attribution toward whichever node has a high-magnitude embedding.
@@ -97,11 +102,10 @@ skill(X, T) = mean over r in races(T) where driver_season(X, T) raced_in r:
 for each era in {1990s, 2000s, 2010s, 2020s}:
     R2_driver      = Var[phi_driver]      / Var[y_hat]
     R2_constructor = Var[phi_constructor] / Var[y_hat]
-    R2_engine      = Var[phi_engine]      / Var[y_hat]
     R2_circuit     = Var[phi_circuit]     / Var[y_hat]
 ```
 
-Expected pattern (a testable prediction): `R2_constructor` rises across eras (F1 becomes more team-dominated); `R2_driver` falls. This is a *quantitative* claim about how F1 has evolved — Sloan reviewers respond well to headlines like "we measure that the modern F1 result is 65% team, 20% driver, 10% engine, 5% circuit". Whether or not that specific number is right, the framework produces one.
+Expected pattern (a testable prediction): `R2_constructor` rises across eras (F1 becomes more team-dominated); `R2_driver` falls. This is a *quantitative* claim about how F1 has evolved — Sloan reviewers respond well to headlines like "we measure that the modern F1 result is mostly team and circuit, with a measurable driver share that has declined over the eras". Whether or not the specific proportions are right, the framework produces them.
 
 ## Support score — shared with sibling branch
 
@@ -166,6 +170,6 @@ Total: ~3 weeks after `counterfactual-swap` reaches its exit criteria.
 
 If `counterfactual-swap` and `marginal-attribution` both exit successfully, the joint paper positions them as:
 
-> "We estimate driver skill via a graph-based counterfactual swap (§Method A). We independently attribute race outcomes to driver, car, engine, and circuit via Shapley decomposition over the same graph (§Method B). The two methods agree at Spearman ρ ≥ 0.X on the driver ranking, validating that the model has learned a consistent driver-vs-car decomposition."
+> "We estimate driver skill via a graph-based counterfactual swap (§Method A). We independently attribute race outcomes to driver, car, and circuit via Shapley decomposition over the same graph (§Method B). The two methods agree at Spearman ρ ≥ 0.X on the driver ranking, validating that the model has learned a consistent driver-vs-car decomposition."
 
 If only one survives, that one is the paper and the other is a rejected-branch note in the appendix or a companion tech report.

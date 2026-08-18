@@ -64,6 +64,8 @@ def load_skill(skill_source: str, device, *, db=None, team_tier=None) -> pd.Data
       * ``points_share``: raw season-points share (naive market-aware baseline).
       * ``constructor_tier``: driver's constructor tier at T (adversarial
         baseline for the decomposition thesis). Requires ``team_tier``.
+      * ``counterfactual_swap``: counterfactual driver-in-car swap skill
+        (this branch's primary method).
     """
     if skill_source == "kalman":
         from validation.kalman_skill import load_kalman_skill
@@ -79,6 +81,10 @@ def load_skill(skill_source: str, device, *, db=None, team_tier=None) -> pd.Data
         if db is None or team_tier is None:
             raise ValueError("constructor_tier baseline requires db + team_tier.")
         return load_constructor_tier(db, team_tier)
+    if skill_source == "counterfactual_swap":
+        from validation.counterfactual_skill import load_counterfactual_swap_skill
+
+        return load_counterfactual_swap_skill(device=device)
     raise ValueError(
         f"Unknown --skill-source: {skill_source!r} "
         f"(supported: kalman, points_share, constructor_tier)"

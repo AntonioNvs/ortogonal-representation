@@ -32,29 +32,31 @@ A **single graph spans 2000–2026**, with time encoded via meta-nodes rather th
 **Node types**
 - `driver_season` — one node per `(driver, season)` pair that exists. `Hamilton@2015`, `Hamilton@2016`, `Antonelli@2025`.
 - `constructor_season` — one node per `(constructor, season)`.
-- `engine_season` — one node per `(engine, season)`.
 - `circuit` — static; a circuit does not need per-season copies (surface, layout are stable).
-- `race` — one node per race, with contextual features (round, weather flags when available, calendar position).
+- `race` — one node per race, with contextual features (round, calendar position).
+
+> **No engine node.** The enriched Ergast/Jolpica schema has no engine table —
+> engine supplier is folded into the constructor entry. If engine-level
+> decomposition is ever wanted, it must be injected from an external source.
 
 **Edge types**
-- `drives_for(driver_season → constructor_season)` — Hamilton@2015 ↔ Mercedes@2015.
+- `drives_for(driver_season → constructor_season)` — the modal team of the season.
 - `same_driver(driver_season_T → driver_season_{T+1})` — directional, carries a driver's identity forward in time.
 - `same_constructor(constructor_season_T → constructor_season_{T+1})` — carries a team's identity forward.
 - `raced_in(driver_season → race)` — participation edge; this is the edge the model regresses on.
 - `held_at(race → circuit)`.
-- `uses_engine(constructor_season → engine_season)`.
 
 The `same_driver` and `same_constructor` edges are the mechanism by which knowledge propagates across seasons *without* a recurrent state and *without* forcing every year of a driver into a single embedding. Antonelli@2025 has no `same_driver` predecessor (his first F1 year), which is correct: he has no prior F1 history to carry.
 
 ## Base model
 
-**Architecture**: Heterogeneous GNN with 2–3 SAGE (or GAT) layers over the schema above. One propagation step diffuses via `same_driver` and `same_constructor` (temporal); another via `drives_for` and `uses_engine` (contextual).
+**Architecture**: Heterogeneous GNN with 2–3 SAGE layers over the schema above. One propagation step diffuses via `same_driver` and `same_constructor` (temporal); another via `drives_for` (contextual).
 
 **Target**: for each `raced_in(driver_season, race)` edge in the training set, predict `positionOrder / n_racers ∈ [0, 1]` (regression). Simple, dense signal, works even for DNFs (position given at the end).
 
-**Readout**: MLP over `[emb(driver_season), emb(constructor_season), emb(engine_season), emb(race), emb(circuit)]`. The readout is the point of intervention for the counterfactual.
+**Readout**: MLP over `[emb(driver_season), emb(constructor_season), emb(race), emb(circuit)]`. The readout is the point of intervention for the counterfactual.
 
-**Splits**: 2000–2018 train, 2019–2022 val, 2023–2026 test (matches the existing `TRAIN_YEARS/VAL_YEARS/TEST_YEARS` scheme in `src/config.py`). Directional `same_driver`/`same_constructor` edges enforce causal ordering.
+**Splits**: from `cfg.TRAIN_YEARS` / `VAL_YEARS` / `TEST_YEARS` (extended mode: train 2000–2021, val 2022–2023, test 2024–2026). Directional `same_driver`/`same_constructor` edges enforce causal ordering.
 
 ## The counterfactual operation
 
@@ -138,11 +140,10 @@ If any of the three fails, the architecture does not decompose driver from car w
 ```
 src/data/temporal_graph.py            # meta-node graph builder
 src/models/hetero_race_predictor.py   # HeteroGNN + edge readout
-src/models/train_counterfactual.py    # training loop
+train_counterfactual.py               # training loop (repo root, like train_kalman.py)
 src/counterfactual/swap.py            # inference-time swap and aggregation
 src/counterfactual/support.py         # support score
 src/validation/counterfactual_skill.py  # adapter for career_validation.load_skill
-src/experiments/counterfactual_run.py  # end-to-end runner
 ```
 
 Nothing under `src/models/kalman_*` or `src/data/kalman_dataset.py` is carried over.
