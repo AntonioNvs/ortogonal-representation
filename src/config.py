@@ -108,3 +108,30 @@ TEMPORAL_CURVE_MODEL = "high"  # lambda_orthogonal = 1.0
 
 # Default GPU for all training and experiment scripts.
 DEFAULT_GPU_ID = 7
+
+# ---------------------------------------------------------------------------
+# Career validation framework (deterministic team tiers + forward outcome)
+# ---------------------------------------------------------------------------
+
+# Window (in seasons) of the trailing moving average used to smooth a team's
+# points share before tier assignment. Trailing (data <= T) keeps it leak-free.
+TIER_WINDOW = 3
+
+# Fixed per-season tier proportions (share of the grid). The remainder of the
+# integer split goes to tier B. Kept here so the runner can pass them through.
+TIER_S_FRAC = 0.30
+TIER_A_FRAC = 0.35
+
+# Forward horizon (in seasons): a driver's career outcome at time T is the mean
+# tier of the teams they drive for in seasons T+1 .. T+TIER_HORIZON.
+TIER_HORIZON = 3
+
+# Mapping from tier label to a scalar score for ranking/correlation.
+TIER_TO_SCORE = {"S": 3, "A": 2, "B": 1}
+
+# Earliest season considered by the career-validation framework. The upper
+# bound is derived from the data (currently ~2026).
+CAREER_VALIDATION_MIN_YEAR = 2000
+
+# Default output directory for career-validation artifacts.
+CAREER_VALIDATION_OUTPUT_DIR = "output/career_validation"
