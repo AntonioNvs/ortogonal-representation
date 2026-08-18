@@ -51,13 +51,23 @@ from models.pipeline_fusion import F1OrthogonalPipeline
 DEFAULT_SAGE_CHECKPOINT = "output/models/model_orthogonal.pth"
 
 
-def _load_graph_bits():
-    """Rebuild the RelBench pkey/fkey graph used at training time.
+GRAPH_META_PATH = "output/models/graph_meta.pt"
 
-    Uses ``train.build_graph`` so we get the exact same node types, edge
-    types, and ``tf_dict`` the pipeline was trained on.
+
+def _load_graph_bits():
+    """Rebuild the graph and load the training-time schema snapshot.
+
+    Rebuilding via the *current* task strips columns the checkpoint was
+    trained with (each task's ``remove_columns`` deletes the outcome fields;
+    ``results-position`` only leaves ``grid`` in results, whereas the saved
+    ``graph_meta.pt`` — captured at training time — keeps ``grid`` AND
+    ``number``, matching the ``[2, 128]`` numerical projection in the
+    checkpoint).
+
+    So we load ``graph_meta.pt`` and override the task's ``build_graph``
+    outputs with it: the graph *topology* comes from the fresh build (needed
+    for edge_index_dict), while ``node_to_col_*`` comes from the snapshot.
     """
-    # Local import: train.py is at the repo root and pulls heavy deps.
     import sys
     repo_root = Path(__file__).resolve().parents[2]
     if str(repo_root) not in sys.path:
@@ -67,6 +77,20 @@ def _load_graph_bits():
     task, _ = get_active_task()
     db = task.dataset.get_db(upto_test_timestamp=False)
     graph_data, node_to_col_names_dict, node_to_col_stats = build_graph(db)
+
+    if os.path.exists(GRAPH_META_PATH):
+        print(f"Loading training-time schema from {GRAPH_META_PATH}")
+        meta = torch.load(GRAPH_META_PATH, map_location="cpu", weights_only=False)
+        node_to_col_names_dict = meta.get(
+            "node_to_col_names_dict", node_to_col_names_dict
+        )
+        node_to_col_stats = meta.get("node_to_col_stats", node_to_col_stats)
+    else:
+        print(
+            f"[sage_top3_skill] {GRAPH_META_PATH} missing — falling back to "
+            "current task schema (may mismatch old checkpoints)."
+        )
+
     return db, graph_data, node_to_col_names_dict, node_to_col_stats, task
 
 

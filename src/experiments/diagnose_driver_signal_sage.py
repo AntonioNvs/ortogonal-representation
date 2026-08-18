@@ -72,18 +72,37 @@ def _build_teammate_pairs(db) -> pd.DataFrame:
     """Ordered (A, B) teammate pairs within (race, constructor), where A
     finished ahead of B (smaller positionOrder).
 
+    Note: uses the *raw* enriched DB (not the task DB), because the task
+    strips ``positionOrder`` and every other outcome column via
+    ``remove_columns``. The raw DB is the same one used for support scoring
+    elsewhere in the framework, so ``driverId`` / ``constructorId`` spaces
+    match the model's.
+
     Columns: [driverId_A, driverId_B, constructorId, raceId, year].
     """
-    results = db.table_dict["results"].df[
-        ["driverId", "constructorId", "raceId", "positionOrder"]
-    ].copy()
-    results = results.dropna(subset=["positionOrder"])
+    results_df = db.table_dict["results"].df
+    order_col = None
+    for candidate in ("positionOrder", "position"):
+        if candidate in results_df.columns:
+            order_col = candidate
+            break
+    if order_col is None:
+        raise RuntimeError(
+            "Neither 'positionOrder' nor 'position' found in results table — "
+            "cannot form ordered teammate pairs."
+        )
+    if order_col != "positionOrder":
+        print(f"[diag] positionOrder missing — using '{order_col}' for pair order")
+
+    results = results_df[["driverId", "constructorId", "raceId", order_col]].copy()
+    results = results.dropna(subset=[order_col])
+    results = results.rename(columns={order_col: "_order"})
     races = db.table_dict["races"].df[["raceId", "year"]]
     results = results.merge(races, on="raceId", how="left")
 
     rows = []
     for (rid, cid), grp in results.groupby(["raceId", "constructorId"]):
-        grp = grp.sort_values("positionOrder")
+        grp = grp.sort_values("_order")
         drv = grp["driverId"].astype(int).tolist()
         year = int(grp["year"].iloc[0])
         n = len(drv)
@@ -101,14 +120,30 @@ def _build_teammate_pairs(db) -> pd.DataFrame:
 
 @torch.no_grad()
 def _driver_scores(checkpoint_path: str, device: torch.device):
-    """Return ``(scores, task)`` — scalar skill score per driver via
-    aux_piloto(emb_driver). Position/positionOrder targets are negated so
-    higher = better skill, matching the "beat teammate" label direction."""
+    """Return scalar skill score per driver via ``aux_piloto(emb_driver)``.
+    Position/positionOrder targets are negated so higher = better skill,
+    matching the "beat teammate" label direction.
+
+    Uses the training-time schema snapshot (``graph_meta.pt``) whenever
+    present so the checkpoint's numerical projections load without a shape
+    mismatch (the current task may strip columns the training task kept).
+    """
     from train import build_graph, get_active_task
 
     task, _ = get_active_task()
     db = task.dataset.get_db(upto_test_timestamp=False)
     graph_data, node_col_names, node_col_stats = build_graph(db)
+
+    # Prefer the training-time schema, if we have it — the current task's
+    # remove_columns may be tighter than the one used when the checkpoint
+    # was fit (e.g. results kept 'grid' AND 'number' at train time, only
+    # 'grid' now), producing a size mismatch on numerical layers.
+    meta_path = "output/models/graph_meta.pt"
+    if os.path.exists(meta_path):
+        print(f"Loading training-time schema from {meta_path}")
+        meta = torch.load(meta_path, map_location="cpu", weights_only=False)
+        node_col_names = meta.get("node_to_col_names_dict", node_col_names)
+        node_col_stats = meta.get("node_to_col_stats", node_col_stats)
 
     num_nodes_dict = {nt: graph_data[nt].num_nodes for nt in graph_data.node_types}
 
@@ -170,10 +205,14 @@ def main():
     )
 
     print(f"Loading SAGE-GNN checkpoint: {args.checkpoint}")
-    scores, db = _driver_scores(args.checkpoint, device)
+    scores, _ = _driver_scores(args.checkpoint, device)
+
+    # Use the raw enriched DB (task strips positionOrder / other outcome cols).
+    from data.enriched_dataset import EnrichedF1Dataset
+    raw_db = EnrichedF1Dataset().get_db(upto_test_timestamp=False)
 
     print("Building teammate pairs...")
-    pairs = _build_teammate_pairs(db)
+    pairs = _build_teammate_pairs(raw_db)
     if pairs.empty:
         print("No teammate pairs found.")
         return
