@@ -199,21 +199,16 @@ class KalmanGNNPipeline(nn.Module):
         qualifying_b: torch.Tensor | None = None,
         grid_a: torch.Tensor | None = None,
         grid_b: torch.Tensor | None = None,
+        detach_context: bool = False,
     ) -> torch.Tensor:
         """Predict P(driver_A beats driver_B) for teammate pairs.
 
-        The prediction is sigma(skill_A - skill_B + context_delta), where
-        context_delta captures the qualifying/grid advantage of A over B.
-
-        Args:
-            v_drivers: (num_drivers, state_dim) -- current driver embeddings.
-            driver_a_ids: (N_pairs,) -- indices of first driver in each pair.
-            driver_b_ids: (N_pairs,) -- indices of second driver in each pair.
-            qualifying_a, qualifying_b: (N_pairs,) or None -- qualifying positions.
-            grid_a, grid_b: (N_pairs,) or None -- starting grid positions.
-
-        Returns:
-            (N_pairs,) -- logits (skill_A - skill_B + context).
+        ``detach_context=True`` blocks the BCE gradient from reaching
+        ``context_encoder`` (or the raw grid/qualifying tensors). The forward
+        value is still added to the logit, so the task remains solvable, but
+        the readout responsible for improving loss is ``skill_head`` alone.
+        Used for a warmup phase that forces the driver-skill signal to be
+        the primary discriminator.
         """
         skill = self.skill_head(v_drivers).squeeze(-1)  # (num_drivers,)
         skill_a = skill[driver_a_ids]
@@ -225,6 +220,9 @@ class KalmanGNNPipeline(nn.Module):
             context_a = torch.stack([qualifying_a, grid_a if grid_a is not None else qualifying_a], dim=-1)
             context_b = torch.stack([qualifying_b, grid_b if grid_b is not None else qualifying_b], dim=-1)
             context_delta = self.context_encoder(context_a) - self.context_encoder(context_b)
-            logit = logit + context_delta.squeeze(-1)
+            context_term = context_delta.squeeze(-1)
+            if detach_context:
+                context_term = context_term.detach()
+            logit = logit + context_term
 
         return logit

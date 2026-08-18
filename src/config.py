@@ -131,8 +131,26 @@ KALMAN_GRAD_CLIP = 1.0        # gradient norm clipping
 # Loss weights
 KALMAN_LAMBDA_PRED = 1.0      # beat-teammate BCE
 KALMAN_LAMBDA_SMOOTH = 0.1    # temporal smoothness ||v_r - v_{r-1}||²
-KALMAN_LAMBDA_CONTRAST = 0.05 # InfoNCE temporal contrast
+KALMAN_LAMBDA_CONTRAST = 0.5  # InfoNCE temporal contrast (raised 0.05->0.5:
+                              # it is the only loss that pushes gradient
+                              # through v_drivers without competing with
+                              # context_encoder for the BCE signal)
 KALMAN_LAMBDA_SKILL = 0.05    # skill forward consistency
+
+# --- Context-vs-skill decorrelation controls -------------------------------
+# During the first N epochs, the context_delta term in predict_teammate is
+# forward-value-only (detached in the backward pass). BCE gradient can only
+# improve loss by teaching skill_head to discriminate teammates, forcing
+# a real signal into skill_head instead of letting context_encoder short-
+# circuit the task. After N epochs the join re-opens and both heads train
+# jointly.
+KALMAN_CONTEXT_DETACH_EPOCHS = 2
+
+# Weight decay applied specifically to context_encoder parameters (in
+# addition to KALMAN_WEIGHT_DECAY on the rest of the model). Higher decay
+# discourages context_encoder from producing high-magnitude outputs that
+# would dominate the logit.
+KALMAN_CONTEXT_WEIGHT_DECAY = 1e-2
 
 # Contrastive loss
 KALMAN_CONTRAST_GAP_MIN = 1   # minimum race gap for positive pairs

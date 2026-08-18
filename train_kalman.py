@@ -81,6 +81,7 @@ def train_kalman(
     warmup = config["warmup_races"]
     accumulation_steps = config["accumulation_steps"]
     contrast_every = config.get("contrast_every", 5)
+    context_detach_epochs = config.get("context_detach_epochs", 0)
 
     # History tracking
     history = {
@@ -90,8 +91,9 @@ def train_kalman(
     }
 
     for epoch in range(config["epochs"]):
+        detach_context = epoch < context_detach_epochs
         print(f"\n{'=' * 60}")
-        print(f"Epoch {epoch + 1}/{config['epochs']}")
+        print(f"Epoch {epoch + 1}/{config['epochs']}  (detach_context={detach_context})")
         print(f"{'=' * 60}")
 
         model.train()
@@ -177,6 +179,7 @@ def train_kalman(
 
                 logits = model.predict_teammate(
                     v_drivers_new, pair_a, pair_b, qual_a, qual_b, grid_a, grid_b,
+                    detach_context=detach_context,
                 )
             else:
                 logits = torch.tensor([], device=device)
@@ -516,10 +519,27 @@ def main():
     )
 
     # --- Initialize optimizer ---
+    # Split params: context_encoder gets aggressive weight decay so it cannot
+    # produce logits that dominate skill_a - skill_b. Skill_head keeps the
+    # default (light) decay so it can grow to a meaningful discriminator norm.
+    context_params, other_params = [], []
+    for name, p in model.named_parameters():
+        if not p.requires_grad:
+            continue
+        if name.startswith("context_encoder"):
+            context_params.append(p)
+        else:
+            other_params.append(p)
     optimizer = optim.AdamW(
-        model.parameters(),
+        [
+            {"params": other_params, "weight_decay": cfg.KALMAN_WEIGHT_DECAY},
+            {"params": context_params, "weight_decay": cfg.KALMAN_CONTEXT_WEIGHT_DECAY},
+        ],
         lr=lr,
-        weight_decay=cfg.KALMAN_WEIGHT_DECAY,
+    )
+    print(
+        f"Optimizer: {len(other_params)} main params (wd={cfg.KALMAN_WEIGHT_DECAY}), "
+        f"{len(context_params)} context_encoder params (wd={cfg.KALMAN_CONTEXT_WEIGHT_DECAY})"
     )
 
     # --- Training config ---
@@ -529,6 +549,7 @@ def main():
         "accumulation_steps": cfg.KALMAN_ACCUMULATION_STEPS,
         "grad_clip": cfg.KALMAN_GRAD_CLIP,
         "contrast_every": cfg.KALMAN_CONTRAST_EVERY,
+        "context_detach_epochs": cfg.KALMAN_CONTEXT_DETACH_EPOCHS,
     }
 
     print(f"\nTraining config: {train_config}")
@@ -536,6 +557,7 @@ def main():
           f"smooth={cfg.KALMAN_LAMBDA_SMOOTH}, "
           f"contrast={cfg.KALMAN_LAMBDA_CONTRAST}, "
           f"skill={cfg.KALMAN_LAMBDA_SKILL}")
+    print(f"Context-detach warmup: first {cfg.KALMAN_CONTEXT_DETACH_EPOCHS} epoch(s)")
 
     # --- Train ---
     print(f"\n{'=' * 60}")
