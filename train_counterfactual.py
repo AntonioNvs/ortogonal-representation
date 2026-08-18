@@ -76,8 +76,13 @@ def train_counterfactual(
     val_mask = torch.tensor(split_masks["val"], dtype=torch.bool, device=device)
     test_mask = torch.tensor(split_masks["test"], dtype=torch.bool, device=device)
 
-    # Constant baseline: predict the training mean everywhere.
+    # Constant baseline: predict the training mean everywhere. Its MAE is the
+    # mean absolute deviation, the honest reference for "did the model beat a
+    # trivial predictor". (R^2 is already relative to this baseline: a constant
+    # predictor has R^2 = 0, so negative R^2 = worse than constant.)
     baseline = y[train_mask].mean().item()
+    baseline_mae_val = (y[val_mask] - baseline).abs().mean().item()
+    baseline_mae_test = (y[test_mask] - baseline).abs().mean().item()
 
     history = {"train_loss": [], "val_mae": [], "val_r2": []}
 
@@ -110,7 +115,7 @@ def train_counterfactual(
         print(
             f"Epoch {epoch + 1}/{epochs} | "
             f"train_loss={loss.item():.4f} | "
-            f"val_mae={val_mae:.4f} (baseline_mae={baseline:.4f}) | "
+            f"val_mae={val_mae:.4f} (const_baseline={baseline_mae_val:.4f}) | "
             f"val_r2={val_r2:+.3f}"
         )
 
@@ -134,7 +139,7 @@ def train_counterfactual(
             "num_driver_season": model.driver_emb.num_embeddings,
             "num_constructor_season": model.constructor_emb.num_embeddings,
         },
-        "baseline_mae": baseline,
+        "const_baseline_mae_test": baseline_mae_test,
         "test_mae": test_mae,
         "test_r2": test_r2,
         "history": history,
@@ -142,7 +147,7 @@ def train_counterfactual(
     with open(os.path.join(output_dir, "training_results.json"), "w") as f:
         json.dump(results, f, indent=4)
 
-    print(f"\nRESULTS: test_mae={test_mae:.4f} (baseline {baseline:.4f}) | test_r2={test_r2:+.3f}")
+    print(f"\nRESULTS: test_mae={test_mae:.4f} (const_baseline={baseline_mae_test:.4f}) | test_r2={test_r2:+.3f}")
     print(f"Model saved to: {model_path}")
     return results
 
