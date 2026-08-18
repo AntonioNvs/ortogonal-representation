@@ -32,8 +32,6 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from sklearn.metrics import roc_auc_score, accuracy_score
-
 import config as cfg
 from validation.counterfactual_skill import (
     DEFAULT_CHECKPOINT,
@@ -103,12 +101,13 @@ def score_pairs(model, x_dict, pairs: pd.DataFrame, device: torch.device) -> np.
     return np.asarray(out, dtype=float)
 
 
-def _cluster_bootstrap_auroc(
-    scores: np.ndarray, labels: np.ndarray, driver_ids: np.ndarray,
+def _cluster_bootstrap_accuracy(
+    scores: np.ndarray, driver_ids: np.ndarray,
     n_bootstrap: int = 2000, seed: int = 0,
 ) -> tuple[float, float]:
-    """AUROC CI resampling drivers (not pairs), so one driver's many pairs
-    count as one unit of information."""
+    """95% CI on pairwise accuracy (= mean(scores > 0)) resampling *drivers*
+    (not pairs), so one driver's many teammate pairs count as one unit of
+    information rather than many independent observations."""
     rng = np.random.default_rng(seed)
     uniq = np.unique(driver_ids)
     idx_by_drv = {d: np.where(driver_ids == d)[0] for d in uniq}
@@ -116,14 +115,15 @@ def _cluster_bootstrap_auroc(
     for b in range(n_bootstrap):
         picks = rng.choice(uniq, size=uniq.size, replace=True)
         idx = np.concatenate([idx_by_drv[d] for d in picks])
-        if len(np.unique(labels[idx])) < 2:
-            reps[b] = np.nan
-            continue
-        reps[b] = roc_auc_score(labels[idx], scores[idx])
-    reps = reps[~np.isnan(reps)]
-    if reps.size == 0:
-        return float("nan"), float("nan")
+        reps[b] = (scores[idx] > 0).mean()
     return float(np.quantile(reps, 0.025)), float(np.quantile(reps, 0.975))
+
+
+def _binomial_p_two_sided(n_correct: int, n: int) -> float:
+    """Two-sided binomial test of accuracy == 0.5, via scipy's exact test."""
+    from scipy.stats import binomtest
+
+    return float(binomtest(n_correct, n, p=0.5, alternative="two-sided").pvalue)
 
 
 def main():
@@ -146,7 +146,6 @@ def main():
         return
 
     scores = score_pairs(model, x_dict, pairs, device)
-    labels = np.ones(len(pairs), dtype=int)  # A always finished ahead by construction
     years = pairs["year"].to_numpy()
 
     # Split masks over the pairs by year.
@@ -160,38 +159,42 @@ def main():
     print("DRIVER-SIGNAL DIAGNOSTIC — teammate discrimination")
     print("=" * 60)
     print(f"n_pairs={len(pairs)}  (each pair: same team, same race, same car)")
+    print("metric: pairwise accuracy = P(driver embedding alone ranks the")
+    print("        teammate who finished ahead as ahead). chance = 0.50\n")
 
     for split_name, yrs in split_years.items():
         m = np.isin(years, yrs)
-        if m.sum() == 0 or len(np.unique(labels[m])) < 2:
-            print(f"\n[{split_name}] n_pairs={m.sum()} — insufficient, skipped")
+        n = int(m.sum())
+        if n < 20:
+            print(f"[{split_name}] n_pairs={n} — too few, skipped")
             continue
-        auroc = roc_auc_score(labels[m], scores[m])
-        # Accuracy at the natural 0-threshold: predicted A ahead iff score > 0.
-        acc = accuracy_score(labels[m], (scores[m] > 0).astype(int))
+        acc = float((scores[m] > 0).mean())
+        n_correct = int((scores[m] > 0).sum())
+        p = _binomial_p_two_sided(n_correct, n)
         print(
-            f"\n[{split_name}] n_pairs={m.sum()}  AUROC={auroc:.4f}  "
-            f"accuracy={acc:.4f}  (chance = 0.50)"
+            f"[{split_name}] n_pairs={n}  accuracy={acc:.4f}  "
+            f"(chance=0.50, binomial p={p:.4g})"
         )
 
-    # Held-out (val+test) cluster-bootstrap CI by driver.
+    # Held-out (val+test): driver-cluster bootstrap CI on accuracy.
     held = np.isin(years, cfg.VAL_YEARS + cfg.TEST_YEARS)
-    if held.sum() >= 10 and len(np.unique(labels[held])) >= 2:
-        lo, hi = _cluster_bootstrap_auroc(
-            scores[held], labels[held], pairs["driverA_id"].to_numpy()[held]
+    n_held = int(held.sum())
+    if n_held >= 20:
+        lo, hi = _cluster_bootstrap_accuracy(
+            scores[held], pairs["driverA_id"].to_numpy()[held]
         )
-        auroc_held = roc_auc_score(labels[held], scores[held])
+        acc_held = float((scores[held] > 0).mean())
         print(
-            f"\n[val+test] AUROC={auroc_held:.4f}  driver-cluster 95% CI "
-            f"[{lo:.4f}, {hi:.4f}]"
+            f"\n[val+test] n_pairs={n_held}  accuracy={acc_held:.4f}  "
+            f"driver-cluster 95% CI [{lo:.4f}, {hi:.4f}]"
         )
 
     print("\nInterpretation:")
-    print("  AUROC ~= 0.50  -> driver_season embedding is dead (same disease as")
-    print("                     the Kalman skill_head): the model predicts the car,")
-    print("                     not the driver. The swap is averaging noise.")
-    print("  AUROC >  0.55  -> there IS driver signal; the problem is elsewhere")
-    print("                     (swap aggregation / support filtering).")
+    print("  accuracy ~= 0.50 (CI covers 0.5)  -> driver_season embedding is dead")
+    print("      (same disease as the Kalman skill_head): the model predicts the")
+    print("      car, not the driver. The swap is averaging noise.")
+    print("  accuracy >  0.55 (CI excludes 0.5) -> there IS driver signal; the")
+    print("      problem is elsewhere (swap aggregation / support filtering).")
 
 
 if __name__ == "__main__":
