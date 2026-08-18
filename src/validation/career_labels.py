@@ -48,12 +48,20 @@ def forward_tier_outcome(
     team_tier: pd.DataFrame,
     horizon: int = 3,
     tier_to_score: dict | None = None,
+    require_full_horizon: bool = False,
 ) -> pd.DataFrame:
     """Forward career-outcome score for each (driver, season T).
 
     ``outcome_score`` is the mean tier-scalar of the driver's teams in
     T+1 .. T+horizon (only observed seasons count). Rows with no observed
     forward season are dropped.
+
+    ``require_full_horizon`` (default False for back-compat): if True, only
+    keep rows where all ``horizon`` forward seasons are observed. This is the
+    principled choice — otherwise a driver's last observable season (n=1)
+    weighs the same as a full-horizon career point (n=horizon), and drivers
+    who retire after T have their last positive evidence dropped. Recommend
+    enabling for the paper's headline numbers.
 
     Returns columns: [driverId, driverRef, season_T, outcome_score, n_observed].
     """
@@ -100,4 +108,7 @@ def forward_tier_outcome(
         return pd.DataFrame(
             columns=["driverId", "driverRef", "season_T", "outcome_score", "n_observed"]
         )
-    return pd.DataFrame(rows)
+    out = pd.DataFrame(rows)
+    if require_full_horizon:
+        out = out[out["n_observed"] >= horizon].reset_index(drop=True)
+    return out

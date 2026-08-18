@@ -126,9 +126,23 @@ def load_kalman_skill(
 
     state = torch.load(checkpoint_path, map_location=device, weights_only=False)
     missing, unexpected = model.load_state_dict(state, strict=False)
+
+    # The whole framework correlates ``skill_head(v_drivers)`` against forward
+    # career outcomes. If the readout is missing from the checkpoint, the
+    # ``skill_score`` returned here is the *randomly initialised* head — the
+    # correlation would be pure noise and silently plausible. Fail loudly.
+    critical = {"skill_head.weight"}
+    critical_missing = critical.intersection(missing)
+    if critical_missing:
+        raise RuntimeError(
+            f"[kalman_skill] refusing to score with an untrained readout: "
+            f"missing critical parameters {sorted(critical_missing)} in "
+            f"{checkpoint_path}. Retrain or point --checkpoint at a run whose "
+            f"state_dict contains the skill head."
+        )
     if missing or unexpected:
         print(
-            f"[kalman_skill] load_state_dict mismatch: "
+            f"[kalman_skill] load_state_dict mismatch (non-critical): "
             f"missing={missing}, unexpected={unexpected}"
         )
 
