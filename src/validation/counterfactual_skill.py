@@ -29,14 +29,17 @@ from models.hetero_race_predictor import HeteroRacePredictor
 DEFAULT_CHECKPOINT = "output/counterfactual/hetero_race_predictor.pth"
 
 
-def load_counterfactual_swap_skill(
+def load_counterfactual_model(
     checkpoint_path: str = DEFAULT_CHECKPOINT,
     device=None,
-) -> pd.DataFrame:
-    """Replay the trained predictor and return counterfactual skill scores.
+) -> tuple[HeteroRacePredictor, object, dict[str, torch.Tensor], torch.device]:
+    """Load the trained predictor, the temporal graph, and the refined
+    node-embedding dict, ready for inference.
 
-    Returns columns: ``[driverId, season, skill_score, support_score,
-    support_bucket]``.
+    Returns ``(model, graph, x_dict, device)``. ``x_dict`` is the output of
+    ``model(data, static)`` (already on ``device``). Reused by the swap
+    scorer and the driver-signal diagnostics so the checkpoint-loading
+    logic lives in one place.
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -85,6 +88,19 @@ def load_counterfactual_swap_skill(
     with torch.no_grad():
         x_dict = model(data, static)
 
+    return model, graph, x_dict, device
+
+
+def load_counterfactual_swap_skill(
+    checkpoint_path: str = DEFAULT_CHECKPOINT,
+    device=None,
+) -> pd.DataFrame:
+    """Replay the trained predictor and return counterfactual skill scores.
+
+    Returns columns: ``[driverId, season, skill_score, support_score,
+    support_bucket]``.
+    """
+    model, graph, x_dict, device = load_counterfactual_model(checkpoint_path, device)
     skill = compute_counterfactual_skill(model, graph, x_dict, device)
     support = compute_support(graph)
 
