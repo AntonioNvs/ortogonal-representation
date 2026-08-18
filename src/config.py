@@ -110,6 +110,18 @@ TEMPORAL_CURVE_MODEL = "high"  # lambda_orthogonal = 1.0
 DEFAULT_GPU_ID = 7
 
 # ---------------------------------------------------------------------------
+# Bradley-Terry driver-vs-car decomposition (leak-free walk-forward)
+# ---------------------------------------------------------------------------
+
+# Learning rate for the walk-forward fit. Bradley-Terry is a convex GLM and
+# converges fast with a larger step than the GNN.
+BT_LR = 0.1
+
+# Number of optimizer steps per expanding-window season. The model warm-starts
+# from the previous season, so a handful of steps suffice per year.
+BT_EPOCHS_PER_STEP = 30
+
+# ---------------------------------------------------------------------------
 # Career validation framework (deterministic team tiers + forward outcome)
 # ---------------------------------------------------------------------------
 

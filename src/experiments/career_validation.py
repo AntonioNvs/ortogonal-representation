@@ -66,6 +66,8 @@ def load_skill(skill_source: str, device, *, db=None, team_tier=None) -> pd.Data
         baseline for the decomposition thesis). Requires ``team_tier``.
       * ``counterfactual_swap``: counterfactual driver-in-car swap skill
         (this branch's primary method).
+      * ``bradley_terry``: walk-forward Bradley-Terry theta (driver skill
+        isolated from car) — the leak-free driver-vs-car decomposition.
     """
     if skill_source == "kalman":
         from validation.kalman_skill import load_kalman_skill
@@ -85,6 +87,10 @@ def load_skill(skill_source: str, device, *, db=None, team_tier=None) -> pd.Data
         from validation.counterfactual_skill import load_counterfactual_swap_skill
 
         return load_counterfactual_swap_skill(device=device)
+    if skill_source == "bradley_terry":
+        from validation.bradley_terry_skill import load_bradley_terry_skill
+
+        return load_bradley_terry_skill(device=device)
     raise ValueError(
         f"Unknown --skill-source: {skill_source!r} "
         f"(supported: kalman, points_share, constructor_tier)"
