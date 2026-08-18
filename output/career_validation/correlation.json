@@ -1,0 +1,61 @@
+{
+  "generated_at": "2026-08-18T02:36:54.629324+00:00",
+  "skill_source": "bradley_terry",
+  "window": 3,
+  "horizon": 3,
+  "min_year": 2000,
+  "lineage": false,
+  "tier_s_frac": 0.3,
+  "tier_a_frac": 0.35,
+  "n_rows": 287,
+  "n_drivers": 46,
+  "spearman_rho": 0.405620163002056,
+  "spearman_p": 8.589361361860483e-13,
+  "kendall_tau": 0.30038695800847315,
+  "kendall_p": 2.5004797589650082e-12,
+  "cluster_bootstrap_spearman": {
+    "rho": 0.405620163002056,
+    "ci_low": 0.23408539472042725,
+    "ci_high": 0.5571425174778271,
+    "boot_mean": 0.3989114035943273,
+    "boot_std": 0.08261950993795716,
+    "n_clusters": 46,
+    "n_rows": 287,
+    "n_valid_replicates": 5000
+  },
+  "fisher_z_pooled": {
+    "rho_pooled": 0.46756167483713096,
+    "ci_low": 0.35685458254871716,
+    "ci_high": 0.5653172614197658,
+    "z_bar": 0.5069452541900011,
+    "z_se": 0.06819943394704735,
+    "n_seasons": 24,
+    "n_rows_total": 287
+  },
+  "permutation_within_season": {
+    "rho_obs": 0.405620163002056,
+    "p_value": 4.999750012499375e-05,
+    "n_perm_valid": 20000
+  },
+  "partial_spearman_given_tier_at_T": {
+    "partial_rho": 0.21749528690345,
+    "ci_low": 0.07011990967119393,
+    "ci_high": 0.3652275947202373,
+    "n_rows": 287,
+    "n_clusters": 46
+  },
+  "moved_up_auroc": {
+    "auroc": 0.4311949685534591,
+    "ci_low": 0.31827034435632195,
+    "ci_high": 0.5519290326510722,
+    "n_rows": 287,
+    "n_pos": 75
+  },
+  "naive_row_bootstrap": {
+    "rho": 0.405620163002056,
+    "boot_mean": 0.40311181554722114,
+    "ci_low": 0.2991894755009991,
+    "ci_high": 0.50149239520642,
+    "n": 287
+  }
+}
