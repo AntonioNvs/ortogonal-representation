@@ -16,5 +16,5 @@ data/raw/jolpica/*
 
 # Mantém o arquivo marcador .gitkeep para preservar as pastas
 !data/raw/f1db/.gitkeep
-!data/raw/jiolpica/.gitkeep
+!data/raw/jolpica/.gitkeep
 
