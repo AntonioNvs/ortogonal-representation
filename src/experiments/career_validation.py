@@ -47,6 +47,10 @@ from validation.team_lineage import lineage_id_by_constructor
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
 
+# Optional CLI override for the SAGE-GNN checkpoint path (used by --sage-checkpoint).
+_SAGE_CHECKPOINT_OVERRIDE: str | None = None
+
+
 def load_raw_db() -> object:
     """Raw enriched DB (full 2000-2026, no task, no ``upto`` truncation).
 
@@ -91,9 +95,20 @@ def load_skill(skill_source: str, device, *, db=None, team_tier=None) -> pd.Data
         from validation.bradley_terry_skill import load_bradley_terry_skill
 
         return load_bradley_terry_skill(device=device)
+    if skill_source == "sage_top3":
+        from validation.sage_top3_skill import (
+            DEFAULT_SAGE_CHECKPOINT,
+            load_sage_top3_skill,
+        )
+
+        return load_sage_top3_skill(
+            checkpoint_path=_SAGE_CHECKPOINT_OVERRIDE or DEFAULT_SAGE_CHECKPOINT,
+            device=device,
+        )
     raise ValueError(
         f"Unknown --skill-source: {skill_source!r} "
-        f"(supported: kalman, points_share, constructor_tier)"
+        f"(supported: kalman, points_share, constructor_tier, "
+        f"counterfactual_swap, bradley_terry, sage_top3)"
     )
 
 
@@ -418,7 +433,13 @@ def main():
     parser.add_argument("--lineage", action="store_true", help="Make team tiers lineage-aware (rebrands carry their rank).")
     parser.add_argument("--require-full-horizon", action="store_true",
         help="Only keep rows with all forward seasons observed (recommended for the paper's headline numbers).")
+    parser.add_argument("--sage-checkpoint", type=str, default=None,
+        help="SAGE-GNN checkpoint path (only used when --skill-source sage_top3). "
+             "Defaults to output/models/model_orthogonal.pth.")
     args = parser.parse_args()
+
+    global _SAGE_CHECKPOINT_OVERRIDE
+    _SAGE_CHECKPOINT_OVERRIDE = args.sage_checkpoint
 
     run_career_validation(
         skill_source=args.skill_source,
