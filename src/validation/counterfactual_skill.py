@@ -21,7 +21,7 @@ import pandas as pd
 import torch
 
 from counterfactual.support import compute_support
-from counterfactual.swap import compute_counterfactual_skill
+from counterfactual.swap import compute_driver_skill
 from data.enriched_dataset import EnrichedF1Dataset
 from data.temporal_graph import build_temporal_graph
 from models.hetero_race_predictor import HeteroRacePredictor
@@ -101,7 +101,7 @@ def load_counterfactual_swap_skill(
     support_bucket]``.
     """
     model, graph, x_dict, device = load_counterfactual_model(checkpoint_path, device)
-    skill = compute_counterfactual_skill(model, graph, x_dict, device)
+    skill = compute_driver_skill(model, graph, x_dict, device)
     support = compute_support(graph)
 
     merged = skill.merge(support, on=["driverId", "season"], how="left")

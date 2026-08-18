@@ -33,44 +33,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config as cfg
+from counterfactual.teammates import build_teammate_pairs
 from validation.counterfactual_skill import (
     DEFAULT_CHECKPOINT,
     load_counterfactual_model,
 )
-
-
-def build_teammate_pairs(raced_in: pd.DataFrame) -> pd.DataFrame:
-    """Form (A, B) pairs of teammates within the same (race, team).
-
-    Returns a DataFrame with one row per ordered pair where A finished ahead
-    of B:
-        [race, constructor_season, circuit, driver_A, driver_B, driverA_id,
-         driverB_id, year]
-    """
-    rows = []
-    for (race, cs), grp in raced_in.groupby(["race", "constructor_season"]):
-        grp = grp.sort_values("positionOrder")
-        drv = grp["driver_season"].tolist()
-        drv_id = grp["driverId"].tolist()
-        circuit = int(grp["circuit"].iloc[0])
-        year = int(grp["year"].iloc[0])
-        n = len(drv)
-        for i in range(n):
-            for j in range(i + 1, n):
-                # i finished ahead of j (lower positionOrder).
-                rows.append(
-                    {
-                        "race": int(race),
-                        "constructor_season": int(cs),
-                        "circuit": circuit,
-                        "driver_A": int(drv[i]),
-                        "driver_B": int(drv[j]),
-                        "driverA_id": int(drv_id[i]),
-                        "driverB_id": int(drv_id[j]),
-                        "year": year,
-                    }
-                )
-    return pd.DataFrame(rows)
 
 
 @torch.no_grad()

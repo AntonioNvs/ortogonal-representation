@@ -1,23 +1,22 @@
-"""Counterfactual driver-in-car swap at inference time.
+"""Driver skill readout for the beat-teammate objective.
 
-Given a trained :class:`HeteroRacePredictor` and its refined node embeddings,
-the scalar skill of a driver in a season is the *expected* race outcome in an
-**average car**, marginalising over the constructors actually active that
-season and over the season's races:
+Once the model is trained on beat-teammate BCE, ``driver_head(emb_driver)``
+is *already* car-independent: the objective forced the driver embedding to
+discriminate teammates while the car was held identical, so the readout is the
+driver's intrinsic skill by construction. No further counterfactual
+intervention is needed — the "swap" is implicit in the training signal.
 
-    skill(X, T) = 1 - mean_{Y in constructors(T), r in races(T)}
-                        f(emb(X@T), emb(Y@T), emb(race_r), emb(circuit_r))
+This module exposes that readout as the season-level skill score:
 
-The only intervention is substituting the ``constructor_season`` node in the
-readout — the driver, race, and circuit embeddings are untouched. This is what
-separates "driver skill" from "the car X happened to drive". ``1 - position``
-maps "finishes first" to a higher score, so higher = better (matching the
-career-validation framework's convention).
+    skill(X, T) = driver_head(emb(driver_season=X@T))
+
+matching the career-validation framework's contract. The position-regression
+``readout_from`` path is retained in the model (for the marginal-attribution
+branch) but is not used here.
 """
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import torch
 
@@ -25,7 +24,7 @@ from data.temporal_graph import TemporalGraph
 from models.hetero_race_predictor import HeteroRacePredictor
 
 
-def compute_counterfactual_skill(
+def compute_driver_skill(
     model: HeteroRacePredictor,
     graph: TemporalGraph,
     x_dict: dict[str, torch.Tensor],
@@ -33,55 +32,26 @@ def compute_counterfactual_skill(
 ) -> pd.DataFrame:
     """Return ``[driverId, season, skill_score]`` for every driver-season node.
 
-    ``x_dict`` is the *refined* node embedding dict (output of
-    ``model(data, static)``), already on ``device``.
+    ``skill_score = driver_head(emb(driver_season))`` — car-independent.
+    Higher = better (the head is trained to be higher for the teammate that
+    finishes ahead).
     """
-    fr = graph.raced_in
-    race_to_circuit = fr[["race", "circuit"]].drop_duplicates().set_index("race")["circuit"]
+    ds = graph.driver_season  # [node_idx, driverId, season]
+    node_idx = torch.tensor(ds["node_idx"].to_numpy(), dtype=torch.long, device=device)
 
-    ds = graph.driver_season.set_index("node_idx")
-
-    rows = []
     with torch.no_grad():
-        for season, grp in fr.groupby("year", sort=True):
-            drivers_T = np.sort(grp["driver_season"].unique())
-            constructors_T = np.sort(grp["constructor_season"].unique())
-            races_T = np.sort(grp["race"].unique())
+        skill = model.driver_skill(x_dict, node_idx).cpu().numpy()
 
-            D, C, R = len(drivers_T), len(constructors_T), len(races_T)
-            if D == 0 or C == 0 or R == 0:
-                continue
-
-            # Cross product drivers x constructors x races, in row-major order
-            # (driver, constructor, race) so reshape(D, C*R) groups per driver.
-            d_idx = np.repeat(drivers_T, C * R)
-            c_idx = np.tile(np.repeat(constructors_T, R), D)
-            r_idx = np.tile(races_T, D * C)
-            circ_idx = race_to_circuit.loc[r_idx].to_numpy()
-
-            logits = model.readout_from(
-                x_dict,
-                torch.tensor(d_idx, dtype=torch.long, device=device),
-                torch.tensor(c_idx, dtype=torch.long, device=device),
-                torch.tensor(r_idx, dtype=torch.long, device=device),
-                torch.tensor(circ_idx, dtype=torch.long, device=device),
-            ).reshape(D, C * R)
-
-            mean_pos = logits.mean(dim=1)  # per driver: average over (car, race)
-            skill = 1.0 - mean_pos
-
-            for i, d in enumerate(drivers_T):
-                driver_id = int(ds.loc[d, "driverId"])
-                rows.append(
-                    {
-                        "driverId": driver_id,
-                        "season": int(season),
-                        "skill_score": float(skill[i].item()),
-                    }
-                )
-
-    return (
-        pd.DataFrame(rows)
-        .sort_values(["driverId", "season"])
-        .reset_index(drop=True)
+    out = pd.DataFrame(
+        {
+            "driverId": ds["driverId"].to_numpy(),
+            "season": ds["season"].to_numpy(),
+            "skill_score": skill,
+        }
     )
+    return out.sort_values(["driverId", "season"]).reset_index(drop=True)
+
+
+# Backwards-compatible alias: earlier callers used this name for the swap
+# aggregation. It now resolves to the direct driver-skill readout.
+compute_counterfactual_skill = compute_driver_skill

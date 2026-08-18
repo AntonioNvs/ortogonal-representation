@@ -93,8 +93,20 @@ class HeteroRacePredictor(nn.Module):
         )
 
         # Edge readout: [driver, constructor, race, circuit] -> scalar.
+        # Used by the position-regression objective (marginal-attribution
+        # branch). NOT used by the beat-teammate objective.
         self.readout = nn.Sequential(
             nn.Linear(4 * state_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1),
+        )
+
+        # Driver-only skill head: state_dim -> 1. Depends on NOTHING but the
+        # driver embedding, so the beat-teammate loss cannot be satisfied by
+        # the car, race, or circuit — the gradient is forced into the driver
+        # embedding. This is the counterfactual-swap objective's readout.
+        self.driver_head = nn.Sequential(
+            nn.Linear(state_dim, 64),
             nn.ReLU(),
             nn.Linear(64, 1),
         )
@@ -146,6 +158,10 @@ class HeteroRacePredictor(nn.Module):
             dim=-1,
         )
         return self.readout(h).squeeze(-1)
+
+    def driver_skill(self, x_dict: dict[str, torch.Tensor], driver_idx: torch.Tensor) -> torch.Tensor:
+        """Scalar skill from the driver embedding alone (car-independent)."""
+        return self.driver_head(x_dict["driver_season"][driver_idx]).squeeze(-1)
 
     def forward(self, data, static: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Convenience: build features, run GNN, return refined ``x_dict``."""

@@ -1,18 +1,14 @@
 """Training loop for the temporal meta-node F1 graph predictor.
 
-Trains :class:`HeteroRacePredictor` to predict ``position_norm`` on each
-``raced_in`` edge from the four participating node embeddings (driver,
-constructor, race, circuit). The graph is small enough that we train in a
-single full-batch forward pass per epoch — no mini-batching, no gradient
-accumulation.
+Trains :class:`HeteroRacePredictor` on the **beat-teammate** objective: for
+each (race, team) pair, predict which of the two teammates finished ahead
+using *only* the driver embeddings. The car, race, and circuit are identical
+for both teammates, so the model cannot solve the task from the car — the
+gradient is forced into the driver embedding, isolating driver skill from car.
 
-Splits are by year (from ``cfg.TRAIN_YEARS`` / ``VAL_YEARS`` / ``TEST_YEARS``).
-The graph is built once over the full window and message passing runs over the
-whole graph; the loss is masked to the train-year edges only. Directional
-``same_driver`` / ``same_constructor`` edges (T -> T+1) keep cross-season flow
-forward-in-time, so a driver's 2020 embedding never sees their 2024 results.
-(Static ``circuit`` nodes aggregate races across all years — a mild transductive
-leak, acceptable for v1 and noted in the design doc.)
+This replaces the earlier position-regression objective, whose diagnostic
+(diagnose_driver_signal) showed the driver embedding was dead: pairwise
+accuracy ~= 0.46 on held-out seasons (chance 0.5).
 
 Usage:
     python -m train_counterfactual --device cuda:7
@@ -33,6 +29,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 import config as cfg
+from counterfactual.teammates import build_teammate_pairs
 from data.enriched_dataset import EnrichedF1Dataset
 from data.temporal_graph import build_temporal_graph
 from models.hetero_race_predictor import HeteroRacePredictor
@@ -42,22 +39,11 @@ def _to_tensor(arr, dtype, device):
     return torch.tensor(np.asarray(arr), dtype=dtype, device=device)
 
 
-def _r2(y_true: torch.Tensor, y_pred: torch.Tensor) -> float:
-    y_true = y_true.detach()
-    y_pred = y_pred.detach()
-    ss_res = ((y_true - y_pred) ** 2).sum()
-    ss_tot = ((y_true - y_true.mean()) ** 2).sum()
-    if ss_tot == 0:
-        return 0.0
-    return float(1.0 - ss_res / ss_tot)
-
-
 def train_counterfactual(
     model: HeteroRacePredictor,
     data,
     static: dict[str, torch.Tensor],
     raced_in: pd.DataFrame,
-    split_masks: dict[str, np.ndarray],
     epochs: int,
     lr: float,
     device: torch.device,
@@ -65,67 +51,72 @@ def train_counterfactual(
 ):
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
 
-    # Node index tensors for the readout, in raced_in row order.
-    driver_idx = _to_tensor(raced_in["driver_season"], torch.long, device)
-    constructor_idx = _to_tensor(raced_in["constructor_season"], torch.long, device)
-    race_idx = _to_tensor(raced_in["race"], torch.long, device)
-    circuit_idx = _to_tensor(raced_in["circuit"], torch.long, device)
-    y = _to_tensor(raced_in["position_norm"], torch.float32, device)
+    # Build teammate pairs (A finished ahead of B) and split by year.
+    pairs = build_teammate_pairs(raced_in)
+    pair_year = pairs["year"].to_numpy()
 
-    train_mask = torch.tensor(split_masks["train"], dtype=torch.bool, device=device)
-    val_mask = torch.tensor(split_masks["val"], dtype=torch.bool, device=device)
-    test_mask = torch.tensor(split_masks["test"], dtype=torch.bool, device=device)
+    driver_A = _to_tensor(pairs["driver_A"], torch.long, device)
+    driver_B = _to_tensor(pairs["driver_B"], torch.long, device)
 
-    # Constant baseline: predict the training mean everywhere. Its MAE is the
-    # mean absolute deviation, the honest reference for "did the model beat a
-    # trivial predictor". (R^2 is already relative to this baseline: a constant
-    # predictor has R^2 = 0, so negative R^2 = worse than constant.)
-    baseline = y[train_mask].mean().item()
-    baseline_mae_val = (y[val_mask] - baseline).abs().mean().item()
-    baseline_mae_test = (y[test_mask] - baseline).abs().mean().item()
+    train_mask = torch.tensor(
+        np.isin(pair_year, cfg.TRAIN_YEARS), dtype=torch.bool, device=device
+    )
+    val_mask = torch.tensor(
+        np.isin(pair_year, cfg.VAL_YEARS), dtype=torch.bool, device=device
+    )
+    test_mask = torch.tensor(
+        np.isin(pair_year, cfg.TEST_YEARS), dtype=torch.bool, device=device
+    )
+    print(
+        f"  teammate pairs: train={int(train_mask.sum())}, "
+        f"val={int(val_mask.sum())}, test={int(test_mask.sum())}"
+    )
 
-    history = {"train_loss": [], "val_mae": [], "val_r2": []}
+    # Label is always 1: A finished ahead of B by construction.
+    labels = torch.ones(len(pairs), device=device)
+
+    history = {"train_loss": [], "val_acc": []}
 
     for epoch in range(epochs):
         model.train()
         x_dict = model(data, static)
-        logits = model.readout_from(
-            x_dict, driver_idx, constructor_idx, race_idx, circuit_idx
+        skill_A = model.driver_skill(x_dict, driver_A)
+        skill_B = model.driver_skill(x_dict, driver_B)
+        logits = skill_A - skill_B
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(
+            logits[train_mask], labels[train_mask]
         )
-        loss = torch.nn.functional.mse_loss(logits[train_mask], y[train_mask])
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # Validation
+        # Validation: pairwise accuracy (chance = 0.5).
         model.eval()
         with torch.no_grad():
             x_dict = model(data, static)
-            logits = model.readout_from(
-                x_dict, driver_idx, constructor_idx, race_idx, circuit_idx
-            )
-            val_mae = torch.nn.functional.l1_loss(logits[val_mask], y[val_mask]).item()
-            val_r2 = _r2(y[val_mask], logits[val_mask])
+            skill_A = model.driver_skill(x_dict, driver_A)
+            skill_B = model.driver_skill(x_dict, driver_B)
+            logits = skill_A - skill_B
+            val_acc = (logits[val_mask] > 0).float().mean().item()
 
         history["train_loss"].append(float(loss.item()))
-        history["val_mae"].append(val_mae)
-        history["val_r2"].append(val_r2)
+        history["val_acc"].append(val_acc)
 
         print(
             f"Epoch {epoch + 1}/{epochs} | "
             f"train_loss={loss.item():.4f} | "
-            f"val_mae={val_mae:.4f} (const_baseline={baseline_mae_val:.4f}) | "
-            f"val_r2={val_r2:+.3f}"
+            f"val_acc={val_acc:.4f} (chance=0.50)"
         )
 
     # Final test metrics
     model.eval()
     with torch.no_grad():
         x_dict = model(data, static)
-        logits = model.readout_from(x_dict, driver_idx, constructor_idx, race_idx, circuit_idx)
-        test_mae = torch.nn.functional.l1_loss(logits[test_mask], y[test_mask]).item()
-        test_r2 = _r2(y[test_mask], logits[test_mask])
+        skill_A = model.driver_skill(x_dict, driver_A)
+        skill_B = model.driver_skill(x_dict, driver_B)
+        logits = skill_A - skill_B
+        test_acc = (logits[test_mask] > 0).float().mean().item()
 
     os.makedirs(output_dir, exist_ok=True)
     model_path = os.path.join(output_dir, "hetero_race_predictor.pth")
@@ -139,15 +130,14 @@ def train_counterfactual(
             "num_driver_season": model.driver_emb.num_embeddings,
             "num_constructor_season": model.constructor_emb.num_embeddings,
         },
-        "const_baseline_mae_test": baseline_mae_test,
-        "test_mae": test_mae,
-        "test_r2": test_r2,
+        "objective": "beat_teammate",
+        "test_acc": test_acc,
         "history": history,
     }
     with open(os.path.join(output_dir, "training_results.json"), "w") as f:
         json.dump(results, f, indent=4)
 
-    print(f"\nRESULTS: test_mae={test_mae:.4f} (const_baseline={baseline_mae_test:.4f}) | test_r2={test_r2:+.3f}")
+    print(f"\nRESULTS: test_acc={test_acc:.4f} (chance=0.50)")
     print(f"Model saved to: {model_path}")
     return results
 
@@ -186,17 +176,6 @@ def main():
         f"raced_in={len(graph.raced_in)}"
     )
 
-    # Year-based split masks over the raced_in rows.
-    years = graph.raced_in["year"].to_numpy()
-    train_mask = np.isin(years, cfg.TRAIN_YEARS)
-    val_mask = np.isin(years, cfg.VAL_YEARS)
-    test_mask = np.isin(years, cfg.TEST_YEARS)
-    split_masks = {"train": train_mask, "val": val_mask, "test": test_mask}
-    print(
-        f"  split: train={train_mask.sum()}, val={val_mask.sum()}, "
-        f"test={test_mask.sum()} raced_in rows"
-    )
-
     model = HeteroRacePredictor(
         num_driver_season=graph.num_driver_seasons,
         num_constructor_season=graph.num_constructor_seasons,
@@ -217,12 +196,17 @@ def main():
     n_params = sum(p.numel() for p in model.parameters())
     print(f"  parameters: {n_params:,}")
 
+    # Join driverId into raced_in (needed by build_teammate_pairs).
+    raced_in = graph.raced_in.copy()
+    raced_in["driverId"] = raced_in["driver_season"].map(
+        graph.driver_season.set_index("node_idx")["driverId"]
+    )
+
     train_counterfactual(
         model=model,
         data=data,
         static=static,
-        raced_in=graph.raced_in,
-        split_masks=split_masks,
+        raced_in=raced_in,
         epochs=args.epochs,
         lr=args.lr,
         device=device,
