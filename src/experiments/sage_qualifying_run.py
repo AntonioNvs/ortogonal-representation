@@ -216,6 +216,44 @@ def main() -> None:
     print(_summ("driver_preds", per_driver_pred))
     print(_summ("ctor_preds", per_constructor_pred))
 
+    # --- paired significance test (cluster bootstrap by driver) --------------
+    # Tests whether SAGE's per-sample MAE is *significantly* lower than each
+    # baseline's. The bootstrap resamples *drivers* (not samples) with
+    # replacement, so within-driver correlation does not inflate significance
+    # (per the project's honest-inference convention in CLAUDE.md).
+    err_sage = np.abs(test_preds - test_y)
+    driver_to_idx: dict = {}
+    for i, d in enumerate(test_driver.tolist()):
+        driver_to_idx.setdefault(d, []).append(i)
+    driver_idx_lists = [np.asarray(v, dtype=np.int64) for v in driver_to_idx.values()]
+    rng = np.random.default_rng(args.seed)
+
+    def _paired(err_base: np.ndarray, B: int = 2000):
+        d = err_sage - err_base  # negative => SAGE better
+        mean_d = float(d.mean())
+        boots = np.empty(B, dtype=np.float64)
+        for b in range(B):
+            chosen = rng.choice(len(driver_idx_lists), size=len(driver_idx_lists), replace=True)
+            idxs = np.concatenate([driver_idx_lists[c] for c in chosen])
+            boots[b] = d[idxs].mean()
+        lo, hi = np.percentile(boots, [2.5, 97.5])
+        p = float((boots >= 0.0).mean())  # fraction of bootstrap means >= 0
+        return mean_d, lo, hi, p
+
+    print("\n--- paired test (SAGE - baseline, cluster-bootstrap by driver, B=2000) ---")
+    for name, err_base in [
+        ("global-mean", np.abs(np.full_like(test_y, global_mean) - test_y)),
+        ("per-driver", np.abs(per_driver_pred - test_y)),
+        ("per-constructor", np.abs(per_constructor_pred - test_y)),
+    ]:
+        mean_d, lo, hi, p = _paired(err_base)
+        sig = "**" if hi < 0.0 else ("*" if lo < 0.0 else "")
+        print(
+            f"  vs {name:15s} ΔMAE = {mean_d:+.4f}  "
+            f"95% CI [{lo:+.4f}, {hi:+.4f}]  p(Δ≥0) = {p:.3f}  {sig}"
+        )
+    print("  (ΔMAE < 0 => SAGE better; CI entirely < 0 => significant; **/<0.05, */<0.10 one-sided)")
+
 
 if __name__ == "__main__":
     main()
