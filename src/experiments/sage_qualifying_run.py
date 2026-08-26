@@ -141,25 +141,54 @@ def main() -> None:
     # --- baselines (leak-free: fitted on train only) ---------------------------
     y_train = y_np[train_mask.numpy()]
     driver_train = driver_id.numpy()[train_mask.numpy()]
+    year_np = graph_data["qualifying"].year.numpy()
+    round_np = graph_data["qualifying"].round.numpy()
+    year_train = year_np[train_mask.numpy()]
+    round_train = round_np[train_mask.numpy()]
+
+    test_driver = driver_id.numpy()[test_mask.numpy()]
+    test_year = year_np[test_mask.numpy()]
+    test_round = round_np[test_mask.numpy()]
+
     global_mean = float(y_train.mean())
 
-    driver_mean = (
-        pd.DataFrame({"driver_id": driver_train, "y": y_train})
-        .groupby("driver_id")["y"]
-        .mean()
+    # Leak-free trailing mean: for each test sample (driver, T, k), predict the
+    # mean of that driver's training qualifying positions with (year, round)
+    # strictly before (T, k). This is the "how well does this driver usually
+    # qualify *so far*" signal, with no future peeking.
+    train_rows = pd.DataFrame(
+        {"driver_id": driver_train, "year": year_train, "round": round_train, "y": y_train}
     )
-    test_driver = driver_id.numpy()[test_mask.numpy()]
-    per_driver_pred = pd.Series(test_driver).map(driver_mean).fillna(global_mean).to_numpy()
+    per_driver_pred = np.full(len(test_driver), global_mean, dtype=np.float64)
+    for i in range(len(test_driver)):
+        d, ty, tr = test_driver[i], test_year[i], test_round[i]
+        past = train_rows[
+            (train_rows["driver_id"] == d)
+            & ((train_rows["year"] < ty) | ((train_rows["year"] == ty) & (train_rows["round"] < tr)))
+        ]
+        if len(past):
+            per_driver_pred[i] = past["y"].mean()
 
     base_global_mae = relbench_mae(test_y, np.full_like(test_y, global_mean))
     base_global_rmse = relbench_rmse(test_y, np.full_like(test_y, global_mean))
     base_driver_mae = relbench_mae(test_y, per_driver_pred)
     base_driver_rmse = relbench_rmse(test_y, per_driver_pred)
 
-    print(f"baseline global-mean  MAE {base_global_mae:.4f} | RMSE {base_global_rmse:.4f}")
-    print(f"baseline per-driver   MAE {base_driver_mae:.4f} | RMSE {base_driver_rmse:.4f}")
+    print(f"baseline global-mean        MAE {base_global_mae:.4f} | RMSE {base_global_rmse:.4f}")
+    print(f"baseline per-driver trailing MAE {base_driver_mae:.4f} | RMSE {base_driver_rmse:.4f}")
     print(f"\nSAGE beats global-mean: {test_mae < base_global_mae} | "
-          f"beats per-driver: {test_mae < base_driver_mae}")
+          f"beats per-driver-trailing: {test_mae < base_driver_mae}")
+
+    # --- distribution diagnostic ----------------------------------------------
+    def _summ(name, arr):
+        return (
+            f"{name:12s} n={len(arr):4d} min={arr.min():6.2f} max={arr.max():6.2f} "
+            f"mean={arr.mean():6.2f} median={np.median(arr):6.2f}"
+        )
+    print("\n--- distribution ---")
+    print(_summ("test_y", test_y))
+    print(_summ("test_preds", test_preds))
+    print(_summ("driver_preds", per_driver_pred))
 
 
 if __name__ == "__main__":

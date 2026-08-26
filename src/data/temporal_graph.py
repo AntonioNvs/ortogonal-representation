@@ -300,10 +300,13 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     )
 
     # ------------------------------------------------------------------
-    # 8. Attach per-target-node year (split key), label, and entity ids.
+    # 8. Attach per-target-node year/round (split + trailing-mean key), label,
+    #    and entity ids.
     # ------------------------------------------------------------------
     qual_year = qualifying["raceId"].map(race_meta["year"]).to_numpy()
+    qual_round = qualifying["raceId"].map(race_meta["round"]).to_numpy()
     data["qualifying"].year = torch.from_numpy(qual_year.astype(np.int64))
+    data["qualifying"].round = torch.from_numpy(qual_round.astype(np.int64))
     data["qualifying"].y = torch.from_numpy(qualifying["position"].to_numpy(dtype=np.float32))
     data["qualifying"].driver_id = torch.from_numpy(qualifying["driverId"].to_numpy(dtype=np.int64))
     data["qualifying"].constructor_id = torch.from_numpy(
