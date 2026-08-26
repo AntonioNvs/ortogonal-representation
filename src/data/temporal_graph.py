@@ -199,9 +199,22 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     # 5. Evidence edges: results@(T,k-1) -> state@(T,k). ``resultId`` is a
     #    contiguous pkey, so it is also the ``results`` node index.
     # ------------------------------------------------------------------
+    # The Ergast source can carry a small number of duplicate (driverId,
+    # raceId) rows (same driver, same race, multiple result rows). They all
+    # describe the same outcome, so we collapse to the first row by natural
+    # key before indexing — but surface them first so the count is visible.
+    dup_driver = results.duplicated(subset=["driverId", "raceId"], keep=False)
+    if dup_driver.any():
+        dup_rows = results.loc[dup_driver, ["resultId", "driverId", "raceId", "position"]]
+        print(
+            f"[temporal_graph] WARNING: results has {int(dup_driver.sum())} duplicate "
+            f"(driverId, raceId) rows across {int(dup_driver.sum() // 2)} pairs; keeping first. "
+            f"sample: {dup_rows.head(6).to_dict('records')}"
+        )
+    results_unique = results.drop_duplicates(subset=["driverId", "raceId"], keep="first")
     result_id_map = pd.Series(
-        results["resultId"].to_numpy(),
-        index=pd.MultiIndex.from_frame(results[["driverId", "raceId"]]),
+        results_unique["resultId"].to_numpy(),
+        index=pd.MultiIndex.from_frame(results_unique[["driverId", "raceId"]]),
     )
     dprev_race = np.full(len(driver_pairs), -1, dtype=np.int64)
     dprev_race[ddst] = driver_pairs["raceId"].to_numpy()[dsrc]
@@ -216,11 +229,20 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
         dprev_result[dhas_prev], np.flatnonzero(dvalid)[dhas_prev]
     )
 
-    # ``constructor_results`` is unique per (constructor, race), so its pkey
-    # (constructorResultsId) is the node index and the lookup is unambiguous.
+    # Same dedup guard for team evidence (defensive; this table is expected to
+    # be unique per (constructor, race), but keep the same robustness).
+    dup_cons = constructor_results.duplicated(subset=["constructorId", "raceId"], keep=False)
+    if dup_cons.any():
+        print(
+            f"[temporal_graph] WARNING: constructor_results has {int(dup_cons.sum())} "
+            f"duplicate (constructorId, raceId) rows; keeping first."
+        )
+    cresults_unique = constructor_results.drop_duplicates(
+        subset=["constructorId", "raceId"], keep="first"
+    )
     cresult_id_map = pd.Series(
-        constructor_results["constructorResultsId"].to_numpy(),
-        index=pd.MultiIndex.from_frame(constructor_results[["constructorId", "raceId"]]),
+        cresults_unique["constructorResultsId"].to_numpy(),
+        index=pd.MultiIndex.from_frame(cresults_unique[["constructorId", "raceId"]]),
     )
     cprev_race = np.full(len(constructor_pairs), -1, dtype=np.int64)
     cprev_race[cdst] = constructor_pairs["raceId"].to_numpy()[csrc]
