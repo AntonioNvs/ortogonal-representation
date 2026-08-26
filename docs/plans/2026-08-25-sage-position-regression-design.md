@@ -31,6 +31,14 @@ Predict `qualifying.position` — the driver's **qualifying grid position** for 
 - The `qualifying` node already exists in the graph with `number`, `position`, `date` features.
 - Lower is better; report **MAE / RMSE** as the primary regression metrics.
 
+**Target normalization (era/grid invariance).** The raw label is normalized to `[0, 1]` before training:
+
+```
+y = (position - 1) / (session_size - 1)      # pole -> 0, back of grid -> 1
+```
+
+where `session_size` is the number of drivers who set a time in *that* qualifying session (one per `raceId`). This makes the target invariant to era-dependent grid sizes (22+ cars in the 1950s, 20 today), so a "5th place" carries the same skill meaning in any era — and the MAE becomes directly interpretable as "mean fraction of the grid the model is off". Baselines (global-mean, per-driver trailing mean) are computed in the same normalized space. Rows whose position exceeds their session size land outside `[0,1]` and are surfaced as an enrichment artifact (see the `out_of_range` warning in `temporal_graph.py`).
+
 Requires a **new RelBench task** `qualifying-position` (entity_table=`qualifying`, target_col=`position`, `remove_columns=[("qualifying", "position")]`), so the target is stripped from the node's input features and cannot leak into the prediction (mirrors how `results-position` removes `position` from `results`).
 
 ## Graph schema — causal round-state graph

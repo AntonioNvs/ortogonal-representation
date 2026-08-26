@@ -211,7 +211,14 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
             f"(driverId, raceId) rows across {int(dup_driver.sum() // 2)} pairs; keeping first. "
             f"sample: {dup_rows.head(6).to_dict('records')}"
         )
-    results_unique = results.drop_duplicates(subset=["driverId", "raceId"], keep="first")
+    # Prefer the non-null position row when a (driverId, raceId) pair is
+    # duplicated (the enrichment can emit a NaN-position row alongside the real
+    # result). ``keep="first"`` on the raw order would sometimes keep the NaN row
+    # and drop the actual finishing position (see the sample in the warning above).
+    results_unique = (
+        results.sort_values("position", ascending=True, na_position="last")
+        .drop_duplicates(subset=["driverId", "raceId"], keep="first")
+    )
     result_id_map = pd.Series(
         results_unique["resultId"].to_numpy(),
         index=pd.MultiIndex.from_frame(results_unique[["driverId", "raceId"]]),
@@ -305,9 +312,38 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     # ------------------------------------------------------------------
     qual_year = qualifying["raceId"].map(race_meta["year"]).to_numpy()
     qual_round = qualifying["raceId"].map(race_meta["round"]).to_numpy()
+
+    # Normalized target: pole (position 1) -> 0, back of the grid -> 1, using
+    # the *session* size (number of drivers who set a time in that race) as the
+    # grid. This makes the target invariant to era-dependent grid sizes (22+ cars
+    # in the 1950s, 20 today): a "5th place" then means the same skill share in
+    # any era. ``y`` is the [0,1] label; raw position is not attached.
+    position = qualifying["position"].to_numpy(dtype=np.float64)
+    n_cars = (
+        qualifying.groupby("raceId")["qualifyId"]
+        .transform("size")
+        .to_numpy(dtype=np.float64)
+    )
+    with np.errstate(divide="ignore", invalid="ignore"):
+        y_norm = (position - 1.0) / (n_cars - 1.0)
+    y_norm = np.where(n_cars > 1, y_norm, 0.0)
+
+    # Surface impossible positions: any row whose position exceeds its session
+    # size lands outside [0,1] and is almost certainly an enrichment artifact.
+    out_of_range = (y_norm < 0.0) | (y_norm > 1.0)
+    if out_of_range.any():
+        n_bad = int(out_of_range.sum())
+        bad_idx = np.flatnonzero(out_of_range)
+        bad = qualifying.iloc[bad_idx[:5]][["qualifyId", "raceId", "driverId", "position"]]
+        print(
+            f"[temporal_graph] WARNING: {n_bad} qualifying rows have position outside "
+            f"[1, session_size] (pos range {position[out_of_range].min():.0f}.."
+            f"{position[out_of_range].max():.0f}). sample: {bad.to_dict('records')}"
+        )
+
     data["qualifying"].year = torch.from_numpy(qual_year.astype(np.int64))
     data["qualifying"].round = torch.from_numpy(qual_round.astype(np.int64))
-    data["qualifying"].y = torch.from_numpy(qualifying["position"].to_numpy(dtype=np.float32))
+    data["qualifying"].y = torch.from_numpy(y_norm.astype(np.float32))
     data["qualifying"].driver_id = torch.from_numpy(qualifying["driverId"].to_numpy(dtype=np.int64))
     data["qualifying"].constructor_id = torch.from_numpy(
         qualifying["constructorId"].to_numpy(dtype=np.int64)
