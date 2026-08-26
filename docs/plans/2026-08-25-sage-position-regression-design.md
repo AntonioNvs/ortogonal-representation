@@ -29,7 +29,7 @@ Predict `qualifying.position` — the driver's **qualifying grid position** for 
 
 - Continuous, dense, pre-race (no DNF ambiguity), no ~22% NaN problem that `results.position` has.
 - The `qualifying` node already exists in the graph with `number`, `position`, `date` features.
-- Lower is better; report MAE / RMSE / Spearman ρ (and optionally a "top-3 in qualifying" AUROC, mirroring the existing `auroc_top3` idiom).
+- Lower is better; report **MAE / RMSE** as the primary regression metrics.
 
 ## Graph schema
 
@@ -67,8 +67,9 @@ Reverse edges are not a new model family — they are the standard way to make a
 
 ## Temporal isolation (no leakage)
 
-The graph spans 2000–2026. A qualifying prediction for race R must only see information available *before* R. Reuse the existing year-mask / round-mask machinery (`add_edge_year_masks`, `add_edge_round_masks`) keyed on the source table's `raceId`:
+The graph spans **1950–2026** — the full F1 dataset, from the first season onward. A qualifying prediction for race R must only see information available *before* R. Reuse the existing year-mask / round-mask machinery (`add_edge_year_masks`, `add_edge_round_masks`) keyed on the source table's `raceId`:
 
+- **Split** (fixed, year-based): train = **1950–2021** (the whole dataset up to the val window), val = **2022–2023**, test = **2024–2026** (the most recent seasons). Implemented by setting `MIN_YEAR = 1950` in `src/config.py` while keeping `EXTENDED_VAL_TIMESTAMP = 2022-01-01` / `EXTENDED_TEST_TIMESTAMP = 2024-01-01`, so `_years_from_timestamps` yields exactly these ranges.
 - **Split masks**: train edges = `TRAIN_YEARS`, val edges = `TRAIN_YEARS ∪ VAL_YEARS`, test edges = all (same as the current fixed-split scheme in `prepare_data`).
 - **Reverse edges are masked consistently with their forward counterparts** — a reverse `drivers → qualifying` edge is the same `(driver, qualifying)` pair as the forward `qualifying → drivers` edge, so it inherits the same temporal mask. This is the one subtle correctness point: masking must be defined on the *underlying row* (keyed by the source table's `raceId`), not on the edge direction.
 
@@ -76,9 +77,18 @@ For the initial test, the fixed year-based split is sufficient; walk-forward (ro
 
 ## Evaluation
 
-- **Metrics**: MAE, RMSE, Spearman ρ (primary); optional top-3-in-qualifying AUROC (secondary, ranking-flavoured).
-- **Baseline**: constant predictor (predict the mean/median grid position) and, if cheap, a `Linear`-on-raw-`qualifying`-features model — to show the SAGE over the graph adds signal over the node's own features.
-- Report val/test on the fixed split, with the standard seed handling.
+- **Metrics**: MAE and RMSE (primary). Lower is better; MAE is the headline number (it is what a mean-predictor minimises, making the baseline comparison direct).
+- **Report** val/test on the fixed split, with the standard seed handling.
+
+## Baselines
+
+Two leak-free baselines, both computed **only on training-years data** (1950–2021), so neither can peek at the future:
+
+1. **Trivial floor — global mean.** Predict the mean grid position over all training qualifying sessions — a single constant for every prediction. This is the sanity floor, not the interesting comparison; any model that does not beat it is broken.
+
+2. **Driver-naive — per-driver trailing mean.** For each driver, predict the mean of *their own* qualifying positions over the training window (`qualifying.position` grouped by `driverId`, restricted to train years). This captures "how well does this driver usually qualify" with no car, team, or race context — the crudest possible driver-skill signal. **This is the primary baseline:** the SAGE model must beat it to show it extracts more than "who is this driver".
+
+A third baseline is noted but deferred: **constructor-naive** (per-team trailing mean grid position). It is the natural counterpart once the driver-naive comparison passes — it isolates the car signal and is the first step toward the project's driver-vs-car question. Not required for this initial test.
 
 ## Files to create (in this branch)
 
@@ -92,11 +102,11 @@ Reuse (from `master`): `src/data/tasks.py`, `src/data/enriched_dataset.py`, `bui
 
 ## Exit criteria
 
-- The model **trains** and beats the constant-predictor baseline on the qualifying-position target (MAE / Spearman).
+- The model **trains** and beats **both** the global-mean floor and the driver-naive (per-driver mean) baseline on MAE (and does not blow up on RMSE).
 - The readout is a single `Linear` (no MLP/aux heads/fusion) — a clean substrate for a future `GNNExplainer` / gradient-attribution pass.
 - (Informal) a face-validity check: top drivers (Verstappen, Hamilton, Leclerc…) tend to get low (good) predicted grid positions.
 
-If the model does not beat baseline, record why before adding complexity — the point of this branch is a minimal, honest substrate, not peak accuracy.
+If the model does not beat the driver-naive baseline, record why before adding complexity — the point of this branch is a minimal, honest substrate, not peak accuracy.
 
 ## Timeline (indicative)
 
