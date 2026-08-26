@@ -9,6 +9,7 @@ fixed year-based split (train 1950–2021, val 2022–2023, test 2024–2026).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import random
 import sys
@@ -48,8 +49,10 @@ def year_mask(years: torch.Tensor, allowed) -> torch.Tensor:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="SAGE qualifying-position regression")
-    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--weight-decay", type=float, default=1e-5)
+    parser.add_argument("--patience", type=int, default=20)
     parser.add_argument("--hidden-dim", type=int, default=64)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--seed", type=int, default=42)
@@ -107,9 +110,13 @@ def main() -> None:
     test_idx = test_mask.nonzero(as_tuple=True)[0].to(device)
 
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-    # --- train loop (full-batch) ----------------------------------------------
+    # --- train loop (full-batch, early stopping on val MAE) --------------------
+    best_val_mae = float("inf")
+    best_state = None
+    epochs_no_improve = 0
+
     for epoch in range(args.epochs):
         model.train()
         optimizer.zero_grad()
@@ -118,14 +125,29 @@ def main() -> None:
         loss.backward()
         optimizer.step()
 
+        model.eval()
+        with torch.no_grad():
+            all_preds = model(tf_dict, edge_index_dict)
+        val_mae = relbench_mae(
+            y_dev[val_idx].cpu().numpy(), all_preds[val_idx].cpu().numpy()
+        )
+
+        if val_mae < best_val_mae - 1e-4:
+            best_val_mae = val_mae
+            best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+
         if (epoch + 1) % 5 == 0 or epoch == 0:
-            model.eval()
-            with torch.no_grad():
-                all_preds = model(tf_dict, edge_index_dict)
-            val_mae = relbench_mae(
-                y_dev[val_idx].cpu().numpy(), all_preds[val_idx].cpu().numpy()
-            )
             print(f"epoch {epoch+1:3d} | train loss {loss.item():.4f} | val MAE {val_mae:.4f}")
+
+        if epochs_no_improve >= args.patience:
+            print(f"early stop at epoch {epoch+1} (best val MAE {best_val_mae:.4f})")
+            break
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
 
     # --- test metrics ----------------------------------------------------------
     model.eval()
@@ -241,12 +263,14 @@ def main() -> None:
         return mean_d, lo, hi, p
 
     print("\n--- paired test (SAGE - baseline, cluster-bootstrap by driver, B=2000) ---")
+    paired = {}
     for name, err_base in [
         ("global-mean", np.abs(np.full_like(test_y, global_mean) - test_y)),
         ("per-driver", np.abs(per_driver_pred - test_y)),
         ("per-constructor", np.abs(per_constructor_pred - test_y)),
     ]:
         mean_d, lo, hi, p = _paired(err_base)
+        paired[name] = {"dmae": mean_d, "p": p}
         sig = "**" if hi < 0.0 else ("*" if lo < 0.0 else "")
         print(
             f"  vs {name:15s} ΔMAE = {mean_d:+.4f}  "
@@ -292,6 +316,26 @@ def main() -> None:
 
     _rank_table("face-validity: SAGE mean pred (test)", test_preds)
     _rank_table("face-validity: per-driver trailing-mean baseline", per_driver_pred)
+
+    # --- machine-readable result line (parsed by sage_sweep.py) ---------------
+    result = {
+        "config": {
+            "num_layers": args.num_layers,
+            "hidden_dim": args.hidden_dim,
+            "seed": args.seed,
+            "epochs": args.epochs,
+        },
+        "test_mae": float(test_mae),
+        "test_rmse": float(test_rmse),
+        "best_val_mae": float(best_val_mae),
+        "baseline_mae": {
+            "global": float(base_global_mae),
+            "driver": float(base_driver_mae),
+            "constructor": float(base_constructor_mae),
+        },
+        "paired": paired,
+    }
+    print("RESULT_JSON=" + json.dumps(result, sort_keys=True))
 
 
 if __name__ == "__main__":
