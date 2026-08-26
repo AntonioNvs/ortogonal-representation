@@ -54,10 +54,12 @@ The graph is **temporally causal by construction**: every edge points from an ev
 - `same_driver_cross`: `driver_state@(T-1, last) → driver_state@(T, 1)` — carries skill across the season boundary. Only exists if the driver raced in season T-1; a rookie's `driver_state@(T,1)` has no predecessor and relies on static features.
 - `same_constructor` / `same_constructor_cross`: the team analogue.
 - `result_of_driver`: `results@(T,k-1) → driver_state@(T,k)` — the previous race's result feeds the state.
-- `result_of_constructor`: `results@(T,k-1) → constructor_state@(T,k)`.
-- `race → circuit`.
-- `qualifying → race` — the target sees the race's circuit/round/year.
+- `result_of_constructor`: `constructor_results@(T,k-1) → constructor_state@(T,k)` (team evidence comes from the `constructor_results` table — one row per (constructor, race) — not `results`, which is per-driver).
+- `circuit → race` — the race node aggregates its circuit.
+- `race → qualifying` — the target aggregates the race's circuit/era context.
 - **Context edges**: `driver_state@(T,k) → qualifying@(T,k)` and `constructor_state@(T,k) → qualifying@(T,k)` — the target aggregates its driver's and team's pre-race state.
+
+(Message passing convention: in every edge `src → dst`, the *destination* aggregates the source. So `qualifying` aggregates `driver_state`, `constructor_state`, and `race`; `race` aggregates `circuit`.)
 
 **Why temporal evolution is representable, and why it is leak-free.** The recurrence
 
@@ -83,13 +85,12 @@ qualifying@(T,k)  ── aggregates ──>  driver_state@(T,k) + constructor_st
 ## Model
 
 1. **`HeteroEncoder`** (input side, "por baixo") — encodes categorical/numerical/timestamp columns to embeddings. Not part of the skeleton; does not harm attribution. Loaded via the `graph_meta.pt` snapshot (read *before* `build_graph` overwrites it, as fixed in the prior branch).
-
 2. **SAGE stack** (`HeteroConv` of `SAGEConv`):
+
    - conv1 `mean` aggregation, `hidden_dim` channels.
    - conv2 `max` aggregation, `hidden_dim` channels (keep a latent representation, not a scalar).
    - Residual connection + `LayerNorm` on `driver_state`, `constructor_state` and `qualifying` (combats oversmoothing, stabilises training).
    - Edge-type dict covers the `result_of_*` evidence edges, the directional `same_*` temporal edges, and the context edges into `qualifying`. Depth is a hyperparameter (start at 2).
-
 3. **Readout**: `Linear(hidden_dim, 1)` applied to the `qualifying` node embedding → scalar grid position.
 
 **Removed** vs. `F1OrthogonalPipeline`: `classifier` MLP, `aux_piloto`/`aux_equipe` heads, `[driver||constructor]` fusion, pre-race feature concatenation, `OrthogonalSeparationLoss`.
@@ -103,17 +104,11 @@ The requirement is a model that is theoretically sound **from the start**, so ev
 **Because the graph is acyclic in time, the split is purely a *label* mask over target nodes** — no edge masking is needed. Every `qualifying@(T,k)` node's receptive field is exactly `{events with (year, round) strictly before (T,k)}`. Concretely, each leakage source and its closure:
 
 1. **Cross-season leakage** (`driver_state@2024` seeing 2025 data). *Closed by structure:* `same_driver_cross` points `@T-1 → @T` only. A 2024 node can reach 2023, 2022, … and never 2025.
-
 2. **Within-season leakage** (`qualifying@(T,k)` seeing results of round `≥ k`). *Closed by structure:* `qualifying@(T,k)` → `driver_state@(T,k)`, which reaches at most `results@(T,k-1)` via `result_of_driver`. `results@(T,k)` (same race, *after* qualifying) is not in the ancestry.
-
 3. **Target's own label** (`qualifying.position`). *Closed by the task:* the `qualifying-position` task removes `position` from the node's input features (mirrors `results-position`). The label is never a feature.
-
 4. **`results.grid` as a proxy for the target.** `results.grid` is the starting grid ≈ the qualifying result of that race. *Closed by structure:* the only `results` in a target's ancestry is `results@(T,k-1)` (previous race), whose `grid` is *that* race's — legitimately past. `results@(T,k)` (whose `grid` is the current qualifying being predicted) is unreachable.
-
 5. **Championship standings leakage.** *Closed by omission:* `standings`/`constructor_standings` are **not** wired as evidence in v1 (only `results` is). If added later, they must feed `driver_state@(T,k)` only for `round < k` — the same round-indexing rule.
-
 6. **Non-leaking but noteworthy features.** `qualifying.number` (car number) and `qualifying.date` (the session timestamp) are known at prediction time and therefore not leakage. However `number` is a potential *shortcut* (the reigning champion often carries `#1`), and `date` lets the model learn era/grid-size effects. Both are legitimate, but the `number` shortcut should be checked (an ablation dropping it) so the skill signal isn't conflated with a number.
-
 7. **Team continuity across renames.** `same_constructor_cross` follows the constructor id, so a rebrand (Toro Rosso → AlphaTauri → RB) is treated as a discontinuity. This is a *data-semantics* choice (an under-counting of team continuity), not a leakage: it can only make the model *less* informed, never more. Documented for completeness.
 
 **Consequence for implementation.** No `add_edge_year_masks` / `add_edge_round_masks` calls are needed for correctness. The training loop can build one static graph over 1950–2026 and run a single forward pass, selecting target nodes by year for train/val/test labels. This is both simpler and less error-prone than the mask-based approach it replaces.
@@ -128,7 +123,6 @@ The requirement is a model that is theoretically sound **from the start**, so ev
 Two leak-free baselines, both computed **only on training-years data** (1950–2021), so neither can peek at the future:
 
 1. **Trivial floor — global mean.** Predict the mean grid position over all training qualifying sessions — a single constant for every prediction. This is the sanity floor, not the interesting comparison; any model that does not beat it is broken.
-
 2. **Driver-naive — per-driver trailing mean.** For each driver, predict the mean of *their own* qualifying positions over the training window (`qualifying.position` grouped by `driverId`, restricted to train years). This captures "how well does this driver usually qualify" with no car, team, or race context — the crudest possible driver-skill signal. **This is the primary baseline:** the SAGE model must beat it to show it extracts more than "who is this driver".
 
 A third baseline is noted but deferred: **constructor-naive** (per-team trailing mean grid position). It is the natural counterpart once the driver-naive comparison passes — it isolates the car signal and is the first step toward the project's driver-vs-car question. Not required for this initial test.

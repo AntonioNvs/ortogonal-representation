@@ -36,6 +36,10 @@ RESULTS_OUTCOME_COLUMNS = [
     "milliseconds", "fastestLap", "rank",
 ]
 
+# Qualifying's only outcome column. ``number`` (car number) and ``date`` are
+# legitimate pre-race features and are kept; ``position`` is the target.
+QUALIFYING_OUTCOME_COLUMNS = ["position"]
+
 
 class EfficientAutoCompleteTask(AutoCompleteTask):
     """Same semantics as ``relbench.base.AutoCompleteTask``, but computes the
@@ -157,6 +161,16 @@ def register_enriched_tasks(dataset_name: str = DEFAULT_NAME, include_official_p
         entity_table="results",
         target_col="points",
         remove_columns=[("results", c) for c in RESULTS_OUTCOME_COLUMNS if c != "points"],
+        cache_dir=None,
+    )
+    register_task(
+        dataset_name,
+        "qualifying-position",
+        EfficientAutoCompleteTask,
+        task_type=TaskType.REGRESSION,
+        entity_table="qualifying",
+        target_col="position",
+        remove_columns=[("qualifying", c) for c in QUALIFYING_OUTCOME_COLUMNS if c != "position"],
         cache_dir=None,
     )
 

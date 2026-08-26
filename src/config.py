@@ -58,7 +58,7 @@ ENRICHED_DB_DIR = "data/enriched/rel-f1"
 # Temporal windows
 # ---------------------------------------------------------------------------
 
-MIN_YEAR = 2000
+MIN_YEAR = 1950
 MAX_YEAR = 2026
 
 # Official rel-f1 benchmark timestamps (relbench.datasets.f1.F1Dataset).
