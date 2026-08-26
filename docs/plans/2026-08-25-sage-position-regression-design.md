@@ -33,44 +33,52 @@ Predict `qualifying.position` — the driver's **qualifying grid position** for 
 
 Requires a **new RelBench task** `qualifying-position` (entity_table=`qualifying`, target_col=`position`, `remove_columns=[("qualifying", "position")]`), so the target is stripped from the node's input features and cannot leak into the prediction (mirrors how `results-position` removes `position` from `results`).
 
-## Graph schema — temporal meta-nodes
+## Graph schema — causal round-state graph
 
-Adopts the **meta-node** design (the same idea already specified in `counterfactual-swap`): instead of one static node per driver/constructor spanning the whole career, each entity gets **one node per season**. This is what makes temporal evolution of driver skill representable at all — a single static `drivers` node cannot distinguish "Verstappen in 2017" from "Verstappen in 2023".
+The graph is **temporally causal by construction**: every edge points from an event at an earlier time to a node at a later time. There are no bidirectional edges across time, so no node can ever aggregate information from its own future. This is the property that makes leakage *impossible* rather than merely masked.
+
+**Design principle — round-granularity states.** A season-level meta-node (`driver_season@T`) would aggregate the *entire* season and therefore leak a mid-season qualifying's own later rounds. To close that, the state node is indexed by **round**, not season: one state node per `(entity, race)`, chained directionally.
 
 **Node types**
 
-- `driver_season` — one node per `(driver, season)` that exists in the data. `verstappen@2017` and `verstappen@2023` are distinct nodes.
-- `constructor_season` — one node per `(constructor, season)`.
-- `race` — one per race (features: round, year).
+- `driver_state@(T,k)` — the driver's latent skill state *just before* race `(T,k)` (after all races with `year < T`, or `year == T and round < k`). One node per `(driver, race)` in which the driver appears (~27k). Input features are the driver's **static** attributes (`dob`, `nationality`, `code`, …); the temporal evidence is injected via message passing.
+- `constructor_state@(T,k)` — the team's latent state just before race `(T,k)`, one per `(constructor, race)` (~13k). Input features are the constructor's static attributes.
+- `results@(T,k)` — the raw race-result evidence (position, points, grid, …). A leaf node.
+- `qualifying@(T,k)` — one per `(driver, race)`; the **target node** (features: `number`, `date`; label: `position`).
+- `race@(T,k)` — one per race (features: round, year).
 - `circuit` — static (one per circuit).
-- `qualifying` — one per `(driver, race)`; the **target node** (features: number, date; label: `position`).
-- `results`, `standings`, `constructor_results`, `constructor_standings` — raw season-evidence nodes (unchanged from the base graph).
 
-**Edge types**
+**Edge types (all directional, causal)**
 
-- `results → driver_season@T`, `standings → driver_season@T` — a season node aggregates its own-season race/championship evidence.
-- `results → constructor_season@T`, `constructor_standings → constructor_season@T`.
-- `same_driver: driver_season@T → driver_season@T+1` — **directional**, carries a driver's identity/skill forward in time (message flows @T → @T+1).
-- `same_constructor: constructor_season@T → constructor_season@T+1` — same for teams.
+- `same_driver`: `driver_state@(T,k-1) → driver_state@(T,k)` — the within-season recurrence carrying a driver's skill forward one round.
+- `same_driver_cross`: `driver_state@(T-1, last) → driver_state@(T, 1)` — carries skill across the season boundary. Only exists if the driver raced in season T-1; a rookie's `driver_state@(T,1)` has no predecessor and relies on static features.
+- `same_constructor` / `same_constructor_cross`: the team analogue.
+- `result_of_driver`: `results@(T,k-1) → driver_state@(T,k)` — the previous race's result feeds the state.
+- `result_of_constructor`: `results@(T,k-1) → constructor_state@(T,k)`.
 - `race → circuit`.
-- `qualifying → race` — the target node sees the race's circuit/era context.
-- **Reverse context edges**: `driver_season@T → qualifying`, `constructor_season@T → qualifying` — the target node aggregates its driver's and team's season embeddings.
+- `qualifying → race` — the target sees the race's circuit/round/year.
+- **Context edges**: `driver_state@(T,k) → qualifying@(T,k)` and `constructor_state@(T,k) → qualifying@(T,k)` — the target aggregates its driver's and team's pre-race state.
 
-**Why temporal evolution is now representable.** `driver_season@2023` aggregates its own 2023 results and, via the `same_driver` chain, every prior season's embedding. `driver_season@2017` has a much shorter chain (only its first seasons) and far less evidence. The SAGE can learn different embeddings for `verstappen@2017` (young, sparse, uncertain) vs `verstappen@2023` (mature, strong), and the single-Linear readout over the target node reflects that difference.
+**Why temporal evolution is representable, and why it is leak-free.** The recurrence
+
+```
+results@(T,k-1) ─(result_of_driver)→ driver_state@(T,k) ─(same_driver)→ driver_state@(T,k+1) → …
+```
+
+means `driver_state@(T,k)` encodes exactly the driver's history up to round `k-1`, and nothing after. `verstappen@(2023, 5)` sees 2023 rounds 1–4 plus all prior seasons; `verstappen@(2017, 5)` sees only 2015–2017 rounds 1–4. The SAGE can therefore learn different embeddings for a young, sparse-history Verstappen vs a mature one, and the single-Linear readout reflects that. Because the chain is acyclic in time, the receptive field of every node is exactly its causal past — **no edge masking is required anywhere**.
 
 Message flow:
 
 ```
-results/standings (season T)
-   └─> driver_season@T ──(same_driver)──> driver_season@T+1 ──> ... ──> driver_season@2023
-   └─> constructor_season@T ─(same_constructor)─> ...
+results@(T,k-1) ──> driver_state@(T,k) ──(same_driver)──> driver_state@(T,k+1) ──> …
+results@(T,k-1) ──> constructor_state@(T,k) ─(same_constructor)─> …
 
-qualifying (target)  ── aggregates ──>  driver_season@T + constructor_season@T
-                                          + race ──> circuit
+qualifying@(T,k)  ── aggregates ──>  driver_state@(T,k) + constructor_state@(T,k)
+                                     + race@(T,k) ──> circuit
         └─> Linear(hidden, 1) ──> predicted grid position
 ```
 
-Reverse edges are not a new model family — they are the standard way to make a heterogeneous GNN bidirectional so a *leaf* node (the row we predict on) can attend to its parents. 100% message passing; no readout complexity added.
+**Depth note (expressiveness, not correctness).** The temporal chain spans up to ~72 seasons × ~20 rounds ≈ 1400 hops, far beyond a 2–3-layer SAGE's reach. This is acceptable for the target: predicting *current* qualifying depends overwhelmingly on recent form and the driver/team static identity, both of which are within a few hops (the static identity is baked into the state node's own features). Long-range career-arc effects are a secondary signal; if they matter, depth is the tuning knob (start at 2–3 layers). This is a modelling choice, not a leakage risk.
 
 ## Model
 
@@ -79,21 +87,36 @@ Reverse edges are not a new model family — they are the standard way to make a
 2. **SAGE stack** (`HeteroConv` of `SAGEConv`):
    - conv1 `mean` aggregation, `hidden_dim` channels.
    - conv2 `max` aggregation, `hidden_dim` channels (keep a latent representation, not a scalar).
-   - Residual connection + `LayerNorm` on `driver_season`, `constructor_season` and `qualifying` (combats oversmoothing, stabilises training).
-   - Edge-type dict covers the raw `results`/`standings` → season-node edges, the directional `same_driver`/`same_constructor` edges, and the reverse context edges into `qualifying`.
+   - Residual connection + `LayerNorm` on `driver_state`, `constructor_state` and `qualifying` (combats oversmoothing, stabilises training).
+   - Edge-type dict covers the `result_of_*` evidence edges, the directional `same_*` temporal edges, and the context edges into `qualifying`. Depth is a hyperparameter (start at 2).
 
 3. **Readout**: `Linear(hidden_dim, 1)` applied to the `qualifying` node embedding → scalar grid position.
 
 **Removed** vs. `F1OrthogonalPipeline`: `classifier` MLP, `aux_piloto`/`aux_equipe` heads, `[driver||constructor]` fusion, pre-race feature concatenation, `OrthogonalSeparationLoss`.
 
-## Temporal isolation (no leakage)
+## Leakage analysis (exhaustive)
 
-Cross-season ordering is enforced by **graph structure**, not just masks: the `same_driver`/`same_constructor` edges are directional (@T → @T+1), so a season node can only aggregate the past. `verstappen@2024` reaches `@2023`, `@2022`, … and can never reach `@2025`. The rest of the leakage control reuses the existing year-mask machinery (`add_edge_year_masks`) keyed on the source table's `raceId`:
+The requirement is a model that is theoretically sound **from the start**, so every temporal leakage source is enumerated below and closed by *construction* (not by an ad-hoc mask that could be forgotten or misapplied).
 
-- **Split** (fixed, year-based): train = **1950–2021** (the whole dataset up to the val window), val = **2022–2023**, test = **2024–2026** (the most recent seasons). Implemented by setting `MIN_YEAR = 1950` in `src/config.py` while keeping `EXTENDED_VAL_TIMESTAMP = 2022-01-01` / `EXTENDED_TEST_TIMESTAMP = 2024-01-01`, so `_years_from_timestamps` yields exactly these ranges.
-- **Split masks**: train edges = `TRAIN_YEARS`, val edges = `TRAIN_YEARS ∪ VAL_YEARS`, test edges = all, applied to the raw leaf edges (`results`/`standings` → season nodes) keyed on the source table's year/`raceId`.
-- **Reverse edges** (`season node → qualifying`) inherit their forward counterpart's mask — a reverse `driver_season@T → qualifying` edge is the same underlying `(driver, race)` row as the forward `qualifying → driver_season@T` edge, so it inherits the same temporal mask. Masking must be defined on the *underlying row*, not the edge direction.
-- **Within-season round leakage** remains for the fixed split: predicting the qualifying of round k from results of round > k in the same season. For the initial test this is left at year-level granularity; the round-mask machinery (`add_edge_round_masks`) already exists in `train.py` and is the documented follow-up if the fixed split shows signal.
+**Split.** Fixed, year-based: train = **1950–2021**, val = **2022–2023**, test = **2024–2026** (most recent seasons). Implemented by setting `MIN_YEAR = 1950` in `src/config.py` while keeping `EXTENDED_VAL_TIMESTAMP = 2022-01-01` / `EXTENDED_TEST_TIMESTAMP = 2024-01-01`, so `_years_from_timestamps` yields exactly these ranges.
+
+**Because the graph is acyclic in time, the split is purely a *label* mask over target nodes** — no edge masking is needed. Every `qualifying@(T,k)` node's receptive field is exactly `{events with (year, round) strictly before (T,k)}`. Concretely, each leakage source and its closure:
+
+1. **Cross-season leakage** (`driver_state@2024` seeing 2025 data). *Closed by structure:* `same_driver_cross` points `@T-1 → @T` only. A 2024 node can reach 2023, 2022, … and never 2025.
+
+2. **Within-season leakage** (`qualifying@(T,k)` seeing results of round `≥ k`). *Closed by structure:* `qualifying@(T,k)` → `driver_state@(T,k)`, which reaches at most `results@(T,k-1)` via `result_of_driver`. `results@(T,k)` (same race, *after* qualifying) is not in the ancestry.
+
+3. **Target's own label** (`qualifying.position`). *Closed by the task:* the `qualifying-position` task removes `position` from the node's input features (mirrors `results-position`). The label is never a feature.
+
+4. **`results.grid` as a proxy for the target.** `results.grid` is the starting grid ≈ the qualifying result of that race. *Closed by structure:* the only `results` in a target's ancestry is `results@(T,k-1)` (previous race), whose `grid` is *that* race's — legitimately past. `results@(T,k)` (whose `grid` is the current qualifying being predicted) is unreachable.
+
+5. **Championship standings leakage.** *Closed by omission:* `standings`/`constructor_standings` are **not** wired as evidence in v1 (only `results` is). If added later, they must feed `driver_state@(T,k)` only for `round < k` — the same round-indexing rule.
+
+6. **Non-leaking but noteworthy features.** `qualifying.number` (car number) and `qualifying.date` (the session timestamp) are known at prediction time and therefore not leakage. However `number` is a potential *shortcut* (the reigning champion often carries `#1`), and `date` lets the model learn era/grid-size effects. Both are legitimate, but the `number` shortcut should be checked (an ablation dropping it) so the skill signal isn't conflated with a number.
+
+7. **Team continuity across renames.** `same_constructor_cross` follows the constructor id, so a rebrand (Toro Rosso → AlphaTauri → RB) is treated as a discontinuity. This is a *data-semantics* choice (an under-counting of team continuity), not a leakage: it can only make the model *less* informed, never more. Documented for completeness.
+
+**Consequence for implementation.** No `add_edge_year_masks` / `add_edge_round_masks` calls are needed for correctness. The training loop can build one static graph over 1950–2026 and run a single forward pass, selecting target nodes by year for train/val/test labels. This is both simpler and less error-prone than the mask-based approach it replaces.
 
 ## Evaluation
 
@@ -113,8 +136,8 @@ A third baseline is noted but deferred: **constructor-naive** (per-team trailing
 ## Files to create (in this branch)
 
 ```
-src/data/temporal_graph.py           # meta-node graph builder (driver_season/constructor_season + same_* edges)
-src/models/sage_regressor.py        # HeteroEncoder + bidirectional SAGE stack + Linear readout
+src/data/temporal_graph.py           # causal round-state graph builder (driver_state/constructor_state + same_*/result_of_* edges)
+src/models/sage_regressor.py        # HeteroEncoder + causal SAGE stack + Linear readout
 src/training/sage_train.py          # training loop (or extend train.py minimally)
 src/experiments/sage_qualifying_run.py   # end-to-end runner
 ```
@@ -131,6 +154,6 @@ If the model does not beat the driver-naive baseline, record why before adding c
 
 ## Timeline (indicative)
 
-- **Day 1**: `sage_regressor.py` + graph reverse-edge plumbing + temporal masks.
-- **Day 2**: training loop + baseline comparison + metrics report.
-- **Day 3 (buffer)**: fix leakage/masking edge cases, produce the interpretability-ready checkpoint.
+- **Day 1**: `temporal_graph.py` (causal round-state graph) + graph sanity checks (per-round node/edge counts, acyclicity check).
+- **Day 2**: `sage_regressor.py` + training loop + baseline comparison + metrics report.
+- **Day 3 (buffer)**: acyclicity/leakage unit checks (assert every node's ancestors are strictly earlier), produce the interpretability-ready checkpoint.
