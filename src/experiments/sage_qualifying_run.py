@@ -254,6 +254,45 @@ def main() -> None:
         )
     print("  (ΔMAE < 0 => SAGE better; CI entirely < 0 => significant; **/<0.05, */<0.10 one-sided)")
 
+    # --- face-validity check (exit criterion 3, informal) ----------------------
+    # Rank drivers by mean predicted position over the test window. Lower is
+    # better (0 = pole). The trailing-mean baseline is shown alongside so the
+    # "current form vs career history" contrast is visible: rookies who debuted
+    # 2023+ have no train-window history and fall back to global_mean (~0.5) in
+    # the baseline, but SAGE can rank them on their 2024-2026 form.
+    name_by_id = (
+        db.table_dict["drivers"].df[["driverId", "forename", "surname"]]
+        .assign(name=lambda d: d["forename"].fillna("") + " " + d["surname"].fillna(""))
+        .set_index("driverId")["name"]
+        .to_dict()
+    )
+
+    def _rank_table(title: str, pred_arr: np.ndarray, min_n: int = 5) -> None:
+        df = pd.DataFrame({"driver_id": test_driver, "pred": pred_arr, "y": test_y})
+        g = (
+            df.groupby("driver_id")
+            .agg(n=("pred", "size"), pred_mean=("pred", "mean"), y_mean=("y", "mean"))
+            .sort_values("pred_mean")
+        )
+        g = g[g["n"] >= min_n].copy()
+        g["name"] = g.index.map(name_by_id)
+        print(f"\n--- {title} (drivers with >= {min_n} test qualifying) ---")
+        print("  TOP 15 (low pred = good):")
+        for _, r in g.head(15).iterrows():
+            print(
+                f"    {r['name']:<24s} pred {r['pred_mean']:.3f}  "
+                f"actual {r['y_mean']:.3f}  n={int(r['n'])}"
+            )
+        print("  BOTTOM 15:")
+        for _, r in g.tail(15).iloc[::-1].iterrows():
+            print(
+                f"    {r['name']:<24s} pred {r['pred_mean']:.3f}  "
+                f"actual {r['y_mean']:.3f}  n={int(r['n'])}"
+            )
+
+    _rank_table("face-validity: SAGE mean pred (test)", test_preds)
+    _rank_table("face-validity: per-driver trailing-mean baseline", per_driver_pred)
+
 
 if __name__ == "__main__":
     main()
