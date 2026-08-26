@@ -133,7 +133,7 @@ Two leak-free baselines, both computed **only on training-years data** (1950–2
 1. **Trivial floor — global mean.** Predict the mean grid position over all training qualifying sessions — a single constant for every prediction. This is the sanity floor, not the interesting comparison; any model that does not beat it is broken.
 2. **Driver-naive — per-driver trailing mean.** For each driver, predict the mean of *their own* qualifying positions over the training window (`qualifying.position` grouped by `driverId`, restricted to train years). This captures "how well does this driver usually qualify" with no car, team, or race context — the crudest possible driver-skill signal. **This is the primary baseline:** the SAGE model must beat it to show it extracts more than "who is this driver".
 
-A third baseline is noted but deferred: **constructor-naive** (per-team trailing mean grid position). It is the natural counterpart once the driver-naive comparison passes — it isolates the car signal and is the first step toward the project's driver-vs-car question. Not required for this initial test.
+3. **Constructor-naive — per-team trailing mean.** The team analogue of the driver-naive baseline: predict the mean of *the team's* training-window qualifying positions (leak-free trailing mean keyed by `constructorId`). This isolates the **car signal** and is the first concrete step toward the project's driver-vs-car question: if the car alone already predicts the grid well, the SAGE model's job is to show it adds *driver* signal above that car floor (and, later, to attribute the residual to driver vs car). Implemented alongside the driver-naive baseline in the runner.
 
 ## Files to create (in this branch)
 

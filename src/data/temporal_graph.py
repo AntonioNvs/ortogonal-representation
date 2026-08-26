@@ -206,15 +206,25 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     dup_driver = results.duplicated(subset=["driverId", "raceId"], keep=False)
     if dup_driver.any():
         dup_rows = results.loc[dup_driver, ["resultId", "driverId", "raceId", "position"]]
+        n_pairs = int(
+            results.loc[dup_driver, ["driverId", "raceId"]].drop_duplicates().shape[0]
+        )
+        # Historical source artifact (1950s shared-drive / dual-entry records):
+        # the *same* driver can carry two ``results`` rows for one race, one of
+        # them with a NaN ``position``. Not a bug we introduced — it is already
+        # present in the pristine Ergast/relbench ``results.csv`` (the sample
+        # pairs land in raceId 2/5/6, i.e. the 1950 season). We resolve it by
+        # keeping the non-null-position row (see below), so no evidence is lost.
         print(
-            f"[temporal_graph] WARNING: results has {int(dup_driver.sum())} duplicate "
-            f"(driverId, raceId) rows across {int(dup_driver.sum() // 2)} pairs; keeping first. "
+            f"[temporal_graph] NOTE: results has {int(dup_driver.sum())} rows duplicated "
+            f"on (driverId, raceId) across {n_pairs} pairs (1950s shared-drive records; "
+            f"the NaN-position duplicate is dropped). Keeping the non-null-position row. "
             f"sample: {dup_rows.head(6).to_dict('records')}"
         )
     # Prefer the non-null position row when a (driverId, raceId) pair is
-    # duplicated (the enrichment can emit a NaN-position row alongside the real
-    # result). ``keep="first"`` on the raw order would sometimes keep the NaN row
-    # and drop the actual finishing position (see the sample in the warning above).
+    # duplicated: sort so NaN positions fall to the end, then take the first.
+    # ``keep="first"`` on the raw order would sometimes keep the NaN row and
+    # drop the actual finishing position (see the sample in the note above).
     results_unique = (
         results.sort_values("position", ascending=True, na_position="last")
         .drop_duplicates(subset=["driverId", "raceId"], keep="first")
