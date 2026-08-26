@@ -2,7 +2,7 @@
 
 **Branch:** `sage-position-regression`
 **Date:** 2026-08-26
-**Status:** implemented (runner edits + sweep script; awaiting A100 sweep results)
+**Status:** implemented + swept. **Locked config: `num_layers=4`, `hidden_dim=128`** (now the runner defaults).
 
 ---
 
@@ -74,3 +74,28 @@ python src/experiments/sage_sweep.py --num-layers 2 3 4 --hidden-dim 64 128 256 
 per-constructor ΔMAE is negative and its p<0.05 in most seeds (so the driver-above-car
 claim is no longer seed-dependent); (c) the single-`Linear` readout is untouched; (d)
 face-validity still holds (elite on top, rookies ranked on current form).
+
+## Sweep results (3 seeds: 42, 7, 123)
+
+```
+layers hidden      MAE     RMSE   Δvs-ctor  p<.05
+     2     64   0.1832   0.2270    -0.0168   0.33   <- old default
+     2    128   0.1794   0.2251    -0.0206   1.00
+     2    256   0.1826   0.2296    -0.0174   0.33
+     3     64   0.1735   0.2188    -0.0264   1.00
+     3    128   0.2471   0.2886    +0.0471   0.33   <- unstable cell
+     3    256   0.1708   0.2201    -0.0291   0.67
+     4     64   0.1704   0.2164    -0.0295   1.00
+     4    128   0.1637   0.2123    -0.0362   1.00   <- WINNER (locked)
+     4    256   0.2586   0.2989    +0.0587   0.33   <- unstable cell
+```
+
+**Decision.** `4/128` wins on every axis: lowest median MAE (0.1637, ~11% below the
+old 0.1832), best RMSE, largest driver-above-car gap (Δ −0.0362 vs −0.0168), and
+`p<.05` in **all 3 seeds** (the seed-fragility observed earlier is gone at this config).
+
+**Follow-up (not blocking).** Two cells (`3/128`, `4/256`) collapsed — worse than the
+constructor baseline (positive Δ). With only 3 seeds a single divergent run flips the
+median; these are most likely training-instability artifacts at the high-width
+boundary, not a real "wider is worse" signal. Re-run `{4/128, 4/64, 3/64, 3/128, 4/256}`
+over 5 seeds before treating the sweep table as a final paper artifact.
