@@ -376,6 +376,17 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     position_res = results_with_meta["position"].to_numpy(dtype=np.float64)
     in_ranking = ~np.isnan(position_res)
 
+    race_id_to_idx = pd.Series(
+        np.arange(len(races), dtype=np.int64),
+        index=races["raceId"].to_numpy(),
+    )
+    result_race_idx = (
+        race_id_to_idx.reindex(results_with_meta["raceId"].to_numpy())
+        .fillna(-1)
+        .astype(np.int64)
+        .to_numpy()
+    )
+
     data["results"].year = torch.from_numpy(results_with_meta["year"].to_numpy(dtype=np.int64))
     data["results"].round = torch.from_numpy(results_with_meta["round"].to_numpy(dtype=np.int64))
     data["results"].race_id = torch.from_numpy(results_with_meta["raceId"].to_numpy(dtype=np.int64))
@@ -389,6 +400,7 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     data["results"].in_ranking = torch.from_numpy(in_ranking)
     data["results"].driver_state_idx = torch.from_numpy(result_driver_state)
     data["results"].constructor_state_idx = torch.from_numpy(result_constructor_state)
+    data["results"].race_idx = torch.from_numpy(result_race_idx)
     grid = results_with_meta["grid"].to_numpy(dtype=np.float64)
     data["results"].grid = torch.from_numpy(np.where(np.isnan(grid), 20.0, grid).astype(np.float32))
 

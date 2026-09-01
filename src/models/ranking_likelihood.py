@@ -40,6 +40,38 @@ def batch_pl_nll(
     return torch.stack(losses).mean()
 
 
+def pairwise_ranking_loss(utilities: torch.Tensor, ranks: torch.Tensor) -> torch.Tensor:
+    """Soft pairwise ranking loss for a single race (lower = better ranks)."""
+    n = utilities.numel()
+    if n <= 1:
+        return utilities.sum() * 0.0
+
+    loss = torch.tensor(0.0, device=utilities.device, dtype=utilities.dtype)
+    count = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if ranks[i] == ranks[j]:
+                continue
+            sign = 1.0 if ranks[i] < ranks[j] else -1.0
+            loss = loss + torch.nn.functional.softplus(-sign * (utilities[i] - utilities[j]))
+            count += 1
+    if count == 0:
+        return utilities.sum() * 0.0
+    return loss / count
+
+
+def batch_pairwise_ranking_loss(
+    utilities_list: list[torch.Tensor],
+    ranks_list: list[torch.Tensor],
+) -> torch.Tensor:
+    if not utilities_list:
+        return torch.tensor(0.0)
+    losses = [
+        pairwise_ranking_loss(u, r) for u, r in zip(utilities_list, ranks_list)
+    ]
+    return torch.stack(losses).mean()
+
+
 def grid_adjusted_race_utilities(
     driver_u: torch.Tensor,
     constructor_u: torch.Tensor,

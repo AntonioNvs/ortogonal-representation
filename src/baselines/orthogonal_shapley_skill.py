@@ -87,8 +87,9 @@ def load_orthogonal_shapley_model_and_graph(
   model = OrthogonalShapleyGNN(
     node_to_col_names_dict=node_to_col_names_dict,
     node_to_col_stats=node_to_col_stats,
-    hidden_dim=config.get("hidden_dim", 32),
-    num_layers=config.get("num_layers", 2),
+    hidden_dim=config.get("hidden_dim", 64),
+    num_layers=config.get("num_layers", 3),
+    mlp_hidden=config.get("mlp_hidden", 64),
   ).to(device)
   model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
   model.eval()
@@ -115,16 +116,23 @@ def export_race_skills(
   x_dict = model.encode(tf_dict, edge_index_dict)
   res = graph_data["results"]
   mask = res.in_ranking & (res.year <= max_year)
-  mask = mask & (res.driver_state_idx >= 0) & (res.constructor_state_idx >= 0)
+  mask = (
+    mask
+    & (res.driver_state_idx >= 0)
+    & (res.constructor_state_idx >= 0)
+    & (res.race_idx >= 0)
+  )
   idx = mask.nonzero(as_tuple=True)[0]
 
   d_idx = res.driver_state_idx[idx].to(device)
   c_idx = res.constructor_state_idx[idx].to(device)
+  race_idx = res.race_idx[idx].to(device)
   grid = res.grid[idx].to(device)
+  round_num = res.round[idx].to(device)
 
   d_emb = x_dict["driver_state"][d_idx]
   c_emb = x_dict["constructor_state"][c_idx]
-  ctx = model.context_features(grid)
+  ctx = model.context_vector(x_dict, race_idx, grid, round_num)
 
   phi_d, phi_c, phi_x, residual = exact_shapley_utilities(
     model, d_emb, c_emb, ctx, baselines

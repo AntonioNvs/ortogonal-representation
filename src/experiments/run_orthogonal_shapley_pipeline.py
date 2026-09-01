@@ -35,9 +35,14 @@ def _run_train(args: argparse.Namespace) -> None:
     "--gpu-id", str(args.gpu_id),
     "--output-dir", args.model_dir,
     "--lambda-orth", str(args.lambda_orth),
-    "--aux-weight", str(args.aux_weight),
+    "--aux-driver-weight", str(args.aux_driver_weight),
+    "--aux-constructor-weight", str(args.aux_constructor_weight),
+    "--lambda-ctx-aux", str(args.lambda_ctx_aux),
+    "--lambda-pair", str(args.lambda_pair),
+    "--lambda-attr", str(args.lambda_attr),
     "--hidden-dim", str(args.hidden_dim),
     "--num-layers", str(args.num_layers),
+    "--mlp-hidden", str(args.mlp_hidden),
   ]
   if args.smoke_test:
     cmd.append("--smoke-test")
@@ -171,11 +176,16 @@ def main() -> None:
   parser.add_argument("--benchmark-dir", type=str, default=DEFAULT_BENCHMARK_DIR)
   parser.add_argument("--plots-dir", type=str, default=DEFAULT_PLOTS_DIR)
   parser.add_argument("--epochs", type=int, default=100)
-  parser.add_argument("--lambda-orth", type=float, default=1.0)
+  parser.add_argument("--lambda-orth", type=float, default=2.0)
   parser.add_argument("--lambda-grid", type=str, default=None)
-  parser.add_argument("--aux-weight", type=float, default=0.5)
-  parser.add_argument("--hidden-dim", type=int, default=32)
-  parser.add_argument("--num-layers", type=int, default=2)
+  parser.add_argument("--aux-driver-weight", type=float, default=0.5)
+  parser.add_argument("--aux-constructor-weight", type=float, default=0.75)
+  parser.add_argument("--lambda-ctx-aux", type=float, default=0.25)
+  parser.add_argument("--lambda-pair", type=float, default=0.25)
+  parser.add_argument("--lambda-attr", type=float, default=0.1)
+  parser.add_argument("--hidden-dim", type=int, default=64)
+  parser.add_argument("--num-layers", type=int, default=3)
+  parser.add_argument("--mlp-hidden", type=int, default=64)
   parser.add_argument("--seed", type=int, default=42)
   parser.add_argument("--gpu-id", type=int, default=cfg.DEFAULT_GPU_ID)
   parser.add_argument("--max-year", type=int, default=2025)

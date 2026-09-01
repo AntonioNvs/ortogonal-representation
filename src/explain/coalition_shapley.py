@@ -7,7 +7,7 @@ from typing import Dict, Tuple
 
 import torch
 
-from models.orthogonal_shapley_gnn import CONTEXT_DIM, OrthogonalShapleyGNN
+from models.orthogonal_shapley_gnn import OrthogonalShapleyGNN
 
 # Coalition bitmasks: driver=1, constructor=2, context=4
 PLAYER_DRIVER = 1
@@ -44,7 +44,7 @@ class CoalitionBaselines:
 
   driver_emb: torch.Tensor  # (hidden_dim,)
   constructor_emb: torch.Tensor  # (hidden_dim,)
-  context: torch.Tensor  # (CONTEXT_DIM,)
+  context: torch.Tensor  # (context_dim,)
 
   def to_dict(self) -> dict:
     return {
@@ -68,15 +68,19 @@ def compute_train_baselines(
   train_mask: torch.Tensor,
   driver_state_idx: torch.Tensor,
   constructor_state_idx: torch.Tensor,
+  race_idx: torch.Tensor,
   grid: torch.Tensor,
+  round_num: torch.Tensor,
 ) -> CoalitionBaselines:
-  """Mean embeddings and context from training-year result rows only."""
+  """Mean embeddings and projected context from training-year result rows only."""
   idx = train_mask.nonzero(as_tuple=True)[0]
   d_idx = driver_state_idx[idx]
   c_idx = constructor_state_idx[idx]
   d_emb = x_dict["driver_state"][d_idx].mean(dim=0)
   c_emb = x_dict["constructor_state"][c_idx].mean(dim=0)
-  ctx = model.context_features(grid[idx]).mean(dim=0)
+  ctx = model.context_vector(
+    x_dict, race_idx[idx], grid[idx], round_num[idx]
+  ).mean(dim=0)
   return CoalitionBaselines(driver_emb=d_emb, constructor_emb=c_emb, context=ctx)
 
 
@@ -144,6 +148,18 @@ def exact_shapley_utilities(
   total_phi = phi_d + phi_c + phi_x
   residual = (v_full - v_empty) - total_phi
   return phi_d, phi_c, phi_x, residual
+
+
+def attribution_balance_loss(
+  phi_d: torch.Tensor,
+  phi_c: torch.Tensor,
+  phi_x: torch.Tensor,
+  *,
+  target_driver_share: float = 0.38,
+) -> torch.Tensor:
+  """Penalize driver Shapley share above ``target_driver_share``."""
+  share_d = phi_d.abs() / (phi_d.abs() + phi_c.abs() + phi_x.abs() + 1e-9)
+  return torch.mean(torch.relu(share_d - target_driver_share) ** 2)
 
 
 def shapley_efficiency_error(

@@ -38,23 +38,46 @@ python src/experiments/train_skill_gnn.py --seed 42
 python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry bayesian_ssm
 ```
 
-## OrthogonalShapleyGNN (candidate)
+## OrthogonalShapleyGNN (candidate, arch v2)
 
-Port of the historical SAGE+MLP orthogonal pipeline onto the causal temporal graph (`src/models/orthogonal_shapley_gnn.py`). **It does not train on qualifying session nodes** — pre-race context is the **starting grid** (`results.grid`, i.e. qualifying outcome), passed as two normalized features. The training target is **classified race finish order**.
+Port of the historical SAGE+MLP orthogonal pipeline onto the causal temporal graph ([`src/models/orthogonal_shapley_gnn.py`](src/models/orthogonal_shapley_gnn.py)). Pre-race **context** combines normalized grid/round scalars with a **race-node embedding** (circuit/era signal from `circuit→race` message passing). Training target is **classified race finish order**.
 
-**Data:** enriched RelBench F1 relational DB → `build_temporal_graph` (`src/data/temporal_graph.py`): per-round `driver_state` / `constructor_state` nodes (static driver/team features + causal message passing over past results, constructor results, races, circuits). Race rows supply finish `position`, `grid`, and state indices.
+**Data:** enriched RelBench F1 relational DB → `build_temporal_graph` ([`src/data/temporal_graph.py`](src/data/temporal_graph.py)): per-round `driver_state` / `constructor_state` / `race` nodes; race rows supply `position`, `grid`, `round`, `race_idx`, and state indices.
 
-**Architecture:** RelBench `HeteroEncoder` → 2-layer heterogeneous SAGE (`mean` then `max`) on state nodes → concatenate `[driver_emb ‖ constructor_emb ‖ grid_context]` → MLP utility head; plus auxiliary linear heads on driver-only and constructor-only embeddings.
+**Architecture (defaults):** RelBench `HeteroEncoder` → **3-layer** heterogeneous SAGE (`mean` then `max`, hidden **64**) with residual `LayerNorm` on `driver_state`, `constructor_state`, and `race` → `context_mlp([grid_norm, round_norm, race_emb])` → concatenate `[driver_emb ‖ constructor_emb ‖ ctx]` → **3-layer** fusion MLP (`mlp_hidden=64`); auxiliary linear heads on driver, constructor, and context channels.
 
-**Loss:** Plackett–Luce NLL on fused utility, plus `0.5 ×` (driver aux + constructor aux PL), plus `λ_orth ×` paired orthogonal penalty (mean squared cosine similarity of matched driver/constructor embeddings; linear warmup over 5 epochs, default `λ_orth=1`).
+**Loss:**
 
-**Skill readout:** at export, driver skill is the exact 3-coalition Shapley value (driver / constructor / grid context) of the fused MLP utility, with train-only baselines (`src/explain/coalition_shapley.py`).
+```
+total = PL_fused
+      + 0.5 × PL_driver_aux
+      + 0.75 × PL_constructor_aux
+      + 0.25 × PL_context_aux
+      + 0.25 × pairwise_ranking(fused)
+      + 0.1 × attribution_balance(Shapley subsample)
+      + λ_orth(epoch) × orth_loss
+```
+
+- `orth_loss` = squared cosine similarity of driver↔constructor embeddings **and** driver↔context (default `λ_orth=2.0`, 10-epoch warmup).
+- `attribution_balance` penalizes driver Shapley share above 38% on a 20% race subsample.
+- Model selection: composite `val_pl + 0.5 × (1 − val_pairwise_acc)`.
+
+**Skill readout:** at export, driver skill is the exact 3-coalition Shapley value (driver / constructor / projected context) of the fused MLP utility, with train-only baselines ([`src/explain/coalition_shapley.py`](src/explain/coalition_shapley.py)).
+
+**Train & validate:**
 
 ```bash
+# Default v2 config (3L/64)
 python src/experiments/train_orthogonal_shapley_gnn.py --seed 42
+
+# SkillGNN-scale ablation preset
+python src/experiments/train_orthogonal_shapley_gnn.py --seed 42 --num-layers 4 --hidden-dim 128 --mlp-hidden 128
+
 python src/experiments/run_orthogonal_shapley_pipeline.py --stages all
 python src/experiments/run_validation_benchmark.py --sources orthogonal_shapley bradley_terry
 ```
+
+**Target gates (locked 2024–2025):** pairwise acc ≥ BT − 0.01 (~0.685), PL NLL ≤ BT + 0.01, driver Shapley share 35–45%, context share 15–25%, partial ρ CI low > 0.
 
 ## Dependencies
 

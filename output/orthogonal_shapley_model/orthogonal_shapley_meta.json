@@ -1,19 +1,31 @@
 {
+  "arch_version": "v2",
   "config": {
-    "hidden_dim": 32,
-    "num_layers": 2,
-    "lambda_orth": 1.0,
-    "aux_weight": 0.5,
-    "orth_warmup_epochs": 5,
-    "max_grad_norm": 0.0,
+    "hidden_dim": 64,
+    "num_layers": 3,
+    "mlp_hidden": 64,
+    "lambda_orth": 2.0,
+    "aux_driver_weight": 0.5,
+    "aux_constructor_weight": 0.75,
+    "lambda_ctx_aux": 0.25,
+    "lambda_pair": 0.25,
+    "lambda_attr": 0.1,
+    "target_driver_share": 0.38,
+    "orth_warmup_epochs": 10,
+    "max_grad_norm": 1.0,
     "seed": 42
   },
   "metrics": {
-    "best_val_pl": 3.595081329345703,
-    "test_pl": 3.705562114715576,
-    "test_pairwise_acc": 0.72102956052602,
-    "test_top3_auroc": 0.8726321988597019,
-    "test_orth_loss": 0.0027733389288187027
+    "best_val_score": 4.650029000897093,
+    "best_val_pl": 4.542874813079834,
+    "test_pl": 4.5861616134643555,
+    "test_pairwise_acc": 0.7585703045970552,
+    "test_top3_auroc": 0.8879181470479741,
+    "test_orth_loss": 0.00048721040366217494,
+    "test_attr_loss": 0.0,
+    "test_driver_share": 0.5213646994808973,
+    "test_constructor_share": 0.4290658447702052,
+    "test_context_share": 0.04956947775336645
   },
   "coalition_baselines_path": "output/orthogonal_shapley_model/coalition_baselines.json"
 }

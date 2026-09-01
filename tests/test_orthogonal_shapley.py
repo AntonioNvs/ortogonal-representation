@@ -13,10 +13,12 @@ import torch
 
 from explain.coalition_shapley import (
   CoalitionBaselines,
+  attribution_balance_loss,
   exact_shapley_utilities,
   shapley_efficiency_error,
 )
 from models.orthogonal_shapley_gnn import CONTEXT_DIM, OrthogonalShapleyGNN
+from models.ranking_likelihood import pairwise_ranking_loss
 from skill.contract import InferenceMode
 from skill.export import build_skill_export
 
@@ -84,10 +86,27 @@ def test_coalition_baselines_roundtrip():
   assert torch.allclose(baselines.context, restored.context)
 
 
-def test_context_features_shape():
+def test_context_scalars_shape():
   grid = torch.tensor([1.0, 10.0, 20.0])
-  ctx = OrthogonalShapleyGNN.context_features(grid)
-  assert ctx.shape == (3, CONTEXT_DIM)
+  round_num = torch.tensor([1.0, 10.0, 20.0])
+  ctx = OrthogonalShapleyGNN.context_scalars(grid, round_num)
+  assert ctx.shape == (3, 2)
+
+
+def test_attribution_balance_loss_penalizes_high_driver_share():
+  phi_d = torch.tensor([2.0, 2.0])
+  phi_c = torch.tensor([0.5, 0.5])
+  phi_x = torch.tensor([0.5, 0.5])
+  loss = attribution_balance_loss(phi_d, phi_c, phi_x, target_driver_share=0.38)
+  assert loss.item() > 0.0
+
+
+def test_pairwise_ranking_loss_finite():
+  utilities = torch.tensor([2.0, 1.0, 0.0])
+  ranks = torch.tensor([1.0, 2.0, 3.0])
+  loss = pairwise_ranking_loss(utilities, ranks)
+  assert torch.isfinite(loss)
+  assert loss.item() >= 0.0
 
 
 def test_skill_export_from_shapley_contribs():
@@ -134,3 +153,4 @@ def test_coalition_baselines_json_serializable():
       loaded = json.load(f)
     restored = CoalitionBaselines.from_dict(loaded, torch.device("cpu"))
     assert restored.driver_emb.shape == (4,)
+    assert restored.context.shape == (CONTEXT_DIM,)

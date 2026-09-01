@@ -46,6 +46,21 @@ def _race_swap_lookup(graph_data, sample_idx: torch.Tensor) -> Dict[int, int]:
   return lookup
 
 
+def _row_context(
+  model: OrthogonalShapleyGNN,
+  x_dict: dict,
+  res,
+  row_idx: torch.Tensor,
+  device: torch.device,
+) -> torch.Tensor:
+  return model.context_vector(
+    x_dict,
+    res.race_idx[row_idx].to(device),
+    res.grid[row_idx].to(device),
+    res.round[row_idx].to(device),
+  )
+
+
 @torch.no_grad()
 def constructor_leakage_probe(
   model: OrthogonalShapleyGNN,
@@ -63,11 +78,10 @@ def constructor_leakage_probe(
   res = graph_data["results"]
   d_idx = res.driver_state_idx[sample_idx].to(device)
   c_idx = res.constructor_state_idx[sample_idx].to(device)
-  grid = res.grid[sample_idx].to(device)
 
   d_emb = x_dict["driver_state"][d_idx]
   c_emb = x_dict["constructor_state"][c_idx]
-  ctx = model.context_features(grid)
+  ctx = _row_context(model, x_dict, res, sample_idx, device)
   phi_d, _, _, _ = exact_shapley_utilities(model, d_emb, c_emb, ctx, baselines)
   constructor_norm = c_emb.norm(dim=-1).cpu().numpy()
   driver_skill = phi_d.cpu().numpy()
@@ -109,21 +123,28 @@ def swap_invariance_test(
   for row_idx in chosen:
     row_t = torch.tensor([row_idx], dtype=torch.long)
     alt_c = torch.tensor([swap_lookup[row_idx]], device=device)
-    grid = res.grid[row_t].to(device)
+
     d_idx = res.driver_state_idx[row_t].to(device)
     c_idx = res.constructor_state_idx[row_t].to(device)
     alt_c_t = alt_c
+    race_idx = res.race_idx[row_t].to(device)
+    grid = res.grid[row_t].to(device)
+    round_num = res.round[row_t].to(device)
 
     d_emb = x_dict["driver_state"][d_idx]
     c_emb = x_dict["constructor_state"][c_idx]
     c_emb_alt = x_dict["constructor_state"][alt_c_t]
-    ctx = model.context_features(grid)
+    ctx = _row_context(model, x_dict, res, row_t, device)
 
     phi_d_orig, _, _, _ = exact_shapley_utilities(model, d_emb, c_emb, ctx, baselines)
     phi_d_swap, _, _, _ = exact_shapley_utilities(model, d_emb, c_emb_alt, ctx, baselines)
 
-    u_orig, _, _, _ = model.race_utilities(x_dict, d_idx, c_idx, grid)
-    u_swap, _, _, _ = model.race_utilities(x_dict, d_idx, alt_c_t, grid)
+    u_orig, _, _, _, _ = model.race_utilities(
+      x_dict, d_idx, c_idx, race_idx, grid, round_num
+    )
+    u_swap, _, _, _, _ = model.race_utilities(
+      x_dict, d_idx, alt_c_t, race_idx, grid, round_num
+    )
 
     skill_diffs.append(abs(float(phi_d_orig.item() - phi_d_swap.item())))
     utility_deltas.append(abs(float(u_orig.item() - u_swap.item())))
@@ -152,11 +173,10 @@ def shapley_efficiency_probe(
   res = graph_data["results"]
   d_idx = res.driver_state_idx[sample_idx].to(device)
   c_idx = res.constructor_state_idx[sample_idx].to(device)
-  grid = res.grid[sample_idx].to(device)
 
   d_emb = x_dict["driver_state"][d_idx]
   c_emb = x_dict["constructor_state"][c_idx]
-  ctx = model.context_features(grid)
+  ctx = _row_context(model, x_dict, res, sample_idx, device)
   phi_d, phi_c, phi_x, residual = exact_shapley_utilities(
     model, d_emb, c_emb, ctx, baselines
   )
