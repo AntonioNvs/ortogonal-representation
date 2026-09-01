@@ -22,16 +22,52 @@
       "n_joined": 921
     },
     "bradley_terry": {
-      "spearman": 0.5477532645467798,
-      "partial_rho": 0.3248151141815471,
-      "partial_ci_low": 0.17849121118069303,
-      "partial_ci_high": 0.46403732844888657,
+      "spearman": 0.5495288767397107,
+      "partial_rho": 0.3277701812465929,
+      "partial_ci_low": 0.17988377688095494,
+      "partial_ci_high": 0.46636119501889417,
       "perm_p": 4.999750012499375e-05,
-      "cluster_ci_low": 0.40515787094415506,
-      "cluster_ci_high": 0.6699203373695597,
-      "moved_up_auroc": 0.3601449275362319,
-      "pairwise_acc_proxy": 0.45104633781763825,
+      "cluster_ci_low": 0.4060802590750545,
+      "cluster_ci_high": 0.6726860373079001,
+      "moved_up_auroc": 0.36141304347826086,
+      "pairwise_acc_proxy": 0.45138526784162414,
       "n_joined": 287
+    },
+    "teammate_residual": {
+      "spearman": 0.13206744006201177,
+      "partial_rho": 0.17102761034780842,
+      "partial_ci_low": 0.0999634421553399,
+      "partial_ci_high": 0.24033690584743556,
+      "perm_p": 4.999750012499375e-05,
+      "cluster_ci_low": 0.047243764414853145,
+      "cluster_ci_high": 0.20893568752990413,
+      "moved_up_auroc": 0.5395328719723184,
+      "pairwise_acc_proxy": 0.6305141307748462,
+      "n_joined": 921
+    },
+    "bayesian_comparator": {
+      "spearman": 0.5590913888586424,
+      "partial_rho": 0.454540330048612,
+      "partial_ci_low": 0.3716975698314601,
+      "partial_ci_high": 0.5268219185174797,
+      "perm_p": 4.999750012499375e-05,
+      "cluster_ci_low": 0.4679101869654861,
+      "cluster_ci_high": 0.6356201654835286,
+      "moved_up_auroc": 0.435986453855942,
+      "pairwise_acc_proxy": 0.7131174609795947,
+      "n_joined": 970
+    },
+    "constructor_tier": {
+      "spearman": 0.47466289987708365,
+      "partial_rho": NaN,
+      "partial_ci_low": NaN,
+      "partial_ci_high": NaN,
+      "perm_p": 4.999750012499375e-05,
+      "cluster_ci_low": 0.4096665041557881,
+      "cluster_ci_high": 0.5331023901476084,
+      "moved_up_auroc": 0.11079884176460567,
+      "pairwise_acc_proxy": 0.6606702123961483,
+      "n_joined": 955
     }
   },
   "xai": {
@@ -58,7 +94,7 @@
       "passed": true,
       "metrics": {
         "model_acc": 0.717175930753989,
-        "bt_acc": 0.45104633781763825
+        "bt_acc": 0.45138526784162414
       },
       "notes": "Model should match or beat BT pairwise accuracy"
     },
