@@ -114,6 +114,7 @@ def race_loss_for_mask(
   baselines: CoalitionBaselines | None = None,
   lambda_attr: float = 0.1,
   target_driver_share: float = 0.38,
+  target_constructor_share: float = 0.30,
   attr_subsample_frac: float = 0.2,
   attr_seed: int = 0,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -191,6 +192,7 @@ def race_loss_for_mask(
         torch.cat(phi_c_parts),
         torch.cat(phi_x_parts),
         target_driver_share=target_driver_share,
+        target_constructor_share=target_constructor_share,
       )
 
   total = pl_total + lambda_pair * pair_loss + lambda_attr * attr_loss
@@ -346,6 +348,8 @@ def train_one_config(
   lambda_pair: float,
   lambda_attr: float,
   target_driver_share: float,
+  target_constructor_share: float,
+  use_additive_readout: bool,
   hidden_dim: int,
   num_layers: int,
   mlp_hidden: int,
@@ -398,6 +402,7 @@ def train_one_config(
     hidden_dim=hidden_dim,
     num_layers=num_layers,
     mlp_hidden=mlp_hidden,
+    use_additive_readout=use_additive_readout,
   ).to(device)
 
   tf_dict = {nt: graph_data[nt].tf.to(device) for nt in graph_data.node_types}
@@ -451,6 +456,7 @@ def train_one_config(
       baselines=running_baselines,
       lambda_attr=lambda_attr,
       target_driver_share=target_driver_share,
+      target_constructor_share=target_constructor_share,
       attr_seed=seed + epoch,
     )
     total_loss = train_total + lam * orth_loss
@@ -491,6 +497,7 @@ def train_one_config(
         baselines=val_baselines,
         lambda_attr=lambda_attr,
         target_driver_share=target_driver_share,
+        target_constructor_share=target_constructor_share,
         attr_seed=seed + epoch,
       )
       val_acc = pairwise_accuracy(model, x_dict, res, val_mask, device)
@@ -582,6 +589,8 @@ def train_one_config(
       "lambda_pair": lambda_pair,
       "lambda_attr": lambda_attr,
       "target_driver_share": target_driver_share,
+      "target_constructor_share": target_constructor_share,
+      "use_additive_readout": use_additive_readout,
       "orth_warmup_epochs": orth_warmup_epochs,
       "max_grad_norm": max_grad_norm,
       "seed": seed,
@@ -633,9 +642,9 @@ def main() -> None:
   parser.add_argument("--lr", type=float, default=1e-3)
   parser.add_argument("--weight-decay", type=float, default=1e-5)
   parser.add_argument("--patience", type=int, default=10)
-  parser.add_argument("--hidden-dim", type=int, default=64)
-  parser.add_argument("--num-layers", type=int, default=3)
-  parser.add_argument("--mlp-hidden", type=int, default=64)
+  parser.add_argument("--hidden-dim", type=int, default=128)
+  parser.add_argument("--num-layers", type=int, default=4)
+  parser.add_argument("--mlp-hidden", type=int, default=128)
   parser.add_argument("--lambda-orth", type=float, default=2.0)
   parser.add_argument("--aux-driver-weight", type=float, default=0.5)
   parser.add_argument("--aux-constructor-weight", type=float, default=0.75)
@@ -643,6 +652,12 @@ def main() -> None:
   parser.add_argument("--lambda-pair", type=float, default=0.25)
   parser.add_argument("--lambda-attr", type=float, default=0.1)
   parser.add_argument("--target-driver-share", type=float, default=0.38)
+  parser.add_argument("--target-constructor-share", type=float, default=0.30)
+  parser.add_argument(
+    "--use-additive-readout",
+    action="store_true",
+    help="read utility as u_d + u_c + u_x (exact Shapley) instead of fused MLP",
+  )
   parser.add_argument(
     "--lambda-grid",
     type=str,
@@ -682,6 +697,8 @@ def main() -> None:
     lambda_pair=args.lambda_pair,
     lambda_attr=args.lambda_attr,
     target_driver_share=args.target_driver_share,
+    target_constructor_share=args.target_constructor_share,
+    use_additive_readout=args.use_additive_readout,
     hidden_dim=args.hidden_dim,
     num_layers=args.num_layers,
     mlp_hidden=args.mlp_hidden,

@@ -87,9 +87,10 @@ def load_orthogonal_shapley_model_and_graph(
   model = OrthogonalShapleyGNN(
     node_to_col_names_dict=node_to_col_names_dict,
     node_to_col_stats=node_to_col_stats,
-    hidden_dim=config.get("hidden_dim", 64),
-    num_layers=config.get("num_layers", 3),
-    mlp_hidden=config.get("mlp_hidden", 64),
+    hidden_dim=config.get("hidden_dim", 128),
+    num_layers=config.get("num_layers", 4),
+    mlp_hidden=config.get("mlp_hidden", 128),
+    use_additive_readout=config.get("use_additive_readout", False),
   ).to(device)
   model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
   model.eval()

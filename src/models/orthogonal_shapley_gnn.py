@@ -4,6 +4,17 @@ Port of the historical ``F1OrthogonalPipeline`` (master @ 9c9af86) onto the
 causal round-state temporal graph.  Driver and constructor state embeddings are
 fused via concatenation with graph-derived pre-race context and passed through
 an MLP readout.  Training uses Plackett-Luce NLL on fused and auxiliary utilities.
+
+Two readouts are supported:
+
+- ``fused`` (legacy) — ``classifier([d || c || ctx])``, a nonlinear MLP over the
+  concatenated players.  Coalition Shapley over this readout is *not* additive,
+  so driver/constructor interaction terms can dominate the attribution.
+- ``additive`` (default for new runs) — ``u_d(d) + u_c(c) + u_x(ctx)`` using the
+  three per-player heads.  Shapley over three linear players is exact by
+  construction (``phi_i = u_i(real) - u_i(baseline)``, efficiency residual 0),
+  so the driver/constructor/context shares can be steered directly by the
+  attribution-balance loss.
 """
 
 from __future__ import annotations
@@ -22,25 +33,27 @@ STATE_TYPES: List[NodeType] = ["driver_state", "constructor_state"]
 NORM_TYPES: List[NodeType] = ["driver_state", "constructor_state", "race"]
 CONTEXT_DIM = 32  # projected context vector size (Shapley third player)
 SCALAR_CONTEXT_DIM = 2  # grid_norm, round_norm
-ARCH_VERSION = "v2"
+ARCH_VERSION = "v3"
 
 
 class OrthogonalShapleyGNN(nn.Module):
-  """Heterogeneous SAGE encoder + fused MLP utility head."""
+  """Heterogeneous SAGE encoder + fused (or additive) utility head."""
 
   def __init__(
     self,
     node_to_col_names_dict: Dict[NodeType, Any],
     node_to_col_stats: Dict[NodeType, Any],
-    hidden_dim: int = 64,
-    num_layers: int = 3,
-    mlp_hidden: int = 64,
+    hidden_dim: int = 128,
+    num_layers: int = 4,
+    mlp_hidden: int = 128,
     context_dim: int = CONTEXT_DIM,
+    use_additive_readout: bool = False,
   ):
     super().__init__()
     self.hidden_dim = hidden_dim
     self.context_dim = context_dim
     self.arch_version = ARCH_VERSION
+    self.use_additive_readout = use_additive_readout
 
     self.encoder = HeteroEncoder(
       channels=hidden_dim,
@@ -138,6 +151,18 @@ class OrthogonalShapleyGNN(nn.Module):
   def utility_from_fused(self, fused: torch.Tensor) -> torch.Tensor:
     return self.classifier(fused).squeeze(-1)
 
+  def utility_additive(
+    self,
+    d_emb: torch.Tensor,
+    c_emb: torch.Tensor,
+    ctx: torch.Tensor,
+  ) -> torch.Tensor:
+    """Sum of the three per-player heads. Shapley over this is exact."""
+    u_d = self.aux_driver(d_emb).squeeze(-1)
+    u_c = self.aux_constructor(c_emb).squeeze(-1)
+    u_x = self.aux_context(ctx).squeeze(-1)
+    return u_d + u_c + u_x
+
   def race_utilities(
     self,
     x_dict: Dict[str, torch.Tensor],
@@ -154,11 +179,14 @@ class OrthogonalShapleyGNN(nn.Module):
     d_emb = x_dict["driver_state"][driver_state_idx]
     c_emb = x_dict["constructor_state"][constructor_state_idx]
     ctx = self.context_vector(x_dict, race_idx, grid, round_num)
-    fused = self.fused_input(d_emb, c_emb, ctx)
-    u_fused = self.utility_from_fused(fused)
     u_d = self.aux_driver(d_emb).squeeze(-1)
     u_c = self.aux_constructor(c_emb).squeeze(-1)
     u_x = self.aux_context(ctx).squeeze(-1)
+    if self.use_additive_readout:
+      u_fused = u_d + u_c + u_x
+    else:
+      fused = self.fused_input(d_emb, c_emb, ctx)
+      u_fused = self.utility_from_fused(fused)
     return u_fused, u_d, u_c, u_x, ctx
 
   def paired_orthogonal_loss(

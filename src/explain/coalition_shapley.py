@@ -93,23 +93,20 @@ def _coalition_value(
   baselines: CoalitionBaselines,
 ) -> torch.Tensor:
   """Scalar utility for one coalition (batch of rows)."""
+  batch = d_emb.shape[0] if d_emb.dim() > 1 else 1
   d = d_emb if coalition_mask & PLAYER_DRIVER else baselines.driver_emb
   c = c_emb if coalition_mask & PLAYER_CONSTRUCTOR else baselines.constructor_emb
   x = ctx if coalition_mask & PLAYER_CONTEXT else baselines.context
+  if d.dim() == 1:
+    d = d.unsqueeze(0).expand(batch, -1)
+  if c.dim() == 1:
+    c = c.unsqueeze(0).expand(batch, -1)
+  if x.dim() == 1:
+    x = x.unsqueeze(0).expand(batch, -1)
 
-  if d_emb.dim() == 1:
-    fused = torch.cat([d, c, x], dim=-1).unsqueeze(0)
-  else:
-    batch = d_emb.shape[0]
-    if not (coalition_mask & PLAYER_DRIVER):
-      d = baselines.driver_emb.unsqueeze(0).expand(batch, -1)
-    if not (coalition_mask & PLAYER_CONSTRUCTOR):
-      c = baselines.constructor_emb.unsqueeze(0).expand(batch, -1)
-    if not (coalition_mask & PLAYER_CONTEXT):
-      x = baselines.context.unsqueeze(0).expand(batch, -1)
-    fused = torch.cat([d, c, x], dim=-1)
-
-  return model.utility_from_fused(fused)
+  if model.use_additive_readout:
+    return model.utility_additive(d, c, x)
+  return model.utility_from_fused(torch.cat([d, c, x], dim=-1))
 
 
 def exact_shapley_utilities(
@@ -156,10 +153,20 @@ def attribution_balance_loss(
   phi_x: torch.Tensor,
   *,
   target_driver_share: float = 0.38,
+  target_constructor_share: float = 0.30,
 ) -> torch.Tensor:
-  """Penalize driver Shapley share above ``target_driver_share``."""
-  share_d = phi_d.abs() / (phi_d.abs() + phi_c.abs() + phi_x.abs() + 1e-9)
-  return torch.mean(torch.relu(share_d - target_driver_share) ** 2)
+  """Two-sided balance: cap driver *and* constructor Shapley shares.
+
+  ``share_i = |phi_i| / (|phi_d| + |phi_c| + |phi_x|)``.  Each head's share is
+  penalized above its target, so neither the driver nor the constructor channel
+  can monopolize the utility (the context channel absorbs the freed share).
+  """
+  total = phi_d.abs() + phi_c.abs() + phi_x.abs() + 1e-9
+  share_d = phi_d.abs() / total
+  share_c = phi_c.abs() / total
+  driver_pen = torch.relu(share_d - target_driver_share) ** 2
+  cons_pen = torch.relu(share_c - target_constructor_share) ** 2
+  return torch.mean(driver_pen + cons_pen)
 
 
 def shapley_efficiency_error(
