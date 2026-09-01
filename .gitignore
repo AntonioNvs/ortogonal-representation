@@ -1,11 +1,12 @@
 /venv
 /cache
-__pycache__/
+**/__pycache__/
 *.pyc
 *.pyo
 .env
 .claude
 *.parquet
+.cursor/
 
 # Project context (local-only, never committed)
 CLAUDE.md

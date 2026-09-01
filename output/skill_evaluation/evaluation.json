@@ -1,0 +1,91 @@
+{
+  "mobility": {
+    "n_drivers": 864,
+    "n_constructors": 211,
+    "n_races": 1149,
+    "n_teammate_pairs": 19915,
+    "n_transfer_drivers": 504,
+    "largest_constructor_component": 184,
+    "weak_link_pairs": 0
+  },
+  "sources": {
+    "skill_gnn": {
+      "spearman": 0.43832018445687554,
+      "partial_rho": 0.28918503058543865,
+      "partial_ci_low": 0.19866779824860098,
+      "partial_ci_high": 0.3785153699990587,
+      "perm_p": 4.999750012499375e-05,
+      "cluster_ci_low": 0.3408239913833949,
+      "cluster_ci_high": 0.5286523195841627,
+      "moved_up_auroc": 0.3556646947203929,
+      "pairwise_acc_proxy": 0.717175930753989,
+      "n_joined": 921
+    },
+    "bradley_terry": {
+      "spearman": 0.5477532645467798,
+      "partial_rho": 0.3248151141815471,
+      "partial_ci_low": 0.17849121118069303,
+      "partial_ci_high": 0.46403732844888657,
+      "perm_p": 4.999750012499375e-05,
+      "cluster_ci_low": 0.40515787094415506,
+      "cluster_ci_high": 0.6699203373695597,
+      "moved_up_auroc": 0.3601449275362319,
+      "pairwise_acc_proxy": 0.45104633781763825,
+      "n_joined": 287
+    }
+  },
+  "xai": {
+    "constructor_leakage_rho": -0.5431848291262693,
+    "swap_invariance": {
+      "skill_diff": 0.0,
+      "utility_swap_delta": 0.33278454422950743,
+      "n_swaps": 200
+    },
+    "channel_decomposition": {
+      "driver_abs_mean": 0.5148996710777283,
+      "constructor_abs_mean": 0.5047134757041931,
+      "grid_abs_mean": 0.4595794677734375,
+      "driver_share_mean": 0.4734846353530884,
+      "constructor_share_mean": 0.5265153646469116,
+      "constructor_dominates": false
+    },
+    "n_samples": 856,
+    "seed": 42
+  },
+  "gates": [
+    {
+      "name": "predictive_vs_bt",
+      "passed": true,
+      "metrics": {
+        "model_acc": 0.717175930753989,
+        "bt_acc": 0.45104633781763825
+      },
+      "notes": "Model should match or beat BT pairwise accuracy"
+    },
+    {
+      "name": "partial_spearman",
+      "passed": true,
+      "metrics": {
+        "partial_rho": 0.28918503058543865
+      },
+      "notes": "Skill adds signal above constructor tier at T"
+    },
+    {
+      "name": "constructor_leakage",
+      "passed": false,
+      "metrics": {
+        "leakage_rho": -0.5431848291262693
+      },
+      "notes": "Driver readout should not correlate with constructor embedding norm"
+    },
+    {
+      "name": "swap_invariance",
+      "passed": true,
+      "metrics": {
+        "skill_diff": 0.0
+      },
+      "notes": "Driver skill stable under constructor swap"
+    }
+  ],
+  "claim_level": "car_adjusted_performance"
+}

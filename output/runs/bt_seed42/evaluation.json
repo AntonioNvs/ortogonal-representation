@@ -1,0 +1,56 @@
+{
+  "model": "bt",
+  "seed": 42,
+  "locked_test": {
+    "pl_nll": NaN,
+    "pairwise_acc": 0.6846450192625206,
+    "n_pairs": 7268
+  },
+  "career": {
+    "spearman": 0.5477983510820522,
+    "partial_rho": 0.32030725677794064,
+    "partial_ci_low": 0.17320391062496343,
+    "partial_ci_high": 0.45829890281971003,
+    "perm_p": 4.999750012499375e-05,
+    "cluster_ci_low": 0.4059643897558611,
+    "cluster_ci_high": 0.6691617587197006
+  },
+  "partial_spearman": {
+    "partial_rho": 0.32030725677794064,
+    "ci_low": 0.17320391062496343,
+    "ci_high": 0.45829890281971003,
+    "n_rows": 287,
+    "n_clusters": 46
+  },
+  "cluster_bootstrap": {
+    "rho": 0.5477983510820522,
+    "ci_low": 0.4059643897558611,
+    "ci_high": 0.6691617587197006,
+    "boot_mean": 0.5407304666330267,
+    "boot_std": 0.06817519310203907,
+    "n_clusters": 46,
+    "n_rows": 287,
+    "n_valid_replicates": 5000
+  },
+  "permutation": {
+    "rho_obs": 0.5477983510820522,
+    "p_value": 4.999750012499375e-05,
+    "n_perm_valid": 20000
+  },
+  "moved_up_auroc_all": {
+    "auroc": 0.3716013968570716,
+    "ci_low": 0.26614259561228526,
+    "ci_high": 0.49283740048095215,
+    "n_rows": 287,
+    "n_pos": 76
+  },
+  "eligible_promotion_auroc": {
+    "auroc": 0.5922467458970007,
+    "ci_low": 0.47806738887967115,
+    "ci_high": 0.6999198403617739,
+    "n_rows": 169,
+    "n_pos": 76,
+    "note": "eligible drivers only (tier_at_T < S)"
+  },
+  "n_joined": 287
+}

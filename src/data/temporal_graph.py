@@ -359,5 +359,37 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
         qualifying["constructorId"].to_numpy(dtype=np.int64)
     )
 
+    # ------------------------------------------------------------------
+    # 9. Results metadata for race-ranking skill GNN (Plackett-Luce target).
+    # ------------------------------------------------------------------
+    results_with_meta = results_unique.merge(
+        race_meta, left_on="raceId", right_index=True
+    )
+    result_driver_state = driver_state_map.reindex(
+        pd.MultiIndex.from_frame(results_with_meta[["driverId", "raceId"]])
+    ).fillna(-1).astype(np.int64).to_numpy()
+    result_constructor_state = constructor_state_map.reindex(
+        pd.MultiIndex.from_frame(results_with_meta[["constructorId", "raceId"]])
+    ).fillna(-1).astype(np.int64).to_numpy()
+
+    position_res = results_with_meta["position"].to_numpy(dtype=np.float64)
+    in_ranking = ~np.isnan(position_res)
+
+    data["results"].year = torch.from_numpy(results_with_meta["year"].to_numpy(dtype=np.int64))
+    data["results"].round = torch.from_numpy(results_with_meta["round"].to_numpy(dtype=np.int64))
+    data["results"].race_id = torch.from_numpy(results_with_meta["raceId"].to_numpy(dtype=np.int64))
+    data["results"].driver_id = torch.from_numpy(
+        results_with_meta["driverId"].to_numpy(dtype=np.int64)
+    )
+    data["results"].constructor_id = torch.from_numpy(
+        results_with_meta["constructorId"].to_numpy(dtype=np.int64)
+    )
+    data["results"].position = torch.from_numpy(position_res.astype(np.float32))
+    data["results"].in_ranking = torch.from_numpy(in_ranking)
+    data["results"].driver_state_idx = torch.from_numpy(result_driver_state)
+    data["results"].constructor_state_idx = torch.from_numpy(result_constructor_state)
+    grid = results_with_meta["grid"].to_numpy(dtype=np.float64)
+    data["results"].grid = torch.from_numpy(np.where(np.isnan(grid), 20.0, grid).astype(np.float32))
+
     data.validate()
     return data, node_to_col_names_dict, node_to_col_stats

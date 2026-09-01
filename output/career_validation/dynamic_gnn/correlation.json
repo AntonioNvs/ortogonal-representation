@@ -1,0 +1,42 @@
+{
+  "skill_source": "dynamic_gnn",
+  "n_rows": 286,
+  "cluster_bootstrap": {
+    "rho": 0.4622064890179571,
+    "ci_low": 0.2809995621696353,
+    "ci_high": 0.6102818550199026,
+    "boot_mean": 0.45133479405469795,
+    "boot_std": 0.08522600142865183,
+    "n_clusters": 46,
+    "n_rows": 286,
+    "n_valid_replicates": 5000
+  },
+  "partial_spearman": {
+    "partial_rho": 0.3198404976167261,
+    "ci_low": 0.1708834389593466,
+    "ci_high": 0.4526548131629247,
+    "n_rows": 286,
+    "n_clusters": 46
+  },
+  "permutation": {
+    "rho_obs": 0.4622064890179571,
+    "p_value": 4.999750012499375e-05,
+    "n_perm_valid": 20000
+  },
+  "moved_up_auroc": {
+    "auroc": 0.47581453634085213,
+    "ci_low": 0.3713700698103779,
+    "ci_high": 0.5830241808302982,
+    "n_rows": 286,
+    "n_pos": 76
+  },
+  "fisher_z_pooled": {
+    "rho_pooled": 0.4829831433695728,
+    "ci_low": 0.3738467310343048,
+    "ci_high": 0.5789275618632503,
+    "z_bar": 0.5268677484103029,
+    "z_se": 0.06835859270246632,
+    "n_seasons": 24,
+    "n_rows_total": 286
+  }
+}

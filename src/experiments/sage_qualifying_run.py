@@ -28,18 +28,13 @@ import config as cfg
 import data.tasks as data_tasks
 from data.temporal_graph import build_temporal_graph
 from models.sage_regressor import SageQualifyingRegressor
+from utils.device import get_device
 
 
 def set_seed(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-
-
-def get_device() -> torch.device:
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    return torch.device("cpu")
 
 
 def year_mask(years: torch.Tensor, allowed) -> torch.Tensor:
@@ -56,10 +51,11 @@ def main() -> None:
     parser.add_argument("--hidden-dim", type=int, default=128)
     parser.add_argument("--num-layers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--gpu-id", type=int, default=cfg.DEFAULT_GPU_ID)
     args = parser.parse_args()
 
     set_seed(args.seed)
-    device = get_device()
+    device = get_device(args.gpu_id)
 
     # --- load database + graph -------------------------------------------------
     data_tasks.register_all(

@@ -1,0 +1,8 @@
+{
+  "config": {
+    "max_year": 2025,
+    "min_races_for_rank": 3,
+    "bootstrap_samples": 200
+  },
+  "n_rows": 8190
+}

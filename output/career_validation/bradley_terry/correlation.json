@@ -1,0 +1,42 @@
+{
+  "skill_source": "bradley_terry",
+  "n_rows": 287,
+  "cluster_bootstrap": {
+    "rho": 0.5492638124898023,
+    "ci_low": 0.4059023578858116,
+    "ci_high": 0.6721078791418451,
+    "boot_mean": 0.5422519120933359,
+    "boot_std": 0.06866626699575486,
+    "n_clusters": 46,
+    "n_rows": 287,
+    "n_valid_replicates": 5000
+  },
+  "partial_spearman": {
+    "partial_rho": 0.3237871410247885,
+    "ci_low": 0.1775753825692227,
+    "ci_high": 0.46515849201997744,
+    "n_rows": 287,
+    "n_clusters": 46
+  },
+  "permutation": {
+    "rho_obs": 0.5492638124898023,
+    "p_value": 4.999750012499375e-05,
+    "n_perm_valid": 20000
+  },
+  "moved_up_auroc": {
+    "auroc": 0.37359690695934145,
+    "ci_low": 0.2686382956469922,
+    "ci_high": 0.4947395718063456,
+    "n_rows": 287,
+    "n_pos": 76
+  },
+  "fisher_z_pooled": {
+    "rho_pooled": 0.6184411627150055,
+    "ci_low": 0.5290380500533707,
+    "ci_high": 0.6942662793328745,
+    "z_bar": 0.7224768273638823,
+    "z_se": 0.06819943394704735,
+    "n_seasons": 24,
+    "n_rows_total": 287
+  }
+}

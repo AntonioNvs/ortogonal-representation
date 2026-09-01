@@ -1,0 +1,23 @@
+{
+  "skill_source": "skill_gnn",
+  "constructor_leakage_rho": -0.4333059304364266,
+  "swap_invariance": {
+    "skill_diff": 0.0,
+    "utility_swap_delta": 0.3074572210013866,
+    "n_swaps": 100
+  },
+  "channel_decomposition": {
+    "driver_abs_mean": 0.46455201506614685,
+    "constructor_abs_mean": 0.5119126439094543,
+    "grid_abs_mean": 0.4714999794960022,
+    "driver_share_mean": 0.43293270468711853,
+    "constructor_share_mean": 0.5670672953128815,
+    "constructor_dominates": false
+  },
+  "gates": {
+    "constructor_leakage": false,
+    "swap_invariance": true
+  },
+  "n_samples": 100,
+  "seed": 42
+}

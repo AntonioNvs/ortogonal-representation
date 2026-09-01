@@ -108,3 +108,8 @@ TEMPORAL_CURVE_MODEL = "high"  # lambda_orthogonal = 1.0
 
 # Default GPU for all training and experiment scripts.
 DEFAULT_GPU_ID = 7
+
+# Bradley-Terry walk-forward defaults
+BT_LR = 0.1
+BT_EPOCHS_PER_STEP = 30
+CAREER_VALIDATION_MIN_YEAR = 2000

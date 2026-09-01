@@ -1,0 +1,13 @@
+{
+  "config": {
+    "hidden_dim": 128,
+    "num_layers": 4,
+    "grid_weight": 0.05,
+    "seed": 42
+  },
+  "metrics": {
+    "best_val_pl": 1.739943504333496,
+    "test_pl": 1.7167590856552124,
+    "test_pairwise_acc": 0.7945374845453523
+  }
+}
