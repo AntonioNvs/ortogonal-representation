@@ -11,6 +11,7 @@ import pandas as pd
 sys.path.append(os.path.abspath("src"))
 
 from visualization.driver_rankings import plot_driver_rankings, resolve_driver_labels
+from visualization.style import resolve_plot_output_dir
 
 
 def main() -> None:
@@ -33,10 +34,10 @@ def main() -> None:
                 f"team={r.get('constructorRef', '?')})"
             )
 
-    out = args.output or f"output/skill_rankings/plots/season_{args.season}_rankings.png"
-    os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
+    out = args.output or f"output/skill_rankings/plots/season_{args.season}_rankings"
     plot_driver_rankings(rankings, args.season, args.drivers, output_path=out, mode=args.mode)
-    print(f"saved plot to {out}")
+    out_dir, _ = resolve_plot_output_dir(out)
+    print(f"saved plots to {out_dir}/")
 
 
 if __name__ == "__main__":

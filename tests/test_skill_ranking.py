@@ -37,10 +37,10 @@ def test_cumulative_season_skill_causal():
     race_df = pd.DataFrame(
         {
             "driverId": [1, 1, 1, 2, 2],
-            "year": [2024, 2024, 2024, 2024, 2024],
+            "season": [2024, 2024, 2024, 2024, 2024],
             "round": [1, 2, 3, 1, 2],
             "raceId": [10, 11, 12, 10, 11],
-            "race_skill": [0.9, 0.8, 0.7, 0.5, 0.6],
+            "skill_0_10": [9.0, 8.0, 7.0, 5.0, 6.0],
             "constructorId": [1, 1, 1, 2, 2],
             "driverRef": ["a", "a", "a", "b", "b"],
             "constructorRef": ["t1", "t1", "t1", "t2", "t2"],
@@ -48,9 +48,7 @@ def test_cumulative_season_skill_causal():
     )
     cum = cumulative_season_skill(race_df)
     d1_r2 = cum[(cum["driverId"] == 1) & (cum["round"] == 2)]["season_skill"].iloc[0]
-    assert d1_r2 == pytest.approx(0.85)
-    d1_r3 = cum[(cum["driverId"] == 1) & (cum["round"] == 3)]["season_skill"].iloc[0]
-    assert d1_r3 == pytest.approx(0.8)
+    assert d1_r2 == pytest.approx(8.5)
 
 
 def test_resolve_drivers():

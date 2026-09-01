@@ -1,3 +1,25 @@
+# Generated outputs — do not commit artifacts
+output/skill_exports/
+output/validation_benchmark/
+output/plots/
+output/skill_model/*.pth
+output/skill_model/*.pt
+output/career_validation/
+output/skill_evaluation/
+output/models/
+output/significance*/
+output/temporal_curve*/
+output/runs/
+output/shap_encoder*
+output/impact_analysis*
+output/skill_rankings/
+notebooks/output/
+
+# Keep directory structure
+!output/.gitkeep
+!output/plots/.gitkeep
+!output/skill_exports/.gitkeep
+
 /venv
 /cache
 **/__pycache__/
@@ -18,4 +40,3 @@ data/raw/jolpica/*
 # Mantém o arquivo marcador .gitkeep para preservar as pastas
 !data/raw/f1db/.gitkeep
 !data/raw/jolpica/.gitkeep
-

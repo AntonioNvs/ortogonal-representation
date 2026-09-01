@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from visualization.style import save_figure
+
 logger = logging.getLogger(__name__)
 
 # Common shorthand -> Ergast driverRef aliases.
@@ -264,7 +266,5 @@ def plot_driver_rankings(
     fig.text(0.5, 0.02, BOOTSTRAP_CAPTION, ha="center", fontsize=9, color="0.45", wrap=True)
 
     if output_path:
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        svg_path = output_path.rsplit(".", 1)[0] + ".svg"
-        fig.savefig(svg_path, bbox_inches="tight")
+        save_figure(fig, output_path)
     return fig

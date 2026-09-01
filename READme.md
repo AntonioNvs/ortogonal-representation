@@ -1,59 +1,45 @@
-### To-Do
+# F1 Driver Skill — Validation-First Pipeline
 
-**04/06**
+Research project on **car-adjusted driver performance** in Formula 1 using a GNN-first architecture with model-agnostic validation benchmarks.
 
-- [X] Reformulação completa do sistema, simplificando a base de dados e o modelo
-  - [X] Diminuição de loss
-  - [X] Remoção do *track encoder*
-  - [X] Somente uma base de dados, a relbench
-  - [X] Ter uma GNN que gera dois espaços latentes, ao invés de dois modelos
-- [X] Fazer um treinamento completo e analisá-lo no analysis.ipynb
-- [X] Verificar o temporal leakage no treinamento, adicionando uma máscara nas arestas
-- [ ] Estudar sobre espaços latentes ortogonais
+## Validation-first workflow
 
-**05/06**
+Define and run benchmarks **before** promoting any new model:
 
-- [ ] Agrupamento de referências literárias sobre o tema
-- [ ] Estruturação do relatório final, nas definições que são propostas
+```bash
+# 1. Export baselines
+python src/experiments/run_bradley_terry.py --max-year 2025
+python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2021 --smoke-test  # dev only
 
-### Perguntas que preciso responder e saber bem
+# 2. Unified benchmark (career gates + locked 2024–2025 PL + Shapley decomposition)
+python src/experiments/run_validation_benchmark.py --sources bradley_terry
 
-#### 1. Porque usar o relbench dataset?
+# 3. Publication plots
+python src/experiments/plots/plot_team_tier_heatmap.py --start-year 2014 --end-year 2025
+python src/experiments/plots/plot_driver_season_skill.py --source bradley_terry --season 2024 --driver verstappen
+python src/experiments/plots/plot_driver_rank_evolution.py --source bradley_terry --driver verstappen --driver hamilton --driver leclerc --driver norris --start-year 2018 --end-year 2024
+python src/experiments/plots/plot_entity_attribution.py --source bradley_terry --season 2024
+```
 
-- Padronização e Relevância: O Relbench é um benchmark moderno e padronizado especificamente desenhado para aprendizado de máquina em bancos de dados relacionais (Deep Learning on Relational Databases).
-- Complexidade Realista: Diferente de datasets tabulares simples, ele reflete a complexidade do mundo real com múltiplas tabelas, chaves primárias/estrangeiras e, crucialmente, dados temporais.
-- Comparabilidade: Usar um benchmark estabelecido permite que seus resultados sejam comparados de forma justa com o estado da arte (state-of-the-art), validando a eficácia da sua abordagem de representação ortogonal contra baselines conhecidos.
+## Contract
 
-#### 2. Porque usar um modelo de rede neural para grafos?
+Every model exports `SkillExport` (`src/skill/contract.py`):
 
-- Mapeamento Natural: Bancos de dados relacionais são, em sua essência, grafos. As linhas das tabelas são os nós (entidades) e as chaves estrangeiras são as arestas (relações).
-- Captura de Contexto Multi-hop: Modelos tradicionais (como XGBoost ou MLPs) exigem engenharia de features manual (feature engineering) para juntar (JOIN) tabelas. As GNNs (como o seu graph_encoder.py) conseguem agregar informações de vizinhanças complexas e distantes de forma automática, capturando dependências estruturais que modelos tabulares ignoram.
+- Per-race: `raw_skill`, calibrated `skill_0_10` ∈ [0,10], uncertainty, driver/constructor/context contributions
+- Per-season aggregates for career validation
+- Inference modes: `filtered` (causal) vs `smoothed` (descriptive only)
 
-#### 3. Porque o conjunto de treino/validação/teste foi esse?
+See [docs/model_contract.md](docs/model_contract.md) for gates, baselines, and claim levels.
 
-- Divisão Temporal (Time-based Split): Em dados relacionais e temporais (como os do Relbench), divisões aleatórias (random splits) causam vazamento de dados (data leakage). A justificativa ideal é que o split foi feito de forma cronológica (ex: treinar em dados até 2020, validar em 2021, testar em 2022).
-- Simulação do Mundo Real: Isso garante que o modelo seja avaliado exatamente como seria usado na vida real: prevendo o futuro com base apenas no passado.
+## Primary model (when trained)
 
-#### 4. Há temporal leakage no treinamento?
+```bash
+python src/experiments/train_skill_gnn.py --seed 42
+python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry bayesian_ssm
+```
 
-- O pipeline de amostragem, gerenciado pelo Relbench e tratado no train.py garante que, para prever um alvo no tempo t, o modelo só tem acesso a features e arestas do grafo onde o carimbo de tempo (timestamp) é estritamente menor que t.
+## Dependencies
 
-#### 5. Porque aplicar loss de ortogonalidade?
+Core: `torch`, `torch-geometric`, `relbench`, `pandas`, `scipy`, `scikit-learn`, `matplotlib`, `seaborn`, `pyarrow`
 
-- Redução de Redundância: Em redes neurais profundas, é comum que diferentes neurônios ou cabeças de atenção aprendam a mesma coisa (colapso de representação). A loss de ortogonalidade força os vetores de representação (embeddings) a serem independentes/descorrelacionados.
-- Desemaranhamento (Disentanglement): Ajuda o modelo a aprender características distintas e complementares dos dados. Como você tem um pipeline_fusion.py, a ortogonalidade pode estar sendo usada para garantir que as diferentes fontes de informação (ou diferentes sub-redes) não sobreponham suas representações antes da fusão.
-
-#### 6. A loss de ortogonalidade realmente da certo?
-
-- ESCREVER APÓS OS TESTES FINAIS
-
-#### 7. Como comprovar que a loss de ortogonalidade ajuda?
-
-- Estudo de Ablação: lambda = 0, lambda > 0
-- Testes de Significância: aucroc melhor, metrica de ortogonalidade melhor
-- Análise qualitativa: matriz de covariância das representações geradas
-
-#### 8. Como saber que as aplicações que eu quero podem ser de valia?
-
-- Comparação com Baselines Fortes
-- Impacto no negócio: exemplo de uso dos encoders
+Bayesian baseline: `cmdstanpy`, `arviz` (+ [CmdStan](https://mc-stan.org/users/interfaces/cmdstan) installed separately)

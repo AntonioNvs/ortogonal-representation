@@ -1,14 +1,13 @@
-"""Semantic attribution via SkillGNN additive channel decomposition."""
+"""Semantic attribution via Shapley variance decomposition."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-import torch
+import pandas as pd
 
-from explain.skill_gnn_probes import ProbeSampleConfig, channel_decomposition, sample_race_rows
-from models.skill_gnn import SkillGNN
+from skill.decomposition import shapley_variance_shares
 
 
 @dataclass
@@ -29,36 +28,24 @@ class SemanticAttribution:
         }
 
 
-@torch.no_grad()
-def semantic_attribution(
-    model: SkillGNN,
-    graph_data,
-    tf_dict,
-    edge_index_dict,
-    device: torch.device,
-    config: Optional[ProbeSampleConfig] = None,
-) -> SemanticAttribution:
-    """Mean absolute channel contributions (SkillGNN has no separate context channel)."""
-    config = config or ProbeSampleConfig()
-    sample_idx = sample_race_rows(graph_data, config)
-    channels = channel_decomposition(
-        model, graph_data, tf_dict, edge_index_dict, device, sample_idx
+def semantic_attribution_from_race_df(race_df: pd.DataFrame) -> SemanticAttribution:
+    """Mean Shapley variance shares from race-level contributions."""
+    shares = shapley_variance_shares(
+        race_df["contrib_driver"].to_numpy(),
+        race_df["contrib_constructor"].to_numpy(),
+        race_df["contrib_context"].to_numpy(),
     )
-    driver = channels["driver_abs_mean"]
-    constructor = channels["constructor_abs_mean"]
-    grid = channels["grid_abs_mean"]
     return SemanticAttribution(
-        driver=driver,
-        constructor=constructor,
-        context=0.0,
-        grid=grid,
-        total=driver + constructor + grid,
+        driver=shares["driver"],
+        constructor=shares["constructor"],
+        context=shares["context"],
+        grid=shares.get("context", 0.0),
+        total=1.0,
     )
 
 
-def shapley_semantic_four_player(*args, **kwargs) -> Dict[str, float]:
-    """Shapley decomposition is redundant for SkillGNN's additive readout."""
-    raise NotImplementedError(
-        "shapley_semantic_four_player is not implemented; use semantic_attribution() "
-        "for SkillGNN's explicit driver/constructor/grid channels."
-    )
+def semantic_attribution(*args, **kwargs):
+    """Legacy entrypoint — pass a race DataFrame as first argument."""
+    if args and isinstance(args[0], pd.DataFrame):
+        return semantic_attribution_from_race_df(args[0])
+    raise TypeError("semantic_attribution now requires a race-level DataFrame export")

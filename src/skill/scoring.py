@@ -7,25 +7,29 @@ import pandas as pd
 
 
 def cumulative_season_skill(race_df: pd.DataFrame) -> pd.DataFrame:
-    """Causal as-of-round cumulative mean race_skill per (driver, season)."""
+    """Causal as-of-round cumulative mean skill per (driver, season)."""
+    df = race_df.copy()
+    season_col = "season" if "season" in df.columns else "year"
+    skill_col = "skill_0_10" if "skill_0_10" in df.columns else "raw_skill" if "raw_skill" in df.columns else "race_skill"
+
     rows = []
-    for (driver_id, season), grp in race_df.groupby(["driverId", "year"]):
+    for (driver_id, season), grp in df.groupby(["driverId", season_col]):
         grp = grp.sort_values("round")
         skills = []
         for _, r in grp.iterrows():
-            skills.append(float(r["race_skill"]))
+            skills.append(float(r[skill_col]))
             rows.append(
                 {
                     "driverId": int(driver_id),
                     "season": int(season),
                     "round": int(r["round"]),
                     "raceId": int(r["raceId"]),
-                    "race_skill": float(r["race_skill"]),
+                    "race_skill": float(r[skill_col]),
                     "season_skill": float(np.mean(skills)),
                     "n_races": len(skills),
                     "constructorId": int(r["constructorId"]),
-                    "driverRef": r.get("driverRef", ""),
-                    "constructorRef": r.get("constructorRef", ""),
+                    "driverRef": r.get("driverRef", r.get("driver_name", "")),
+                    "constructorRef": r.get("constructorRef", r.get("constructor_name", "")),
                 }
             )
     out = pd.DataFrame(rows)

@@ -11,12 +11,13 @@ sys.path.append(os.path.abspath("src"))
 
 import config as cfg
 import data.tasks as data_tasks
+from baselines.skill_loader import load_skill_export, season_scores_for_career
 from baselines.skill_gnn_skill import get_skill_gnn_db
-from experiments.evaluate_skill_model import join_career, load_skill_by_source
+from experiments.evaluate_skill_model import join_career
 from validation.inference import (
     cluster_bootstrap_spearman,
+    eligible_promotion_auroc,
     fisher_z_pooled,
-    moved_up_auroc,
     partial_spearman,
     permutation_within_season,
 )
@@ -38,6 +39,7 @@ def main() -> None:
     parser.add_argument("--meta", type=str, default="output/skill_model/skill_gnn_meta.json")
     args = parser.parse_args()
 
+    source = "bayesian_ssm" if args.skill_source == "bayesian_comparator" else args.skill_source
     output_dir = args.output_dir or os.path.join("output/career_validation", args.skill_source)
 
     data_tasks.register_all(
@@ -51,13 +53,13 @@ def main() -> None:
     lineage = lineage_id_by_constructor(db.table_dict["constructors"].df)
     team_tier = compute_team_tiers(compute_constructor_season_points(db), lineage=lineage)
 
-    skill = load_skill_by_source(
-        args.skill_source,
+    export = load_skill_export(
+        source,
         db,
-        team_tier,
         checkpoint_path=args.checkpoint,
         meta_path=args.meta,
     )
+    skill = season_scores_for_career(export)
     joined = join_career(skill, db, team_tier, horizon=args.horizon)
 
     report = {
@@ -66,7 +68,7 @@ def main() -> None:
         "cluster_bootstrap": cluster_bootstrap_spearman(joined),
         "partial_spearman": partial_spearman(joined),
         "permutation": permutation_within_season(joined),
-        "moved_up_auroc": moved_up_auroc(joined),
+        "eligible_promotion_auroc": eligible_promotion_auroc(joined),
     }
 
     per_season = []
@@ -86,6 +88,7 @@ def main() -> None:
         json.dump(report, f, indent=2, default=float)
     joined.to_csv(os.path.join(output_dir, "joined.csv"), index=False)
     skill.to_csv(os.path.join(output_dir, "skill_scores.csv"), index=False)
+    export.race.to_parquet(os.path.join(output_dir, "race_skill.parquet"), index=False)
     team_tier.to_csv(os.path.join(output_dir, "team_tiers.csv"), index=False)
     print(json.dumps(report, indent=2, default=float))
 
