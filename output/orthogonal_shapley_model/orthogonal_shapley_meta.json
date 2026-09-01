@@ -1,0 +1,19 @@
+{
+  "config": {
+    "hidden_dim": 32,
+    "num_layers": 2,
+    "lambda_orth": 1.0,
+    "aux_weight": 0.5,
+    "orth_warmup_epochs": 5,
+    "max_grad_norm": 0.0,
+    "seed": 42
+  },
+  "metrics": {
+    "best_val_pl": 3.595081329345703,
+    "test_pl": 3.705562114715576,
+    "test_pairwise_acc": 0.72102956052602,
+    "test_top3_auroc": 0.8726321988597019,
+    "test_orth_loss": 0.0027733389288187027
+  },
+  "coalition_baselines_path": "output/orthogonal_shapley_model/coalition_baselines.json"
+}

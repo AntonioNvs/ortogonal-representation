@@ -11,6 +11,7 @@ import pandas as pd
 import config as cfg
 from baselines.bradley_terry_skill import export_bradley_terry
 from baselines.bayesian_ssm import export_bayesian_ssm
+from baselines.orthogonal_shapley_skill import export_orthogonal_shapley
 from baselines.skill_gnn_skill import export_skill_gnn
 from baselines.teammate_residual import export_teammate_residual
 from data.enriched_dataset import EnrichedF1Dataset
@@ -33,6 +34,7 @@ def load_skill_export(
     output_dir: Optional[str] = None,
     checkpoint_path: str = "output/skill_model/skill_gnn.pth",
     meta_path: str = "output/skill_model/skill_gnn_meta.json",
+    baselines_path: Optional[str] = None,
     force_recompute: bool = False,
 ) -> SkillExport:
     """Load or compute a validated SkillExport for the given source."""
@@ -90,6 +92,20 @@ def load_skill_export(
             db,
             checkpoint_path=checkpoint_path,
             meta_path=meta_path,
+            max_year=max_year,
+            inference_mode=inference_mode,
+        )
+    elif source == "orthogonal_shapley":
+        orth_ckpt = checkpoint_path
+        orth_meta = meta_path
+        if checkpoint_path == "output/skill_model/skill_gnn.pth":
+            orth_ckpt = "output/orthogonal_shapley_model/orthogonal_shapley.pth"
+            orth_meta = "output/orthogonal_shapley_model/orthogonal_shapley_meta.json"
+        export = export_orthogonal_shapley(
+            db,
+            checkpoint_path=orth_ckpt,
+            meta_path=orth_meta,
+            baselines_path=baselines_path,
             max_year=max_year,
             inference_mode=inference_mode,
         )

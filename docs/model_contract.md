@@ -41,6 +41,7 @@ skill_0_10        = 10 * sigmoid(alpha * (f - mu_train) / sigma_train)
 | **Benchmark BT** | Walk-forward race-level Bradley–Terry | `src/baselines/bradley_terry_skill.py` |
 | **Benchmark Bayesian** | Lindner et al. state-space (Stan/NUTS) | `src/baselines/bayesian_ssm.py` |
 | Simple baseline | Teammate-residual | `src/baselines/teammate_residual.py` |
+| **Candidate (2026-09-01)** | OrthogonalShapleyGNN — SAGE+MLP fusion + coalition Shapley | `src/models/orthogonal_shapley_gnn.py` |
 
 ## Common export contract
 
@@ -113,6 +114,11 @@ python src/experiments/run_validation_benchmark.py --sources bradley_terry bayes
 # Primary GNN (when ready)
 python src/experiments/train_skill_gnn.py --seed 42
 python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry bayesian_ssm
+
+# OrthogonalShapleyGNN candidate (SAGE+MLP + coalition Shapley)
+python src/experiments/train_orthogonal_shapley_gnn.py --seed 42
+python src/experiments/run_orthogonal_shapley_pipeline.py --stages all
+python src/experiments/run_validation_benchmark.py --sources orthogonal_shapley bradley_terry
 
 # Plots
 python src/experiments/plots/plot_team_tier_heatmap.py --start-year 2014 --end-year 2025

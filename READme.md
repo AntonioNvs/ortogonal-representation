@@ -38,6 +38,24 @@ python src/experiments/train_skill_gnn.py --seed 42
 python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry bayesian_ssm
 ```
 
+## OrthogonalShapleyGNN (candidate)
+
+Port of the historical SAGE+MLP orthogonal pipeline onto the causal temporal graph (`src/models/orthogonal_shapley_gnn.py`). **It does not train on qualifying session nodes** — pre-race context is the **starting grid** (`results.grid`, i.e. qualifying outcome), passed as two normalized features. The training target is **classified race finish order**.
+
+**Data:** enriched RelBench F1 relational DB → `build_temporal_graph` (`src/data/temporal_graph.py`): per-round `driver_state` / `constructor_state` nodes (static driver/team features + causal message passing over past results, constructor results, races, circuits). Race rows supply finish `position`, `grid`, and state indices.
+
+**Architecture:** RelBench `HeteroEncoder` → 2-layer heterogeneous SAGE (`mean` then `max`) on state nodes → concatenate `[driver_emb ‖ constructor_emb ‖ grid_context]` → MLP utility head; plus auxiliary linear heads on driver-only and constructor-only embeddings.
+
+**Loss:** Plackett–Luce NLL on fused utility, plus `0.5 ×` (driver aux + constructor aux PL), plus `λ_orth ×` paired orthogonal penalty (mean squared cosine similarity of matched driver/constructor embeddings; linear warmup over 5 epochs, default `λ_orth=1`).
+
+**Skill readout:** at export, driver skill is the exact 3-coalition Shapley value (driver / constructor / grid context) of the fused MLP utility, with train-only baselines (`src/explain/coalition_shapley.py`).
+
+```bash
+python src/experiments/train_orthogonal_shapley_gnn.py --seed 42
+python src/experiments/run_orthogonal_shapley_pipeline.py --stages all
+python src/experiments/run_validation_benchmark.py --sources orthogonal_shapley bradley_terry
+```
+
 ## Dependencies
 
 Core: `torch`, `torch-geometric`, `relbench`, `pandas`, `scipy`, `scikit-learn`, `matplotlib`, `seaborn`, `pyarrow`

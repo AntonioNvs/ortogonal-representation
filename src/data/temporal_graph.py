@@ -71,6 +71,44 @@ RESULTS_COLS = [
 CONSTRUCTOR_RESULTS_COLS = ["points", "date"]
 
 
+def deduplicate_results(results: pd.DataFrame) -> pd.DataFrame:
+    """Collapse Ergast shared-drive duplicate ``(driverId, raceId)`` rows.
+
+    The pristine Ergast source (1950s) can list the same driver twice for one
+    race — one row with ``position=NaN`` (shared drive) and one with the actual
+    finish.  We keep the row with the best (lowest, non-null) position so every
+    ``(driverId, raceId)`` pair is unique across nodes, edges, and PL metadata.
+    """
+    dup = results.duplicated(subset=["driverId", "raceId"], keep=False)
+    if dup.any():
+        n_pairs = int(
+            results.loc[dup, ["driverId", "raceId"]].drop_duplicates().shape[0]
+        )
+        print(
+            f"[temporal_graph] deduplicated {int(dup.sum())} results rows across "
+            f"{n_pairs} (driverId, raceId) pairs (1950s shared-drive); kept best position."
+        )
+    return (
+        results.sort_values("position", ascending=True, na_position="last")
+        .drop_duplicates(subset=["driverId", "raceId"], keep="first")
+        .reset_index(drop=True)
+    )
+
+
+def deduplicate_constructor_results(constructor_results: pd.DataFrame) -> pd.DataFrame:
+    """Defensive dedup for ``(constructorId, raceId)`` (expected unique)."""
+    dup = constructor_results.duplicated(subset=["constructorId", "raceId"], keep=False)
+    if dup.any():
+        print(
+            f"[temporal_graph] deduplicated {int(dup.sum())} constructor_results rows "
+            f"on (constructorId, raceId); kept first."
+        )
+    return (
+        constructor_results.drop_duplicates(subset=["constructorId", "raceId"], keep="first")
+        .reset_index(drop=True)
+    )
+
+
 def _materialize_node(df: pd.DataFrame, col_to_stype: Dict[str, Any]) -> Tuple:
     """Materialize a single node-type DataFrame into a tensor frame + col stats,
     mirroring ``relbench.modeling.graph.make_pkey_fkey_graph``."""
@@ -99,8 +137,10 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     constructors = db.table_dict["constructors"].df
     circuits = db.table_dict["circuits"].df
     races = db.table_dict["races"].df
-    results = db.table_dict["results"].df
-    constructor_results = db.table_dict["constructor_results"].df
+    results = deduplicate_results(db.table_dict["results"].df)
+    constructor_results = deduplicate_constructor_results(
+        db.table_dict["constructor_results"].df
+    )
     qualifying = db.table_dict["qualifying"].df
 
     race_meta = races.set_index("raceId")[["year", "round"]]
@@ -196,42 +236,13 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     )
 
     # ------------------------------------------------------------------
-    # 5. Evidence edges: results@(T,k-1) -> state@(T,k). ``resultId`` is a
-    #    contiguous pkey, so it is also the ``results`` node index.
+    # 5. Evidence edges: results@(T,k-1) -> state@(T,k).
+    # Node index = row position in the deduplicated ``results`` frame (not the
+    # raw ``resultId`` PK, which has gaps after dedup).
     # ------------------------------------------------------------------
-    # The Ergast source can carry a small number of duplicate (driverId,
-    # raceId) rows (same driver, same race, multiple result rows). They all
-    # describe the same outcome, so we collapse to the first row by natural
-    # key before indexing — but surface them first so the count is visible.
-    dup_driver = results.duplicated(subset=["driverId", "raceId"], keep=False)
-    if dup_driver.any():
-        dup_rows = results.loc[dup_driver, ["resultId", "driverId", "raceId", "position"]]
-        n_pairs = int(
-            results.loc[dup_driver, ["driverId", "raceId"]].drop_duplicates().shape[0]
-        )
-        # Historical source artifact (1950s shared-drive / dual-entry records):
-        # the *same* driver can carry two ``results`` rows for one race, one of
-        # them with a NaN ``position``. Not a bug we introduced — it is already
-        # present in the pristine Ergast/relbench ``results.csv`` (the sample
-        # pairs land in raceId 2/5/6, i.e. the 1950 season). We resolve it by
-        # keeping the non-null-position row (see below), so no evidence is lost.
-        print(
-            f"[temporal_graph] NOTE: results has {int(dup_driver.sum())} rows duplicated "
-            f"on (driverId, raceId) across {n_pairs} pairs (1950s shared-drive records; "
-            f"the NaN-position duplicate is dropped). Keeping the non-null-position row. "
-            f"sample: {dup_rows.head(6).to_dict('records')}"
-        )
-    # Prefer the non-null position row when a (driverId, raceId) pair is
-    # duplicated: sort so NaN positions fall to the end, then take the first.
-    # ``keep="first"`` on the raw order would sometimes keep the NaN row and
-    # drop the actual finishing position (see the sample in the note above).
-    results_unique = (
-        results.sort_values("position", ascending=True, na_position="last")
-        .drop_duplicates(subset=["driverId", "raceId"], keep="first")
-    )
     result_id_map = pd.Series(
-        results_unique["resultId"].to_numpy(),
-        index=pd.MultiIndex.from_frame(results_unique[["driverId", "raceId"]]),
+        np.arange(len(results), dtype=np.int64),
+        index=pd.MultiIndex.from_frame(results[["driverId", "raceId"]]),
     )
     dprev_race = np.full(len(driver_pairs), -1, dtype=np.int64)
     dprev_race[ddst] = driver_pairs["raceId"].to_numpy()[dsrc]
@@ -246,20 +257,10 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
         dprev_result[dhas_prev], np.flatnonzero(dvalid)[dhas_prev]
     )
 
-    # Same dedup guard for team evidence (defensive; this table is expected to
-    # be unique per (constructor, race), but keep the same robustness).
-    dup_cons = constructor_results.duplicated(subset=["constructorId", "raceId"], keep=False)
-    if dup_cons.any():
-        print(
-            f"[temporal_graph] WARNING: constructor_results has {int(dup_cons.sum())} "
-            f"duplicate (constructorId, raceId) rows; keeping first."
-        )
-    cresults_unique = constructor_results.drop_duplicates(
-        subset=["constructorId", "raceId"], keep="first"
-    )
+    # Same for constructor_results: node index = row position after dedup.
     cresult_id_map = pd.Series(
-        cresults_unique["constructorResultsId"].to_numpy(),
-        index=pd.MultiIndex.from_frame(cresults_unique[["constructorId", "raceId"]]),
+        np.arange(len(constructor_results), dtype=np.int64),
+        index=pd.MultiIndex.from_frame(constructor_results[["constructorId", "raceId"]]),
     )
     cprev_race = np.full(len(constructor_pairs), -1, dtype=np.int64)
     cprev_race[cdst] = constructor_pairs["raceId"].to_numpy()[csrc]
@@ -362,7 +363,7 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     # ------------------------------------------------------------------
     # 9. Results metadata for race-ranking skill GNN (Plackett-Luce target).
     # ------------------------------------------------------------------
-    results_with_meta = results_unique.merge(
+    results_with_meta = results.merge(
         race_meta, left_on="raceId", right_index=True
     )
     result_driver_state = driver_state_map.reindex(

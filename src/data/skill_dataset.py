@@ -14,6 +14,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from data.temporal_graph import deduplicate_results
 from relbench.base import Database
 
 
@@ -80,11 +81,8 @@ def build_skill_dataset(db: Database, config: Optional[SkillDatasetConfig] = Non
     res = results.merge(race_meta, left_on="raceId", right_index=True, how="inner")
     res = res[(res["year"] >= cfg.min_year) & (res["year"] <= cfg.max_year)]
 
-    # Dedup results on (driverId, raceId) — same guard as temporal_graph.
-    res = (
-        res.sort_values("position", ascending=True, na_position="last")
-        .drop_duplicates(subset=["driverId", "raceId"], keep="first")
-    )
+    # Dedup results on (driverId, raceId) — shared with temporal_graph.
+    res = deduplicate_results(res)
 
     n_qual = qual.groupby("raceId")["qualifyId"].transform("size").astype(float)
     qual["qualifying_skill"] = _normalize_rank(qual["position"].astype(float), n_qual)

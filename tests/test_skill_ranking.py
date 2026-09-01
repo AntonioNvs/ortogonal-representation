@@ -9,7 +9,7 @@ import torch
 
 from data.skill_dataset import DnfPolicy, SkillDatasetConfig, _normalize_rank, assert_skill_dataset_invariants
 from models.ranking_likelihood import plackett_luce_nll
-from skill.scoring import cumulative_season_skill
+from skill.scoring import cumulative_season_skill, peak_season_skill
 from visualization.driver_rankings import _resolve_drivers, plot_driver_rankings
 
 
@@ -82,6 +82,29 @@ def test_plot_two_drivers():
     import matplotlib.pyplot as plt
 
     plt.close(fig)
+
+
+def test_peak_season_skill():
+    race = pd.DataFrame(
+        {
+            "driverId": [1, 1, 1, 2, 2],
+            "season": [2024, 2024, 2024, 2024, 2024],
+            "round": [1, 2, 3, 1, 2],
+            "raceId": [101, 102, 103, 101, 102],
+            "skill_0_10": [7.0, 9.5, 8.0, 6.0, 8.5],
+            "driver_name": ["Max Verstappen"] * 3 + ["Lando Norris"] * 2,
+            "constructor_name": ["Red Bull"] * 3 + ["McLaren"] * 2,
+        }
+    )
+    peaks = peak_season_skill(race)
+    assert len(peaks) == 2
+    verstappen = peaks.loc[peaks["driverId"] == 1].iloc[0]
+    norris = peaks.loc[peaks["driverId"] == 2].iloc[0]
+    assert verstappen["peak_skill"] == pytest.approx((7.0 + 9.5 + 8.0) / 3)
+    assert verstappen["n_races"] == 3
+    assert norris["peak_skill"] == pytest.approx((6.0 + 8.5) / 2)
+    ranked = peaks.sort_values("peak_skill", ascending=False).reset_index(drop=True)
+    assert ranked.iloc[0]["driver_name"] == "Max Verstappen"
 
 
 @pytest.mark.skipif(

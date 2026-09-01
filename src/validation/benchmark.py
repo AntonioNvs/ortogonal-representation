@@ -12,6 +12,7 @@ import config as cfg
 from data.mobility import compute_mobility_report
 from data.race_panel import RacePanelConfig, build_race_panel
 from data.skill_dataset import SkillDatasetConfig
+from explain.orthogonal_shapley_probes import run_orthogonal_shapley_probes
 from explain.skill_gnn_probes import ProbeSampleConfig, infer_claim_level, run_xai_probes
 from skill.calibration import distribution_diagnostics
 from skill.contract import InferenceMode, SkillExport
@@ -45,6 +46,7 @@ def benchmark_source(
     *,
     checkpoint_path: Optional[str] = None,
     meta_path: Optional[str] = None,
+    baselines_path: Optional[str] = None,
     xai_seed: int = 42,
 ) -> Dict:
     """Full benchmark report for one SkillExport."""
@@ -93,13 +95,32 @@ def benchmark_source(
     # Mobility
     report["mobility"] = compute_mobility_report(db, SkillDatasetConfig(max_year=export.metadata.max_year)).to_dict()
 
-    # SkillGNN XAI (optional)
+    # Model XAI probes (optional)
     if source == "skill_gnn" and checkpoint_path:
         try:
             xai = run_xai_probes(
                 db,
                 checkpoint_path=checkpoint_path,
                 meta_path=meta_path or "output/skill_model/skill_gnn_meta.json",
+                config=ProbeSampleConfig(seed=xai_seed),
+            )
+            report["xai"] = xai
+            report["claim_level"] = infer_claim_level(
+                partial_rho=career.get("partial_rho", float("nan")),
+                partial_ci_low=career.get("partial_ci_low", float("nan")),
+                leakage_rho=xai["constructor_leakage_rho"],
+            )
+        except Exception as exc:
+            report["xai_error"] = str(exc)
+    elif source == "orthogonal_shapley":
+        try:
+            orth_ckpt = checkpoint_path or "output/orthogonal_shapley_model/orthogonal_shapley.pth"
+            orth_meta = meta_path or "output/orthogonal_shapley_model/orthogonal_shapley_meta.json"
+            xai = run_orthogonal_shapley_probes(
+                db,
+                checkpoint_path=orth_ckpt,
+                meta_path=orth_meta,
+                baselines_path=baselines_path,
                 config=ProbeSampleConfig(seed=xai_seed),
             )
             report["xai"] = xai
