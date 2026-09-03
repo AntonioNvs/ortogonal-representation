@@ -201,21 +201,30 @@ def cox_univariate(
     x = x - x.mean()
     beta = 0.0
     for _ in range(max_iter):
-        # Breslow partial likelihood score and information.
+        # Breslow partial likelihood score and information. Risk-set weights use
+        # the log-sum-exp (max-subtraction) trick so exp(beta*x) never overflows,
+        # and the Newton step is damped so beta cannot diverge.
         score = 0.0
         info = 0.0
         for i in np.where(e == 1)[0]:
             risk = t >= t[i]
-            w = np.exp(beta * x[risk])
+            xr = x[risk]
+            w = np.exp(beta * xr - (beta * xr).max())  # stable softmax weights
             denom = w.sum()
-            xbar = (x[risk] * w).sum() / denom
+            xbar = (xr * w).sum() / denom
             score += x[i] - xbar
-            # information: sum over risk set of w*(x - xbar)^2 / denom
-            info += ((x[risk] ** 2 * w).sum() / denom) - xbar ** 2
+            # information: weighted variance of x over the risk set
+            info += ((xr ** 2 * w).sum() / denom) - xbar ** 2
         if info <= 1e-12:
             break
         step = score / info
-        beta += step
+        beta_new = beta + step
+        halvings = 0
+        while not np.isfinite(beta_new) and halvings < 30:
+            step *= 0.5
+            beta_new = beta + step
+            halvings += 1
+        beta = beta_new
         if abs(step) < tol:
             break
 
@@ -231,9 +240,18 @@ def cox_univariate(
 
     p = float(chi2_dist.sf(score0 ** 2 / info0, 1)) if info0 > 0 else float("nan")
 
+    # Near-separation can push beta to a huge value; clamp to a finite range so
+    # the HR stays JSON- and plot-safe (e^30 ≈ 1e13). Significance comes from the
+    # score test below, not from the raw beta magnitude.
+    if not np.isfinite(beta):
+        beta = float("nan")
+    else:
+        beta = float(np.clip(beta, -30.0, 30.0))
+    hr = float(np.exp(beta)) if np.isfinite(beta) else float("nan")
+
     return {
-        "beta": float(beta),
-        "hazard_ratio": float(np.exp(beta)),
+        "beta": beta,
+        "hazard_ratio": hr,
         "p_value": p,
         "n": int(t.size),
         "n_events": int((e == 1).sum()),
