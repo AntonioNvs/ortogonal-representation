@@ -190,6 +190,113 @@ def constructor_recoverability_probe(
 
 
 @torch.no_grad()
+def constructor_recoverability_career_probe(
+  model: OrthogonalShapleyGNN,
+  graph_data,
+  tf_dict,
+  edge_index_dict,
+  device: torch.device,
+  sample_idx: torch.Tensor,
+  *,
+  seed: int = 42,
+  null_perm: int = 50,
+) -> Dict[str, Any]:
+  """Supervised probe on the *career* (car-free) driver embedding.
+
+  The hard-identification Section 1 makes the driver skill the sum of a
+  career-shared embedding and a per-season offset. This probe asks whether the
+  **career** embedding alone leaks constructor identity. Because the embedding is
+  constant across a driver's career, the clean test is restricted to drivers who
+  switched teams: for those drivers the embedding cannot vary between teams, so a
+  held-out AUC near chance (~0.5) means the career channel is car-free, while an
+  AUC well above the null p95 means it still encodes the car.
+  """
+  from sklearn.linear_model import LogisticRegression
+  from sklearn.metrics import roc_auc_score
+  from sklearn.model_selection import StratifiedKFold
+  from sklearn.preprocessing import StandardScaler
+
+  if model.driver_career is None or not hasattr(res := graph_data["results"], "driver_career_idx"):
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "note": "career embedding not present"}
+
+  if sample_idx.numel() < 20:
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "n_drivers": 0, "note": "insufficient rows"}
+
+  x_dict = model.encode(tf_dict, edge_index_dict)
+  career_idx = res.driver_career_idx[sample_idx]
+  c_id = res.constructor_id[sample_idx]
+  driver_id = res.driver_id[sample_idx]
+
+  emb = model.driver_career(career_idx.to(device)).cpu().numpy()
+  labels = c_id.cpu().numpy()
+  drivers = driver_id.cpu().numpy()
+
+  # Restrict to team-switchers: drivers who appear under >=2 constructors. Only
+  # for these is "recover the constructor from a career-constant embedding" a
+  # meaningful leak test (a one-team driver's team is trivially the driver).
+  df = pd.DataFrame({"driver": drivers, "label": labels, "emb": list(emb)})
+  n_teams = df.groupby("driver")["label"].nunique()
+  switchers = n_teams[n_teams >= 2].index
+  df = df[df["driver"].isin(switchers)].reset_index(drop=True)
+
+  if len(df) < 20 or df["label"].nunique() < 2:
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "n_drivers": int(switchers.size), "note": "too few team-switchers"}
+
+  X = np.vstack(df["emb"].to_numpy())
+  y = df["label"].to_numpy()
+  counts = pd.Series(y).value_counts()
+  keep = pd.Series(y).isin(counts[counts >= 2].index).to_numpy()
+  X, y = X[keep], y[keep]
+  if len(np.unique(y)) < 2 or len(y) < 20:
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "n_drivers": int(switchers.size), "note": "too few separable classes"}
+
+  scaler = StandardScaler().fit(X)
+  Xs = scaler.transform(X)
+
+  def _macro_auc(yy):
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+    aucs = []
+    classes = np.unique(yy)
+    for tr, te in skf.split(Xs, yy):
+      clf = LogisticRegression(max_iter=1000, C=1.0)
+      clf.fit(Xs[tr], yy[tr])
+      probs = clf.predict_proba(Xs[te])
+      for k, c in enumerate(clf.classes_):
+        ybin = (yy[te] == c).astype(int)
+        if ybin.sum() == 0 or ybin.sum() == len(te):
+          continue
+        aucs.append(roc_auc_score(ybin, probs[:, k]))
+    return float(np.mean(aucs)) if aucs else float("nan")
+
+  macro_auc = _macro_auc(y)
+
+  rng = np.random.default_rng(seed)
+  null_aucs = []
+  for _ in range(null_perm):
+    yp = rng.permutation(y)
+    a = _macro_auc(yp)
+    if not np.isnan(a):
+      null_aucs.append(a)
+  null_p95 = float(np.quantile(null_aucs, 0.95)) if null_aucs else float("nan")
+
+  return {
+    "macro_auc": macro_auc,
+    "null_auc_mean": float(np.mean(null_aucs)) if null_aucs else float("nan"),
+    "null_auc_p95": null_p95,
+    "null_aucs": [float(a) for a in null_aucs],
+    "leakage": bool(not np.isnan(macro_auc) and not np.isnan(null_p95) and macro_auc > null_p95),
+    "n_drivers": int(switchers.size),
+    "n_states": int(len(y)),
+    "n_classes": int(np.unique(y).size),
+    "restricted_to_team_switchers": True,
+  }
+
+
+@torch.no_grad()
 def swap_invariance_test(
   model: OrthogonalShapleyGNN,
   graph_data,
@@ -312,6 +419,9 @@ def run_orthogonal_shapley_probes(
   recoverability = constructor_recoverability_probe(
     model, graph_data, tf_dict, edge_index_dict, device, sample_idx, seed=config.seed
   )
+  career_recoverability = constructor_recoverability_career_probe(
+    model, graph_data, tf_dict, edge_index_dict, device, sample_idx, seed=config.seed
+  )
   swap = swap_invariance_test(
     model, graph_data, tf_dict, edge_index_dict, device, baselines, sample_idx, config
   )
@@ -324,6 +434,7 @@ def run_orthogonal_shapley_probes(
     "skill_source": "orthogonal_shapley",
     "constructor_leakage_rho": leakage_rho,
     "constructor_recoverability": recoverability,
+    "constructor_recoverability_career": career_recoverability,
     "swap_invariance": swap,
     "shapley_efficiency": efficiency,
     "gates": gates,

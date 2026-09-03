@@ -100,11 +100,15 @@ def main() -> None:
             except KeyError as exc:
                 print(f"  skip sensitivity {metric}: {exc}")
 
-    # 4. Honesty: constructor recoverability null vs held-out AUC.
-    rec = sources.get(_PRIMARY, {}).get("xai", {}).get("constructor_recoverability")
+    # 4. Honesty: constructor recoverability null vs held-out AUC. Prefer the
+    #    career (team-switcher) probe when present — it is the clean test for the
+    #    hard-identification variant.
+    xai = sources.get(_PRIMARY, {}).get("xai", {})
+    rec = xai.get("constructor_recoverability_career") or xai.get("constructor_recoverability")
     if isinstance(rec, dict):
         plot_recoverability(
             rec,
+            title="Does the driver career channel leak the constructor?",
             output_path=os.path.join(args.output_dir, "recoverability_probe"),
         )
 

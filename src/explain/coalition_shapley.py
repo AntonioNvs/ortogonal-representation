@@ -42,23 +42,31 @@ _SHAPLEY_WEIGHTS: Dict[int, Dict[int, float]] = {
 class CoalitionBaselines:
   """Train-only reference embeddings and context for absent players."""
 
-  driver_emb: torch.Tensor  # (hidden_dim,)
+  driver_emb: torch.Tensor  # (hidden_dim,) season-state baseline
   constructor_emb: torch.Tensor  # (hidden_dim,)
   context: torch.Tensor  # (context_dim,)
+  driver_career_emb: torch.Tensor | None = None  # (hidden_dim,) career baseline
 
   def to_dict(self) -> dict:
-    return {
+    d = {
       "driver_emb": self.driver_emb.cpu().tolist(),
       "constructor_emb": self.constructor_emb.cpu().tolist(),
       "context": self.context.cpu().tolist(),
     }
+    if self.driver_career_emb is not None:
+      d["driver_career_emb"] = self.driver_career_emb.cpu().tolist()
+    return d
 
   @classmethod
   def from_dict(cls, d: dict, device: torch.device) -> "CoalitionBaselines":
+    career = d.get("driver_career_emb")
     return cls(
       driver_emb=torch.tensor(d["driver_emb"], device=device),
       constructor_emb=torch.tensor(d["constructor_emb"], device=device),
       context=torch.tensor(d["context"], device=device),
+      driver_career_emb=(
+        torch.tensor(career, device=device) if career is not None else None
+      ),
     )
 
 
@@ -71,6 +79,7 @@ def compute_train_baselines(
   race_idx: torch.Tensor,
   grid: torch.Tensor,
   round_num: torch.Tensor,
+  driver_career_idx: torch.Tensor | None = None,
 ) -> CoalitionBaselines:
   """Mean embeddings and projected context from training-year result rows only."""
   idx = train_mask.nonzero(as_tuple=True)[0]
@@ -81,7 +90,13 @@ def compute_train_baselines(
   ctx = model.context_vector(
     x_dict, race_idx[idx], grid[idx], round_num[idx]
   ).mean(dim=0)
-  return CoalitionBaselines(driver_emb=d_emb, constructor_emb=c_emb, context=ctx)
+  career_emb = None
+  if driver_career_idx is not None and model.driver_career is not None:
+    career_emb = model.driver_career(driver_career_idx[idx]).mean(dim=0)
+  return CoalitionBaselines(
+    driver_emb=d_emb, constructor_emb=c_emb, context=ctx,
+    driver_career_emb=career_emb,
+  )
 
 
 def _coalition_value(
@@ -91,6 +106,7 @@ def _coalition_value(
   c_emb: torch.Tensor,
   ctx: torch.Tensor,
   baselines: CoalitionBaselines,
+  career_emb: torch.Tensor | None = None,
 ) -> torch.Tensor:
   """Scalar utility for one coalition (batch of rows)."""
   batch = d_emb.shape[0] if d_emb.dim() > 1 else 1
@@ -104,8 +120,19 @@ def _coalition_value(
   if x.dim() == 1:
     x = x.unsqueeze(0).expand(batch, -1)
 
+  career = None
+  if model.driver_career is not None:
+    if coalition_mask & PLAYER_DRIVER:
+      career = career_emb
+    elif baselines.driver_career_emb is not None:
+      career = baselines.driver_career_emb
+      if career.dim() == 1:
+        career = career.unsqueeze(0).expand(batch, -1)
+    if career is not None and career.dim() == 1:
+      career = career.unsqueeze(0).expand(batch, -1)
+
   if model.use_additive_readout:
-    return model.utility_additive(d, c, x)
+    return model.utility_additive(d, c, x, career)
   return model.utility_from_fused(torch.cat([d, c, x], dim=-1))
 
 
@@ -115,6 +142,7 @@ def exact_shapley_utilities(
   c_emb: torch.Tensor,
   ctx: torch.Tensor,
   baselines: CoalitionBaselines,
+  career_emb: torch.Tensor | None = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
   """Exact 3-player Shapley values centered at v(empty coalition).
 
@@ -122,7 +150,9 @@ def exact_shapley_utilities(
   """
   v_cache: Dict[int, torch.Tensor] = {}
   for mask in range(8):
-    v_cache[mask] = _coalition_value(model, mask, d_emb, c_emb, ctx, baselines)
+    v_cache[mask] = _coalition_value(
+      model, mask, d_emb, c_emb, ctx, baselines, career_emb
+    )
 
   phi_d = torch.zeros_like(v_cache[0])
   phi_c = torch.zeros_like(v_cache[0])

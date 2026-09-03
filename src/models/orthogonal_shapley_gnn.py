@@ -48,6 +48,7 @@ class OrthogonalShapleyGNN(nn.Module):
     mlp_hidden: int = 128,
     context_dim: int = CONTEXT_DIM,
     use_additive_readout: bool = False,
+    num_drivers: int = 0,
   ):
     super().__init__()
     self.hidden_dim = hidden_dim
@@ -92,7 +93,10 @@ class OrthogonalShapleyGNN(nn.Module):
       nn.ReLU(),
       nn.Linear(mlp_hidden, 1),
     )
-    self.aux_driver = nn.Linear(hidden_dim, 1)
+    self.num_drivers = num_drivers
+    self.driver_career = nn.Embedding(num_drivers, hidden_dim) if num_drivers > 0 else None
+    self.aux_driver_career = nn.Linear(hidden_dim, 1)
+    self.aux_driver_season = nn.Linear(hidden_dim, 1)
     self.aux_constructor = nn.Linear(hidden_dim, 1)
     self.aux_context = nn.Linear(context_dim, 1)
     self.driver_ctx_orth = nn.Linear(hidden_dim, context_dim)
@@ -151,14 +155,33 @@ class OrthogonalShapleyGNN(nn.Module):
   def utility_from_fused(self, fused: torch.Tensor) -> torch.Tensor:
     return self.classifier(fused).squeeze(-1)
 
+  def driver_skill(
+    self,
+    d_emb: torch.Tensor,
+    career_emb: torch.Tensor | None = None,
+  ) -> torch.Tensor:
+    """Driver player value = career-shared ability + per-season offset.
+
+    ``career_emb`` is the car-free per-driver embedding (hard-identification
+    Section 1); ``d_emb`` is the per-season GNN node. When ``career_emb`` is
+    None (or the career embedding is disabled) the driver channel reverts to the
+    legacy per-season head.
+    """
+    u_season = self.aux_driver_season(d_emb).squeeze(-1)
+    if career_emb is not None and self.driver_career is not None:
+      u_career = self.aux_driver_career(career_emb).squeeze(-1)
+      return u_career + u_season
+    return u_season
+
   def utility_additive(
     self,
     d_emb: torch.Tensor,
     c_emb: torch.Tensor,
     ctx: torch.Tensor,
+    career_emb: torch.Tensor | None = None,
   ) -> torch.Tensor:
     """Sum of the three per-player heads. Shapley over this is exact."""
-    u_d = self.aux_driver(d_emb).squeeze(-1)
+    u_d = self.driver_skill(d_emb, career_emb)
     u_c = self.aux_constructor(c_emb).squeeze(-1)
     u_x = self.aux_context(ctx).squeeze(-1)
     return u_d + u_c + u_x
@@ -171,15 +194,23 @@ class OrthogonalShapleyGNN(nn.Module):
     race_idx: torch.Tensor,
     grid: torch.Tensor,
     round_num: torch.Tensor,
+    driver_career_idx: torch.Tensor | None = None,
   ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """Return (fused_u, driver_aux_u, constructor_aux_u, context_aux_u, ctx).
 
     During export the driver channel is replaced by coalition Shapley values.
+    ``driver_career_idx`` enables the career-shared driver head (hard
+    identification); when None the driver channel is the legacy per-season head.
     """
     d_emb = x_dict["driver_state"][driver_state_idx]
     c_emb = x_dict["constructor_state"][constructor_state_idx]
     ctx = self.context_vector(x_dict, race_idx, grid, round_num)
-    u_d = self.aux_driver(d_emb).squeeze(-1)
+    career_emb = (
+      self.driver_career(driver_career_idx)
+      if (driver_career_idx is not None and self.driver_career is not None)
+      else None
+    )
+    u_d = self.driver_skill(d_emb, career_emb)
     u_c = self.aux_constructor(c_emb).squeeze(-1)
     u_x = self.aux_context(ctx).squeeze(-1)
     if self.use_additive_readout:

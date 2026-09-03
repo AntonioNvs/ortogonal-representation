@@ -91,6 +91,7 @@ def load_orthogonal_shapley_model_and_graph(
     num_layers=config.get("num_layers", 4),
     mlp_hidden=config.get("mlp_hidden", 128),
     use_additive_readout=config.get("use_additive_readout", False),
+    num_drivers=int(getattr(graph_data, "num_drivers", 0)),
   ).to(device)
   model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
   model.eval()
@@ -135,8 +136,26 @@ def export_race_skills(
   c_emb = x_dict["constructor_state"][c_idx]
   ctx = model.context_vector(x_dict, race_idx, grid, round_num)
 
+  career_emb = None
+  if hasattr(res, "driver_career_idx") and model.driver_career is not None:
+    career_emb = model.driver_career(res.driver_career_idx[idx].to(device))
+
   phi_d, phi_c, phi_x, residual = exact_shapley_utilities(
-    model, d_emb, c_emb, ctx, baselines
+    model, d_emb, c_emb, ctx, baselines, career_emb
+  )
+
+  race_id_cpu = res.race_id[idx].cpu().numpy()
+
+  # Hard within-race centering of the driver *skill score* (Section 2): the
+  # skill becomes an intra-race deviation, removing the car/era/circuit level by
+  # construction. PL is invariant to a per-race translation, so this is a
+  # post-hoc export transform that does not conflict with training. The Shapley
+  # channels (contrib_driver/constructor/context) are left un-centered so the
+  # attribution still satisfies exact efficiency (sum == v_full − v_empty).
+  phi_d_np = phi_d.cpu().numpy()
+  phi_d_centered = (
+    phi_d_np
+    - pd.Series(phi_d_np).groupby(race_id_cpu).transform("mean").to_numpy()
   )
 
   rows = pd.DataFrame(
@@ -144,10 +163,10 @@ def export_race_skills(
       "driverId": res.driver_id[idx].cpu().numpy(),
       "season": res.year[idx].cpu().numpy(),
       "round": res.round[idx].cpu().numpy(),
-      "raceId": res.race_id[idx].cpu().numpy(),
+      "raceId": race_id_cpu,
       "constructorId": res.constructor_id[idx].cpu().numpy(),
-      "raw_skill": phi_d.cpu().numpy(),
-      "contrib_driver": phi_d.cpu().numpy(),
+      "raw_skill": phi_d_centered,
+      "contrib_driver": phi_d_np,
       "contrib_constructor": phi_c.cpu().numpy(),
       "contrib_context": phi_x.cpu().numpy(),
       "contrib_residual": residual.cpu().numpy(),

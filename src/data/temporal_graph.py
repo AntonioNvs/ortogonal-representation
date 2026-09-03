@@ -393,6 +393,16 @@ def build_temporal_graph(db: Database) -> Tuple[HeteroData, Dict[str, Any], Dict
     data["results"].driver_id = torch.from_numpy(
         results_with_meta["driverId"].to_numpy(dtype=np.int64)
     )
+    # Contiguous per-driver index for the career-shared embedding (hard
+    # identification): one slot per unique driverId, stable across a career.
+    driver_ids_sorted = sorted(int(d) for d in drivers["driverId"].unique())
+    driver_to_career = {d: i for i, d in enumerate(driver_ids_sorted)}
+    data.num_drivers = len(driver_ids_sorted)
+    data["results"].driver_career_idx = torch.from_numpy(
+        results_with_meta["driverId"]
+        .map(driver_to_career)
+        .to_numpy(dtype=np.int64)
+    )
     data["results"].constructor_id = torch.from_numpy(
         results_with_meta["constructorId"].to_numpy(dtype=np.int64)
     )

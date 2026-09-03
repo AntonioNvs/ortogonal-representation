@@ -74,6 +74,11 @@ def _collect_race_batches(
   race_idx = res.race_idx[idx].to(device)
   grid = res.grid[idx].to(device)
   round_num = res.round[idx].to(device)
+  driver_career_idx = (
+    res.driver_career_idx[idx].to(device)
+    if hasattr(res, "driver_career_idx")
+    else None
+  )
 
   fused_list: List[torch.Tensor] = []
   driver_list: List[torch.Tensor] = []
@@ -90,6 +95,7 @@ def _collect_race_batches(
       race_idx[rmask],
       grid[rmask],
       round_num[rmask],
+      driver_career_idx[rmask] if driver_career_idx is not None else None,
     )
     fused_list.append(u_fused)
     driver_list.append(u_d)
@@ -146,6 +152,11 @@ def race_loss_for_mask(
   race_idx = res.race_idx[idx].to(device)
   grid = res.grid[idx].to(device)
   round_num = res.round[idx].to(device)
+  driver_career_idx = (
+    res.driver_career_idx[idx].to(device)
+    if hasattr(res, "driver_career_idx")
+    else None
+  )
 
   orth = model.paired_orthogonal_loss(
     x_dict,
@@ -179,8 +190,13 @@ def race_loss_for_mask(
         grid[rmask],
         round_num[rmask],
       )
+      career_emb = (
+        model.driver_career(driver_career_idx[rmask])
+        if driver_career_idx is not None
+        else None
+      )
       phi_d, phi_c, phi_x, _ = exact_shapley_utilities(
-        model, d_emb, c_emb, ctx, baselines
+        model, d_emb, c_emb, ctx, baselines, career_emb
       )
       phi_d_parts.append(phi_d)
       phi_c_parts.append(phi_c)
@@ -219,6 +235,11 @@ def pairwise_accuracy(
   race_idx = res.race_idx[idx].to(device)
   grid = res.grid[idx].to(device)
   round_num = res.round[idx].to(device)
+  driver_career_idx = (
+    res.driver_career_idx[idx].to(device)
+    if hasattr(res, "driver_career_idx")
+    else None
+  )
 
   for rid in torch.unique(race_ids):
     rmask = race_ids == rid
@@ -229,6 +250,7 @@ def pairwise_accuracy(
       race_idx[rmask],
       grid[rmask],
       round_num[rmask],
+      driver_career_idx[rmask] if driver_career_idx is not None else None,
     )
     pos = positions[rmask]
     n = u_fused.numel()
@@ -279,8 +301,11 @@ def mean_attribution_shares(
       res.grid[row_idx].to(device),
       res.round[row_idx].to(device),
     )
+    career_emb = None
+    if hasattr(res, "driver_career_idx") and model.driver_career is not None:
+      career_emb = model.driver_career(res.driver_career_idx[row_idx].to(device))
     phi_d, phi_c, phi_x, _ = exact_shapley_utilities(
-      model, d_emb, c_emb, ctx, baselines
+      model, d_emb, c_emb, ctx, baselines, career_emb
     )
     denom = phi_d.abs() + phi_c.abs() + phi_x.abs() + 1e-9
     shares_d.append(float(torch.mean(phi_d.abs() / denom).item()))
@@ -308,9 +333,15 @@ def top3_auroc(
   grid = res.grid[idx].to(device)
   round_num = res.round[idx].to(device)
   positions = res.position[idx].cpu().numpy()
+  driver_career_idx = (
+    res.driver_career_idx[idx].to(device)
+    if hasattr(res, "driver_career_idx")
+    else None
+  )
 
   u_fused, _, _, _, _ = model.race_utilities(
-    x_dict, driver_state_idx, constructor_state_idx, race_idx, grid, round_num
+    x_dict, driver_state_idx, constructor_state_idx, race_idx, grid, round_num,
+    driver_career_idx,
   )
   scores = u_fused.detach().cpu().numpy()
   labels = (positions <= 3).astype(np.int32)
@@ -403,6 +434,7 @@ def train_one_config(
     num_layers=num_layers,
     mlp_hidden=mlp_hidden,
     use_additive_readout=use_additive_readout,
+    num_drivers=int(getattr(graph_data, "num_drivers", 0)),
   ).to(device)
 
   tf_dict = {nt: graph_data[nt].tf.to(device) for nt in graph_data.node_types}
@@ -441,6 +473,9 @@ def train_one_config(
           res.race_idx.to(device),
           res.grid.to(device),
           res.round.to(device),
+          getattr(res, "driver_career_idx", None).to(device)
+          if hasattr(res, "driver_career_idx")
+          else None,
         )
 
     train_total, pl_loss, orth_loss, attr_loss = race_loss_for_mask(
@@ -483,6 +518,9 @@ def train_one_config(
         res.race_idx.to(device),
         res.grid.to(device),
         res.round.to(device),
+        getattr(res, "driver_career_idx", None).to(device)
+        if hasattr(res, "driver_career_idx")
+        else None,
       )
       _, val_pl, _, val_attr = race_loss_for_mask(
         model,
@@ -559,6 +597,9 @@ def train_one_config(
       res.race_idx.to(device),
       res.grid.to(device),
       res.round.to(device),
+      getattr(res, "driver_career_idx", None).to(device)
+      if hasattr(res, "driver_career_idx")
+      else None,
     )
     test_share_d, test_share_c, test_share_x = mean_attribution_shares(
       model, x_dict, res, test_mask, device, baselines, max_races=100, seed=seed
