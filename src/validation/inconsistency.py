@@ -11,14 +11,25 @@ def mark_underrated(
     df: pd.DataFrame,
     *,
     skill_col: str = "skill_score",
+    cohort_skill_col: str | None = None,
     season_col: str = "season_T",
     tier_col: str = "constructor_tier_score_at_T",
     skill_pct_threshold: float = 0.75,
     max_tier_score: float = 1.0,
 ) -> pd.DataFrame:
-    """Flag drivers with high within-season skill but B-tier team at T."""
+    """Flag drivers with high within-season skill but B-tier team at T.
+
+    ``cohort_skill_col`` (when present) decouples the *cohort definition* from
+    the model under test: the within-season percentile is computed on
+    ``cohort_skill_col`` (a model-free score, e.g. teammate residual) so the
+    underrated set is identical across models, while ``skill_col`` remains the
+    model's own score used for evaluation. When absent, behaviour is unchanged
+    (percentile on ``skill_col``).
+    """
     out = df.copy()
-    out["skill_percentile"] = out.groupby(season_col)[skill_col].rank(pct=True, method="average")
+    rank_col = cohort_skill_col if (cohort_skill_col and cohort_skill_col in out.columns) else skill_col
+    out["skill_percentile"] = out.groupby(season_col)[rank_col].rank(pct=True, method="average")
+    out["cohort_rank_col"] = rank_col
     out["underrated_flag"] = (
         (out["skill_percentile"] >= skill_pct_threshold)
         & (out[tier_col] <= max_tier_score + 1e-9)
@@ -207,12 +218,14 @@ def build_inconsistency_report(
     skill_pct_threshold: float = 0.75,
     max_tier_score: float = 1.0,
     seed: int = 0,
+    cohort_skill_col: str | None = None,
 ) -> dict:
     """Full inconsistency report for one skill source join."""
     marked = mark_underrated(
         df,
         skill_pct_threshold=skill_pct_threshold,
         max_tier_score=max_tier_score,
+        cohort_skill_col=cohort_skill_col,
     )
     return {
         "underrated_resolution": underrated_resolution_rate(marked, seed=seed),

@@ -28,13 +28,15 @@ def join_career_from_export(
     db,
     team_tier: pd.DataFrame,
     horizon: int | None = None,
+    *,
+    cohort_skill: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     from experiments.evaluate_skill_model import join_career
 
     skill = export.season.copy()
     if "skill_score" not in skill.columns:
         skill["skill_score"] = skill.get("skill_0_10", skill.get("raw_skill"))
-    return join_career(skill, db, team_tier, horizon=horizon)
+    return join_career(skill, db, team_tier, horizon=horizon, cohort_skill=cohort_skill)
 
 
 def benchmark_source(
@@ -48,6 +50,9 @@ def benchmark_source(
     baselines_path: Optional[str] = None,
     xai_seed: int = 42,
     horizon: int | None = None,
+    cohort_skill: pd.DataFrame | None = None,
+    min_year: int | None = None,
+    era_windows: bool = False,
 ) -> Dict:
     """Full benchmark report for one SkillExport."""
     source = export.source
@@ -84,13 +89,43 @@ def benchmark_source(
     report["locked_test"] = race_pl_nll_and_pairwise(race_with_pos, test_years=tuple(cfg.TEST_YEARS))
 
     # Career validity
-    joined = join_career_from_export(export, db, team_tier, horizon=horizon)
-    career_report, _ = compute_career_metrics(
+    joined = join_career_from_export(export, db, team_tier, horizon=horizon, cohort_skill=cohort_skill)
+    cohort_skill_col = "cohort_skill_score" if cohort_skill is not None else None
+    career_report, marked_joined = compute_career_metrics(
         joined,
         skill_source=source,
         horizon=horizon,
         seed=xai_seed,
+        cohort_skill_col=cohort_skill_col,
+        min_year=min_year,
     )
+    report["cohort_skill_col"] = cohort_skill_col
+
+    # Era stratification: modern (>=2010) primary, hybrid (>=1990) robustness.
+    if era_windows and "season_T" in joined.columns:
+        era = {}
+        for label, ymin in (("modern_2010", 2010), ("hybrid_1990", 1990), ("full", None)):
+            _rep, _ = compute_career_metrics(
+                joined,
+                skill_source=source,
+                horizon=horizon,
+                seed=xai_seed,
+                cohort_skill_col=cohort_skill_col,
+                min_year=ymin,
+            )
+            era[label] = {
+                "n_rows": _rep.get("n_rows"),
+                "n_underrated": _rep.get("n_underrated"),
+                "partial_rho": _rep["career_summary"].get("partial_rho"),
+                "partial_ci_low": _rep["career_summary"].get("partial_ci_low"),
+                "partial_rho_continuous": _rep["career_summary"].get("partial_rho_continuous"),
+                "partial_rho_continuous_ci_low": _rep["career_summary"].get("partial_rho_continuous_ci_low"),
+                "underrated_resolution": _rep["underrated_resolution"].get("resolution_rate"),
+                "underrated_auroc": _rep["underrated_promotion_auroc"].get("auroc"),
+                "underrated_partial_rho": _rep["underrated_partial_spearman"].get("partial_rho"),
+                "fisher_z_pooled": _rep["fisher_z_pooled"].get("rho_pooled"),
+            }
+        report["era_windows"] = era
     report["career"] = career_report["career_summary"]
     report["career"]["underrated_resolution"] = career_report["underrated_resolution"]
     report["career"]["underrated_promotion_auroc"] = career_report["underrated_promotion_auroc"]
@@ -100,12 +135,29 @@ def benchmark_source(
     report["career"]["underrated_partial_ci_low"] = career_report["career_summary"].get(
         "underrated_partial_ci_low", float("nan")
     )
+    report["career"]["partial_rho_continuous"] = career_report["career_summary"].get(
+        "partial_rho_continuous", float("nan")
+    )
+    report["career"]["partial_rho_continuous_ci_low"] = career_report["career_summary"].get(
+        "partial_rho_continuous_ci_low", float("nan")
+    )
     career = report["career"]
     report["career_full"] = {
         k: v for k, v in career_report.items() if k != "career_summary"
     }
     report["n_joined"] = len(joined)
     report["n_underrated"] = career_report.get("n_underrated", 0)
+
+    # Survival (censored time-to-first-promotion): eligible primary, underrated secondary.
+    from validation.survival import eligible_survival, survival_analysis
+
+    try:
+        report["survival"] = {
+            "eligible": eligible_survival(marked_joined, seed=xai_seed),
+            "underrated": survival_analysis(marked_joined, mask_col="underrated_flag", seed=xai_seed),
+        }
+    except Exception as exc:  # survival is diagnostic; never fatal
+        report["survival_error"] = str(exc)
 
     # Mobility
     report["mobility"] = compute_mobility_report(db, SkillDatasetConfig(max_year=export.metadata.max_year)).to_dict()
@@ -143,6 +195,7 @@ def benchmark_source(
                 partial_rho=career.get("partial_rho", float("nan")),
                 partial_ci_low=career.get("partial_ci_low", float("nan")),
                 leakage_rho=xai["constructor_leakage_rho"],
+                leakage_pass=xai.get("gates", {}).get("constructor_leakage"),
             )
         except Exception as exc:
             report["xai_error"] = str(exc)
@@ -224,7 +277,7 @@ def evaluate_benchmark_gates(reports: Dict[str, Dict], *, bt_key: str = "bradley
     return gates
 
 
-def write_benchmark_report(reports: Dict[str, Dict], output_dir: str) -> None:
+def write_benchmark_report(reports: Dict[str, Dict], output_dir: str, extra: Dict | None = None) -> None:
     import os
 
     os.makedirs(output_dir, exist_ok=True)
@@ -233,6 +286,8 @@ def write_benchmark_report(reports: Dict[str, Dict], output_dir: str) -> None:
         {s: r.get("career", {}) for s, r in reports.items()}
     )
     payload = {"sources": reports, "gates": gates, "resolution_comparison": resolution_comparison}
+    if extra:
+        payload.update(extra)
     with open(os.path.join(output_dir, "benchmark.json"), "w") as f:
         json.dump(payload, f, indent=2, default=float)
 

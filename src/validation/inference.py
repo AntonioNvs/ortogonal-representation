@@ -28,6 +28,8 @@ but should surface the cluster/permutation numbers as primary.
 
 from __future__ import annotations
 
+from typing import Callable, Tuple
+
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
@@ -471,6 +473,144 @@ def stratum_partial_spearman(
     return result
 
 
+def paired_cluster_bootstrap_diff(
+    df_a: pd.DataFrame,
+    df_b: pd.DataFrame,
+    stat_fn: Callable[[pd.DataFrame], float],
+    *,
+    key_cols: Tuple[str, ...] = ("driverId", "season_T"),
+    cluster_col: str = "driverId",
+    n_bootstrap: int = 2000,
+    ci: float = 0.95,
+    seed: int = 0,
+) -> dict:
+    """Paired cluster-bootstrap distribution of ``stat_fn(a) - stat_fn(b)``.
+
+    ``df_a`` and ``df_b`` are two models' rows over the *same fixed cohort*
+    (identical rows up to the skill column). We align on ``key_cols``, resample
+    driver clusters with replacement once per replicate, and evaluate
+    ``stat_fn`` on the same resampled driver subset for both models. Because
+    the two models share drivers, this is a paired test — strictly more
+    powerful than comparing independent CIs.
+
+    Returns ``diff_obs`` (a - b), ``diff_ci_low/high``, ``p_one_sided`` =
+    P(diff <= 0), and the aligned row/cluster counts.
+    """
+    a = df_a.dropna(subset=list(key_cols)).copy()
+    b = df_b.dropna(subset=list(key_cols)).copy()
+
+    key_a = a.set_index(list(key_cols)).index
+    key_b = b.set_index(list(key_cols)).index
+    common = key_a.intersection(key_b)
+    a = a.set_index(list(key_cols)).loc[common].reset_index()
+    b = b.set_index(list(key_cols)).loc[common].reset_index()
+
+    diff_obs = float(stat_fn(a) - stat_fn(b))
+    clusters = a[cluster_col].to_numpy()
+    unique = np.unique(clusters)
+    if unique.size < 2:
+        return {
+            "diff_obs": diff_obs,
+            "diff_ci_low": float("nan"),
+            "diff_ci_high": float("nan"),
+            "p_one_sided": float("nan"),
+            "n_rows": int(len(a)),
+            "n_clusters": int(unique.size),
+            "note": "fewer than 2 clusters; no bootstrap",
+        }
+
+    idx_by_cluster = {c: np.where(clusters == c)[0] for c in unique}
+    rng = np.random.default_rng(seed)
+    reps = np.empty(n_bootstrap, dtype=float)
+    for i in range(n_bootstrap):
+        picks = rng.choice(unique, size=unique.size, replace=True)
+        idx = np.concatenate([idx_by_cluster[c] for c in picks])
+        reps[i] = float(stat_fn(a.iloc[idx]) - stat_fn(b.iloc[idx]))
+
+    valid = reps[~np.isnan(reps)]
+    alpha = 1.0 - ci
+    return {
+        "diff_obs": diff_obs,
+        "diff_ci_low": float(np.quantile(valid, alpha / 2.0)) if valid.size else float("nan"),
+        "diff_ci_high": float(np.quantile(valid, 1.0 - alpha / 2.0)) if valid.size else float("nan"),
+        "p_one_sided": float(np.mean(valid <= 0.0)) if valid.size else float("nan"),
+        "n_rows": int(len(a)),
+        "n_clusters": int(unique.size),
+        "n_valid_replicates": int(valid.size),
+    }
+
+
+def fixed_cohort_paired_comparison(
+    joined_by_source: dict[str, pd.DataFrame],
+    *,
+    baseline_key: str = "bradley_terry",
+    cohort_skill_col: str = "cohort_skill_score",
+    key_cols: Tuple[str, ...] = ("driverId", "season_T"),
+    cluster_col: str = "driverId",
+    n_bootstrap: int = 2000,
+    seed: int = 0,
+) -> dict:
+    """Paired comparison of model discriminators on a model-free fixed cohort.
+
+    The underrated cohort is defined once via ``cohort_skill_col`` (a
+    model-free score such as teammate residual), so the flag and the ``promoted``
+    label are identical across sources. The quantities that still differ across
+    models are the *within-cohort* AUROC and Spearman of each source's own
+    ``skill_score``. We report each source's value plus the paired
+    cluster-bootstrap difference vs the baseline.
+    """
+    from sklearn.metrics import roc_auc_score
+
+    from validation.inconsistency import mark_underrated
+
+    if baseline_key not in joined_by_source:
+        return {"error": f"baseline {baseline_key} not in joined frames"}
+
+    # Cohort keys from the baseline frame (flag is model-free, so identical).
+    ref = mark_underrated(joined_by_source[baseline_key], cohort_skill_col=cohort_skill_col)
+    cohort_keys = set(ref.loc[ref["underrated_flag"], list(key_cols)].apply(tuple, axis=1))
+
+    def _restrict(df: pd.DataFrame) -> pd.DataFrame:
+        marked = mark_underrated(df, cohort_skill_col=cohort_skill_col)
+        return marked[marked["underrated_flag"]].dropna(subset=list(key_cols)).copy()
+
+    def _auroc(df: pd.DataFrame) -> float:
+        sub = df.dropna(subset=["skill_score", "promoted"])
+        if len(sub) < 5 or sub["promoted"].nunique() < 2:
+            return float("nan")
+        return float(roc_auc_score(sub["promoted"].to_numpy(), sub["skill_score"].to_numpy()))
+
+    def _spearman(df: pd.DataFrame) -> float:
+        sub = df.dropna(subset=["skill_score", "outcome_score"])
+        return _safe_spearmanr(sub["skill_score"].to_numpy(), sub["outcome_score"].to_numpy())
+
+    base_a = _restrict(joined_by_source[baseline_key])
+    out: dict = {"baseline": baseline_key, "cohort_skill_col": cohort_skill_col,
+                 "n_cohort_rows": len(cohort_keys)}
+    out["sources"] = {}
+    out["paired_diff"] = {}
+    for source, frame in joined_by_source.items():
+        sub = _restrict(frame)
+        out["sources"][source] = {
+            "n_rows": int(len(sub)),
+            "auroc": _auroc(sub),
+            "spearman": _spearman(sub),
+        }
+        if source == baseline_key:
+            continue
+        out["paired_diff"][source] = {
+            "auroc": paired_cluster_bootstrap_diff(
+                sub, base_a, _auroc, key_cols=key_cols, cluster_col=cluster_col,
+                n_bootstrap=n_bootstrap, seed=seed,
+            ),
+            "spearman": paired_cluster_bootstrap_diff(
+                sub, base_a, _spearman, key_cols=key_cols, cluster_col=cluster_col,
+                n_bootstrap=n_bootstrap, seed=seed,
+            ),
+        }
+    return out
+
+
 def compare_resolution_rates(
     reports_by_source: dict[str, dict],
     *,
@@ -479,7 +619,12 @@ def compare_resolution_rates(
     n_bootstrap: int = 2000,
     seed: int = 0,
 ) -> dict:
-    """Bootstrap comparison of resolution rates across skill sources.
+    """Comparison of resolution rates across skill sources.
+
+    NOTE: resolution rate is a model discriminator only when the underrated
+    cohort is defined *per model* (endogenous). For a model-free fixed cohort,
+    the rate is shared across sources — use
+    :func:`fixed_cohort_paired_comparison` on the AUROC / Spearman instead.
 
     Each entry in ``reports_by_source`` should contain
     ``reports_by_source[source]["underrated_resolution"][metric_key]``.
@@ -506,4 +651,5 @@ def compare_resolution_rates(
         "rates": rates,
         "baseline": baseline_key,
         "comparisons": comparisons,
+        "note": "point comparison only; use fixed_cohort_paired_comparison for a paired CI/p on a model-free cohort",
     }

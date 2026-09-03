@@ -93,6 +93,103 @@ def constructor_leakage_probe(
 
 
 @torch.no_grad()
+def constructor_recoverability_probe(
+  model: OrthogonalShapleyGNN,
+  graph_data,
+  tf_dict,
+  edge_index_dict,
+  device: torch.device,
+  sample_idx: torch.Tensor,
+  *,
+  seed: int = 42,
+  null_perm: int = 50,
+) -> Dict[str, Any]:
+  """Supervised probe: can constructor identity be recovered from driver state?
+
+  Fits a one-vs-rest linear probe predicting ``constructorId`` from the driver's
+  season-long ``driver_state`` embedding (deduplicated by ``driver_state_idx``).
+  Reports held-out macro-AUC plus a null distribution (permuted constructor
+  labels) so the gate is set against an empirical chance level, not an arbitrary
+  correlation threshold.
+
+  This is the honest falsification: leakage means "the car's identity is
+  reconstructible from the driver channel alone."
+  """
+  from sklearn.linear_model import LogisticRegression
+  from sklearn.metrics import roc_auc_score
+  from sklearn.model_selection import StratifiedKFold
+  from sklearn.preprocessing import StandardScaler
+
+  if sample_idx.numel() < 20:
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "n_states": int(sample_idx.numel()), "note": "insufficient rows"}
+
+  x_dict = model.encode(tf_dict, edge_index_dict)
+  res = graph_data["results"]
+  d_idx = res.driver_state_idx[sample_idx]
+  c_id = res.constructor_id[sample_idx]
+
+  emb = x_dict["driver_state"][d_idx].cpu().numpy()
+  labels = c_id.cpu().numpy()
+
+  # Deduplicate by driver_state_idx (season-long state; avoid double-counting rows).
+  states = res.driver_state_idx[sample_idx].cpu().numpy()
+  df = pd.DataFrame({"state": states, "label": labels, "emb": list(emb)})
+  df = df.drop_duplicates(subset=["state"]).reset_index(drop=True)
+  X = np.vstack(df["emb"].to_numpy())
+  y = df["label"].to_numpy()
+  # Drop constructor classes with <2 states (not evaluable one-vs-rest).
+  counts = pd.Series(y).value_counts()
+  keep = pd.Series(y).isin(counts[counts >= 2].index).to_numpy()
+  X, y = X[keep], y[keep]
+
+  if len(np.unique(y)) < 2 or len(y) < 20:
+    return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
+            "n_states": int(len(y)), "note": "too few separable classes"}
+
+  scaler = StandardScaler().fit(X)
+  Xs = scaler.transform(X)
+
+  def _macro_auc(yy):
+    # Stratified 5-fold, one-vs-rest macro-AUC.
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+    aucs = []
+    classes = np.unique(yy)
+    for tr, te in skf.split(Xs, yy):
+      clf = LogisticRegression(max_iter=1000, C=1.0)
+      clf.fit(Xs[tr], yy[tr])
+      probs = clf.predict_proba(Xs[te])
+      for k, c in enumerate(clf.classes_):
+        ybin = (yy[te] == c).astype(int)
+        if ybin.sum() == 0 or ybin.sum() == len(te):
+          continue
+        aucs.append(roc_auc_score(ybin, probs[:, k]))
+    return float(np.mean(aucs)) if aucs else float("nan")
+
+  macro_auc = _macro_auc(y)
+
+  # Null distribution: permute constructor labels, recompute macro-AUC.
+  rng = np.random.default_rng(seed)
+  null_aucs = []
+  for _ in range(null_perm):
+    yp = rng.permutation(y)
+    a = _macro_auc(yp)
+    if not np.isnan(a):
+      null_aucs.append(a)
+  null_p95 = float(np.quantile(null_aucs, 0.95)) if null_aucs else float("nan")
+
+  return {
+    "macro_auc": macro_auc,
+    "null_auc_mean": float(np.mean(null_aucs)) if null_aucs else float("nan"),
+    "null_auc_p95": null_p95,
+    "null_aucs": [float(a) for a in null_aucs],
+    "leakage": bool(not np.isnan(macro_auc) and not np.isnan(null_p95) and macro_auc > null_p95),
+    "n_states": int(len(y)),
+    "n_classes": int(np.unique(y).size),
+  }
+
+
+@torch.no_grad()
 def swap_invariance_test(
   model: OrthogonalShapleyGNN,
   graph_data,
@@ -212,17 +309,21 @@ def run_orthogonal_shapley_probes(
   leakage_rho = constructor_leakage_probe(
     model, graph_data, tf_dict, edge_index_dict, device, baselines, sample_idx
   )
+  recoverability = constructor_recoverability_probe(
+    model, graph_data, tf_dict, edge_index_dict, device, sample_idx, seed=config.seed
+  )
   swap = swap_invariance_test(
     model, graph_data, tf_dict, edge_index_dict, device, baselines, sample_idx, config
   )
   efficiency = shapley_efficiency_probe(
     model, graph_data, tf_dict, edge_index_dict, device, baselines, sample_idx
   )
-  gates = evaluate_xai_gates(leakage_rho, swap["skill_diff"])
+  gates = evaluate_xai_gates(leakage_rho, swap["skill_diff"], recoverability)
 
   return {
     "skill_source": "orthogonal_shapley",
     "constructor_leakage_rho": leakage_rho,
+    "constructor_recoverability": recoverability,
     "swap_invariance": swap,
     "shapley_efficiency": efficiency,
     "gates": gates,

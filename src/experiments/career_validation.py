@@ -37,6 +37,7 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=str, default="output/skill_model/skill_gnn.pth")
     parser.add_argument("--meta", type=str, default="output/skill_model/skill_gnn_meta.json")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--min-year", type=int, default=None, help="Restrict career metrics to season_T >= min_year")
     args = parser.parse_args()
 
     source = "bayesian_ssm" if args.skill_source == "bayesian_comparator" else args.skill_source
@@ -68,6 +69,7 @@ def main() -> None:
         skill_source=args.skill_source,
         horizon=horizon,
         seed=args.seed,
+        min_year=args.min_year,
     )
 
     os.makedirs(output_dir, exist_ok=True)
