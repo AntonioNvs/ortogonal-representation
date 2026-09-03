@@ -1,9 +1,9 @@
 {
-  "arch_version": "v2",
+  "arch_version": "v3",
   "config": {
-    "hidden_dim": 64,
-    "num_layers": 3,
-    "mlp_hidden": 64,
+    "hidden_dim": 128,
+    "num_layers": 4,
+    "mlp_hidden": 128,
     "lambda_orth": 2.0,
     "aux_driver_weight": 0.5,
     "aux_constructor_weight": 0.75,
@@ -11,21 +11,23 @@
     "lambda_pair": 0.25,
     "lambda_attr": 0.1,
     "target_driver_share": 0.38,
+    "target_constructor_share": 0.3,
+    "use_additive_readout": true,
     "orth_warmup_epochs": 10,
     "max_grad_norm": 1.0,
     "seed": 42
   },
   "metrics": {
-    "best_val_score": 4.650029000897093,
-    "best_val_pl": 4.542874813079834,
-    "test_pl": 4.5861616134643555,
-    "test_pairwise_acc": 0.7585703045970552,
-    "test_top3_auroc": 0.8879181470479741,
-    "test_orth_loss": 0.00048721040366217494,
+    "best_val_score": 4.695373285845451,
+    "best_val_pl": 4.579256534576416,
+    "test_pl": 4.646439552307129,
+    "test_pairwise_acc": 0.7418230864336293,
+    "test_top3_auroc": 0.8797315575229256,
+    "test_orth_loss": 0.006062575150281191,
     "test_attr_loss": 0.0,
-    "test_driver_share": 0.5213646994808973,
-    "test_constructor_share": 0.4290658447702052,
-    "test_context_share": 0.04956947775336645
+    "test_driver_share": 0.4823655208288613,
+    "test_constructor_share": 0.4174182526135849,
+    "test_context_share": 0.10021623886995397
   },
   "coalition_baselines_path": "output/orthogonal_shapley_model/coalition_baselines.json"
 }

@@ -1,0 +1,701 @@
+{
+  "sources": {
+    "bradley_terry": {
+      "skill_source": "bradley_terry",
+      "schema_version": "1.0",
+      "inference_mode": "filtered",
+      "calibration": {
+        "mu": 0.06813981840481276,
+        "sigma": 1.0655115761771368,
+        "alpha": 1.0
+      },
+      "score_diagnostics": {
+        "n": 16223,
+        "mean": 5.102874137326877,
+        "std": 2.0993481611664553,
+        "iqr": 3.3266622125833614,
+        "central_mass_4_6": 0.31067003636811935,
+        "saturation_low": 0.0,
+        "saturation_high": 0.0
+      },
+      "n_race_rows": 16223,
+      "n_season_rows": 2488,
+      "shapley_season_mean": {
+        "driver": 0.27639780141793074,
+        "constructor": 0.6316943743591324,
+        "context": 0.09190782422293677
+      },
+      "shapley_driver_share_ci": {
+        "mean": 0.27639780141793074,
+        "lo": 0.18443684869312513,
+        "hi": 0.42240947432755355
+      },
+      "locked_test": {
+        "pl_nll": 1.8892964124679565,
+        "pairwise_acc": 0.6951018161805174,
+        "n_races": 48,
+        "n_pairs": 7268
+      },
+      "career": {
+        "spearman": 0.30400288303798345,
+        "partial_rho": 0.1425771967182368,
+        "partial_ci_low": 0.054730752085572563,
+        "partial_ci_high": 0.22473382158500346,
+        "perm_p": 4.999750012499375e-05,
+        "cluster_ci_low": 0.20862915278127678,
+        "cluster_ci_high": 0.3923308402088321,
+        "eligible_promotion_auroc": 0.5419264593094185,
+        "cluster_bootstrap": {
+          "rho": 0.30400288303798345,
+          "ci_low": 0.20862915278127678,
+          "ci_high": 0.3923308402088321,
+          "boot_mean": 0.3007713511276743,
+          "boot_std": 0.04663385826739365,
+          "n_clusters": 359,
+          "n_rows": 1601,
+          "n_valid_replicates": 5000
+        },
+        "permutation": {
+          "rho_obs": 0.30400288303798345,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "underrated_partial_rho": -0.0009895087149926188,
+        "underrated_partial_ci_low": -0.36755591268655935,
+        "underrated_partial_ci_high": 0.3248961416041524,
+        "rising_underrated_partial_rho": 0.08082645992903403,
+        "underrated_resolution": {
+          "resolution_rate": 0.673469387755102,
+          "ci_low": 0.5,
+          "ci_high": 0.8695652173913043,
+          "n_underrated": 49,
+          "n_promoted": 33,
+          "n_clusters": 31
+        },
+        "underrated_promotion_auroc": {
+          "auroc": 0.5662878787878788,
+          "ci_low": 0.2903013582342954,
+          "ci_high": 0.8067300604452307,
+          "n_rows": 49,
+          "n_pos": 33
+        }
+      },
+      "career_full": {
+        "skill_source": "bradley_terry",
+        "horizon": "inf",
+        "n_rows": 1601,
+        "n_underrated": 49,
+        "cluster_bootstrap": {
+          "rho": 0.30400288303798345,
+          "ci_low": 0.20862915278127678,
+          "ci_high": 0.3923308402088321,
+          "boot_mean": 0.3007713511276743,
+          "boot_std": 0.04663385826739365,
+          "n_clusters": 359,
+          "n_rows": 1601,
+          "n_valid_replicates": 5000
+        },
+        "partial_spearman": {
+          "partial_rho": 0.1425771967182368,
+          "ci_low": 0.06096066594612037,
+          "ci_high": 0.23015122064376248,
+          "n_rows": 1601,
+          "n_clusters": 359
+        },
+        "permutation": {
+          "rho_obs": 0.30400288303798345,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "eligible_promotion_auroc": {
+          "auroc": 0.5419264593094185,
+          "ci_low": 0.49248765841263614,
+          "ci_high": 0.591598481418151,
+          "n_rows": 1004,
+          "n_pos": 483,
+          "note": "eligible drivers only (tier_at_T < S)"
+        },
+        "underrated_resolution": {
+          "resolution_rate": 0.673469387755102,
+          "ci_low": 0.5,
+          "ci_high": 0.8695652173913043,
+          "n_underrated": 49,
+          "n_promoted": 33,
+          "n_clusters": 31
+        },
+        "underrated_promotion_auroc": {
+          "auroc": 0.5662878787878788,
+          "ci_low": 0.2903013582342954,
+          "ci_high": 0.8067300604452307,
+          "n_rows": 49,
+          "n_pos": 33
+        },
+        "time_to_promotion": {
+          "median_seasons": 1.0,
+          "mean_seasons": 1.8181818181818181,
+          "n_promoted": 33,
+          "n_underrated": 49
+        },
+        "resolution_by_decade": [
+          {
+            "decade": 1950,
+            "resolution_rate": 1.0,
+            "n_underrated": 2,
+            "n_promoted": 2
+          },
+          {
+            "decade": 1960,
+            "resolution_rate": 0.8333333333333334,
+            "n_underrated": 6,
+            "n_promoted": 5
+          },
+          {
+            "decade": 1970,
+            "resolution_rate": 0.6111111111111112,
+            "n_underrated": 18,
+            "n_promoted": 11
+          },
+          {
+            "decade": 1980,
+            "resolution_rate": 1.0,
+            "n_underrated": 5,
+            "n_promoted": 5
+          },
+          {
+            "decade": 1990,
+            "resolution_rate": 0.5714285714285714,
+            "n_underrated": 7,
+            "n_promoted": 4
+          },
+          {
+            "decade": 2000,
+            "resolution_rate": 0.4,
+            "n_underrated": 5,
+            "n_promoted": 2
+          },
+          {
+            "decade": 2010,
+            "resolution_rate": 0.75,
+            "n_underrated": 4,
+            "n_promoted": 3
+          },
+          {
+            "decade": 2020,
+            "resolution_rate": 0.5,
+            "n_underrated": 2,
+            "n_promoted": 1
+          }
+        ],
+        "underrated_partial_spearman": {
+          "partial_rho": -0.0009895087149926188,
+          "ci_low": -0.36755591268655935,
+          "ci_high": 0.3248961416041524,
+          "n_rows": 49,
+          "n_stratum_rows": 49,
+          "stratum": "underrated_flag",
+          "note": "constructor_tier_score_at_T constant in stratum; using raw Spearman"
+        },
+        "fisher_z_pooled": {
+          "rho_pooled": 0.34918343006395447,
+          "ci_low": 0.3023236582251836,
+          "ci_high": 0.3943595095828645,
+          "z_bar": 0.3645134929569834,
+          "z_se": 0.026754805427388343,
+          "n_seasons": 68,
+          "n_rows_total": 1601
+        }
+      },
+      "n_joined": 1601,
+      "n_underrated": 49,
+      "mobility": {
+        "n_drivers": 864,
+        "n_constructors": 211,
+        "n_races": 1149,
+        "n_teammate_pairs": 19915,
+        "n_transfer_drivers": 504,
+        "largest_constructor_component": 184,
+        "weak_link_pairs": 0
+      }
+    },
+    "bayesian_ssm": {
+      "skill_source": "bayesian_ssm",
+      "schema_version": "1.0",
+      "inference_mode": "smoothed",
+      "calibration": {
+        "mu": 0.13683054736512373,
+        "sigma": 0.297667610911418,
+        "alpha": 1.0
+      },
+      "score_diagnostics": {
+        "n": 2712,
+        "mean": 5.021940880313215,
+        "std": 2.091118716218542,
+        "iqr": 3.5193904802261944,
+        "central_mass_4_6": 0.30162241887905605,
+        "saturation_low": 0.0,
+        "saturation_high": 0.0
+      },
+      "n_race_rows": 2712,
+      "n_season_rows": 175,
+      "shapley_season_mean": {
+        "driver": 0.008557356438646191,
+        "constructor": 0.022813804084977515,
+        "context": 0.9686288394763762
+      },
+      "shapley_driver_share_ci": {
+        "mean": 0.008557356438646191,
+        "lo": 0.007920830424566138,
+        "hi": 0.021490236851184702
+      },
+      "locked_test": {
+        "pl_nll": NaN,
+        "pairwise_acc": NaN,
+        "n_races": 0
+      },
+      "career": {
+        "spearman": 0.5933571432272569,
+        "partial_rho": 0.43417778004866686,
+        "partial_ci_low": 0.1442892918085608,
+        "partial_ci_high": 0.6674533739929822,
+        "perm_p": 4.999750012499375e-05,
+        "cluster_ci_low": 0.3197667988211118,
+        "cluster_ci_high": 0.7768512481031062,
+        "eligible_promotion_auroc": 0.7750424448217318,
+        "cluster_bootstrap": {
+          "rho": 0.5933571432272569,
+          "ci_low": 0.3197667988211118,
+          "ci_high": 0.7768512481031062,
+          "boot_mean": 0.5794765285047784,
+          "boot_std": 0.11814434438038939,
+          "n_clusters": 37,
+          "n_rows": 147,
+          "n_valid_replicates": 5000
+        },
+        "permutation": {
+          "rho_obs": 0.5933571432272569,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "underrated_partial_rho": 0.14285714285714288,
+        "underrated_partial_ci_low": -1.0,
+        "underrated_partial_ci_high": 1.0,
+        "rising_underrated_partial_rho": NaN,
+        "underrated_resolution": {
+          "resolution_rate": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_underrated": 6,
+          "n_promoted": 6,
+          "n_clusters": 4
+        },
+        "underrated_promotion_auroc": {
+          "auroc": NaN,
+          "ci_low": NaN,
+          "ci_high": NaN,
+          "n_rows": 6,
+          "n_pos": 6
+        }
+      },
+      "career_full": {
+        "skill_source": "bayesian_ssm",
+        "horizon": "inf",
+        "n_rows": 147,
+        "n_underrated": 6,
+        "cluster_bootstrap": {
+          "rho": 0.5933571432272569,
+          "ci_low": 0.3197667988211118,
+          "ci_high": 0.7768512481031062,
+          "boot_mean": 0.5794765285047784,
+          "boot_std": 0.11814434438038939,
+          "n_clusters": 37,
+          "n_rows": 147,
+          "n_valid_replicates": 5000
+        },
+        "partial_spearman": {
+          "partial_rho": 0.43417778004866686,
+          "ci_low": 0.1444094554453942,
+          "ci_high": 0.6772220570204025,
+          "n_rows": 147,
+          "n_clusters": 37
+        },
+        "permutation": {
+          "rho_obs": 0.5933571432272569,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "eligible_promotion_auroc": {
+          "auroc": 0.7750424448217318,
+          "ci_low": 0.5842644909947982,
+          "ci_high": 0.9166826923076922,
+          "n_rows": 100,
+          "n_pos": 38,
+          "note": "eligible drivers only (tier_at_T < S)"
+        },
+        "underrated_resolution": {
+          "resolution_rate": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "n_underrated": 6,
+          "n_promoted": 6,
+          "n_clusters": 4
+        },
+        "underrated_promotion_auroc": {
+          "auroc": NaN,
+          "ci_low": NaN,
+          "ci_high": NaN,
+          "n_rows": 6,
+          "n_pos": 6
+        },
+        "time_to_promotion": {
+          "median_seasons": 1.0,
+          "mean_seasons": 1.1666666666666667,
+          "n_promoted": 6,
+          "n_underrated": 6
+        },
+        "resolution_by_decade": [
+          {
+            "decade": 2010,
+            "resolution_rate": 1.0,
+            "n_underrated": 6,
+            "n_promoted": 6
+          }
+        ],
+        "underrated_partial_spearman": {
+          "partial_rho": 0.14285714285714288,
+          "ci_low": -1.0,
+          "ci_high": 1.0,
+          "n_rows": 6,
+          "n_stratum_rows": 6,
+          "stratum": "underrated_flag",
+          "note": "constructor_tier_score_at_T constant in stratum; using raw Spearman"
+        },
+        "fisher_z_pooled": {
+          "rho_pooled": 0.6380488796139177,
+          "ci_low": 0.5213209410641098,
+          "ci_high": 0.7313389804824187,
+          "z_bar": 0.7548759644254184,
+          "z_se": 0.09016696346674323,
+          "n_seasons": 8,
+          "n_rows_total": 147
+        }
+      },
+      "n_joined": 147,
+      "n_underrated": 6,
+      "mobility": {
+        "n_drivers": 853,
+        "n_constructors": 210,
+        "n_races": 1057,
+        "n_teammate_pairs": 18997,
+        "n_transfer_drivers": 498,
+        "largest_constructor_component": 183,
+        "weak_link_pairs": 0
+      }
+    },
+    "orthogonal_shapley": {
+      "skill_source": "orthogonal_shapley",
+      "schema_version": "1.0",
+      "inference_mode": "filtered",
+      "calibration": {
+        "mu": -0.023715920923881136,
+        "sigma": 0.661107099740374,
+        "alpha": 1.0
+      },
+      "score_diagnostics": {
+        "n": 16223,
+        "mean": 5.001660880301668,
+        "std": 2.164623817815122,
+        "iqr": 3.9259550279141813,
+        "central_mass_4_6": 0.26222030450594835,
+        "saturation_low": 0.0,
+        "saturation_high": 0.0
+      },
+      "n_race_rows": 16223,
+      "n_season_rows": 2488,
+      "shapley_season_mean": {
+        "driver": 0.5420818420016612,
+        "constructor": 0.3556034885108961,
+        "context": 0.10231466948744262
+      },
+      "shapley_driver_share_ci": {
+        "mean": 0.5420818420016612,
+        "lo": 0.3309108527173807,
+        "hi": 0.67627994972263
+      },
+      "locked_test": {
+        "pl_nll": 1.8732308149337769,
+        "pairwise_acc": 0.6834067143643369,
+        "n_races": 48,
+        "n_pairs": 7268
+      },
+      "career": {
+        "spearman": 0.44328463761926756,
+        "partial_rho": 0.269663660234158,
+        "partial_ci_low": 0.17756569155900787,
+        "partial_ci_high": 0.35559927031389416,
+        "perm_p": 4.999750012499375e-05,
+        "cluster_ci_low": 0.3482768925660966,
+        "cluster_ci_high": 0.5282855882741662,
+        "eligible_promotion_auroc": 0.6054132242899664,
+        "cluster_bootstrap": {
+          "rho": 0.44328463761926756,
+          "ci_low": 0.3482768925660966,
+          "ci_high": 0.5282855882741662,
+          "boot_mean": 0.4408789340535118,
+          "boot_std": 0.045208961057466523,
+          "n_clusters": 359,
+          "n_rows": 1601,
+          "n_valid_replicates": 5000
+        },
+        "permutation": {
+          "rho_obs": 0.44328463761926756,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "underrated_partial_rho": 0.6296027429257386,
+        "underrated_partial_ci_low": 0.12724851019572853,
+        "underrated_partial_ci_high": 0.8625127482880867,
+        "rising_underrated_partial_rho": 0.7714285714285715,
+        "underrated_resolution": {
+          "resolution_rate": 0.8,
+          "ci_low": 0.5263157894736842,
+          "ci_high": 1.0,
+          "n_underrated": 15,
+          "n_promoted": 12,
+          "n_clusters": 13
+        },
+        "underrated_promotion_auroc": {
+          "auroc": 0.6666666666666666,
+          "ci_low": 0.4,
+          "ci_high": 0.9166666666666666,
+          "n_rows": 15,
+          "n_pos": 12
+        }
+      },
+      "career_full": {
+        "skill_source": "orthogonal_shapley",
+        "horizon": "inf",
+        "n_rows": 1601,
+        "n_underrated": 15,
+        "cluster_bootstrap": {
+          "rho": 0.44328463761926756,
+          "ci_low": 0.3482768925660966,
+          "ci_high": 0.5282855882741662,
+          "boot_mean": 0.4408789340535118,
+          "boot_std": 0.045208961057466523,
+          "n_clusters": 359,
+          "n_rows": 1601,
+          "n_valid_replicates": 5000
+        },
+        "partial_spearman": {
+          "partial_rho": 0.269663660234158,
+          "ci_low": 0.17855643264869958,
+          "ci_high": 0.3516900609222901,
+          "n_rows": 1601,
+          "n_clusters": 359
+        },
+        "permutation": {
+          "rho_obs": 0.44328463761926756,
+          "p_value": 4.999750012499375e-05,
+          "n_perm_valid": 20000
+        },
+        "eligible_promotion_auroc": {
+          "auroc": 0.6054132242899664,
+          "ci_low": 0.5552221764053342,
+          "ci_high": 0.6560097378097762,
+          "n_rows": 1004,
+          "n_pos": 483,
+          "note": "eligible drivers only (tier_at_T < S)"
+        },
+        "underrated_resolution": {
+          "resolution_rate": 0.8,
+          "ci_low": 0.5263157894736842,
+          "ci_high": 1.0,
+          "n_underrated": 15,
+          "n_promoted": 12,
+          "n_clusters": 13
+        },
+        "underrated_promotion_auroc": {
+          "auroc": 0.6666666666666666,
+          "ci_low": 0.4,
+          "ci_high": 0.9166666666666666,
+          "n_rows": 15,
+          "n_pos": 12
+        },
+        "time_to_promotion": {
+          "median_seasons": 1.0,
+          "mean_seasons": 1.5,
+          "n_promoted": 12,
+          "n_underrated": 15
+        },
+        "resolution_by_decade": [
+          {
+            "decade": 1950,
+            "resolution_rate": 1.0,
+            "n_underrated": 1,
+            "n_promoted": 1
+          },
+          {
+            "decade": 1960,
+            "resolution_rate": 0.5,
+            "n_underrated": 2,
+            "n_promoted": 1
+          },
+          {
+            "decade": 1970,
+            "resolution_rate": 0.6666666666666666,
+            "n_underrated": 6,
+            "n_promoted": 4
+          },
+          {
+            "decade": 1980,
+            "resolution_rate": 1.0,
+            "n_underrated": 1,
+            "n_promoted": 1
+          },
+          {
+            "decade": 1990,
+            "resolution_rate": 1.0,
+            "n_underrated": 1,
+            "n_promoted": 1
+          },
+          {
+            "decade": 2000,
+            "resolution_rate": 1.0,
+            "n_underrated": 3,
+            "n_promoted": 3
+          },
+          {
+            "decade": 2010,
+            "resolution_rate": 1.0,
+            "n_underrated": 1,
+            "n_promoted": 1
+          }
+        ],
+        "underrated_partial_spearman": {
+          "partial_rho": 0.6296027429257386,
+          "ci_low": 0.12724851019572853,
+          "ci_high": 0.8625127482880867,
+          "n_rows": 15,
+          "n_stratum_rows": 15,
+          "stratum": "underrated_flag",
+          "note": "constructor_tier_score_at_T constant in stratum; using raw Spearman"
+        },
+        "fisher_z_pooled": {
+          "rho_pooled": 0.5454156150192144,
+          "ci_low": 0.5075275514356216,
+          "ci_high": 0.581198561489814,
+          "z_bar": 0.6118322988664568,
+          "z_se": 0.026754805427388343,
+          "n_seasons": 68,
+          "n_rows_total": 1601
+        }
+      },
+      "n_joined": 1601,
+      "n_underrated": 15,
+      "mobility": {
+        "n_drivers": 864,
+        "n_constructors": 211,
+        "n_races": 1149,
+        "n_teammate_pairs": 19915,
+        "n_transfer_drivers": 504,
+        "largest_constructor_component": 184,
+        "weak_link_pairs": 0
+      },
+      "xai": {
+        "skill_source": "orthogonal_shapley",
+        "constructor_leakage_rho": 0.23823480113060255,
+        "swap_invariance": {
+          "skill_diff": 0.0041271980536112095,
+          "utility_swap_delta": 0.013319162130355834,
+          "n_swaps": 200
+        },
+        "shapley_efficiency": {
+          "mean_efficiency_error": 9.363204656054336e-10,
+          "mean_driver_share": 0.6168278455734253
+        },
+        "gates": {
+          "constructor_leakage": true,
+          "swap_invariance": true
+        },
+        "n_samples": 856,
+        "seed": 42
+      },
+      "claim_level": "strong_skill"
+    }
+  },
+  "gates": [
+    {
+      "source": "bradley_terry",
+      "partial_spearman_gate": false,
+      "underrated_resolution_gate": false,
+      "underrated_auroc_gate": false,
+      "underrated_partial_spearman_gate": false,
+      "locked_pl_gate": true,
+      "locked_pairwise_gate": true,
+      "partial_rho": 0.1425771967182368,
+      "partial_ci_low": 0.054730752085572563,
+      "resolution_rate": 0.673469387755102,
+      "resolution_ci_low": 0.5,
+      "underrated_auroc": 0.5662878787878788,
+      "underrated_partial_rho": -0.0009895087149926188,
+      "pl_nll": 1.8892964124679565,
+      "pairwise_acc": 0.6951018161805174
+    },
+    {
+      "source": "bayesian_ssm",
+      "partial_spearman_gate": true,
+      "underrated_resolution_gate": true,
+      "underrated_auroc_gate": false,
+      "underrated_partial_spearman_gate": false,
+      "locked_pl_gate": false,
+      "locked_pairwise_gate": false,
+      "partial_rho": 0.43417778004866686,
+      "partial_ci_low": 0.1442892918085608,
+      "resolution_rate": 1.0,
+      "resolution_ci_low": 1.0,
+      "underrated_auroc": NaN,
+      "underrated_partial_rho": 0.14285714285714288,
+      "pl_nll": NaN,
+      "pairwise_acc": NaN
+    },
+    {
+      "source": "orthogonal_shapley",
+      "partial_spearman_gate": true,
+      "underrated_resolution_gate": true,
+      "underrated_auroc_gate": false,
+      "underrated_partial_spearman_gate": true,
+      "locked_pl_gate": true,
+      "locked_pairwise_gate": false,
+      "partial_rho": 0.269663660234158,
+      "partial_ci_low": 0.17756569155900787,
+      "resolution_rate": 0.8,
+      "resolution_ci_low": 0.5263157894736842,
+      "underrated_auroc": 0.6666666666666666,
+      "underrated_partial_rho": 0.6296027429257386,
+      "pl_nll": 1.8732308149337769,
+      "pairwise_acc": 0.6834067143643369
+    }
+  ],
+  "resolution_comparison": {
+    "rates": {
+      "bradley_terry": 0.673469387755102,
+      "bayesian_ssm": 1.0,
+      "orthogonal_shapley": 0.8
+    },
+    "baseline": "bradley_terry",
+    "comparisons": {
+      "bayesian_ssm": {
+        "rate": 1.0,
+        "baseline_rate": 0.673469387755102,
+        "diff_vs_baseline": 0.326530612244898,
+        "beats_baseline": true
+      },
+      "orthogonal_shapley": {
+        "rate": 0.8,
+        "baseline_rate": 0.673469387755102,
+        "diff_vs_baseline": 0.12653061224489803,
+        "beats_baseline": true
+      }
+    }
+  }
+}

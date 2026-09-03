@@ -14,13 +14,7 @@ import data.tasks as data_tasks
 from baselines.skill_loader import load_skill_export, season_scores_for_career
 from baselines.skill_gnn_skill import get_skill_gnn_db
 from experiments.evaluate_skill_model import join_career
-from validation.inference import (
-    cluster_bootstrap_spearman,
-    eligible_promotion_auroc,
-    fisher_z_pooled,
-    partial_spearman,
-    permutation_within_season,
-)
+from validation.career_metrics import compute_career_metrics, parse_horizon_arg
 from validation.team_lineage import lineage_id_by_constructor
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
@@ -34,13 +28,20 @@ def main() -> None:
         default=None,
         help="Defaults to output/career_validation/{skill_source}",
     )
-    parser.add_argument("--horizon", type=int, default=3)
+    parser.add_argument(
+        "--horizon",
+        type=str,
+        default="inf",
+        help="Forward horizon: 'inf' for rest-of-career (default) or integer seasons",
+    )
     parser.add_argument("--checkpoint", type=str, default="output/skill_model/skill_gnn.pth")
     parser.add_argument("--meta", type=str, default="output/skill_model/skill_gnn_meta.json")
+    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     source = "bayesian_ssm" if args.skill_source == "bayesian_comparator" else args.skill_source
     output_dir = args.output_dir or os.path.join("output/career_validation", args.skill_source)
+    horizon = parse_horizon_arg(args.horizon)
 
     data_tasks.register_all(
         enriched_db_dir=cfg.ENRICHED_DB_DIR,
@@ -60,33 +61,31 @@ def main() -> None:
         meta_path=args.meta,
     )
     skill = season_scores_for_career(export)
-    joined = join_career(skill, db, team_tier, horizon=args.horizon)
+    joined = join_career(skill, db, team_tier, horizon=horizon)
 
-    report = {
-        "skill_source": args.skill_source,
-        "n_rows": len(joined),
-        "cluster_bootstrap": cluster_bootstrap_spearman(joined),
-        "partial_spearman": partial_spearman(joined),
-        "permutation": permutation_within_season(joined),
-        "eligible_promotion_auroc": eligible_promotion_auroc(joined),
-    }
-
-    per_season = []
-    for season, grp in joined.groupby("season_T"):
-        if len(grp) < 5:
-            continue
-        from scipy.stats import spearmanr
-
-        rho, _ = spearmanr(grp["skill_score"], grp["outcome_score"])
-        per_season.append({"season": int(season), "n": len(grp), "spearman": float(rho)})
-    report["fisher_z_pooled"] = fisher_z_pooled(
-        __import__("pandas").DataFrame(per_season) if per_season else __import__("pandas").DataFrame()
+    report, marked = compute_career_metrics(
+        joined,
+        skill_source=args.skill_source,
+        horizon=horizon,
+        seed=args.seed,
     )
 
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "correlation.json"), "w") as f:
         json.dump(report, f, indent=2, default=float)
+    with open(os.path.join(output_dir, "resolution_report.json"), "w") as f:
+        resolution_payload = {
+            "underrated_resolution": report["underrated_resolution"],
+            "underrated_promotion_auroc": report["underrated_promotion_auroc"],
+            "time_to_promotion": report["time_to_promotion"],
+            "resolution_by_decade": report["resolution_by_decade"],
+            "underrated_partial_spearman": report["underrated_partial_spearman"],
+        }
+        json.dump(resolution_payload, f, indent=2, default=float)
     joined.to_csv(os.path.join(output_dir, "joined.csv"), index=False)
+    marked[marked["underrated_flag"]].to_csv(
+        os.path.join(output_dir, "inconsistencies.csv"), index=False
+    )
     skill.to_csv(os.path.join(output_dir, "skill_scores.csv"), index=False)
     export.race.to_parquet(os.path.join(output_dir, "race_skill.parquet"), index=False)
     team_tier.to_csv(os.path.join(output_dir, "team_tiers.csv"), index=False)

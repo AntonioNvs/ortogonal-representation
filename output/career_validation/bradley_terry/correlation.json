@@ -1,42 +1,154 @@
 {
   "skill_source": "bradley_terry",
-  "n_rows": 287,
+  "horizon": "inf",
+  "n_rows": 1601,
+  "n_underrated": 49,
   "cluster_bootstrap": {
-    "rho": 0.5492638124898023,
-    "ci_low": 0.4059023578858116,
-    "ci_high": 0.6721078791418451,
-    "boot_mean": 0.5422519120933359,
-    "boot_std": 0.06866626699575486,
-    "n_clusters": 46,
-    "n_rows": 287,
+    "rho": 0.30400288303798345,
+    "ci_low": 0.20862915278127678,
+    "ci_high": 0.3923308402088321,
+    "boot_mean": 0.3007713511276743,
+    "boot_std": 0.04663385826739365,
+    "n_clusters": 359,
+    "n_rows": 1601,
     "n_valid_replicates": 5000
   },
   "partial_spearman": {
-    "partial_rho": 0.3237871410247885,
-    "ci_low": 0.1775753825692227,
-    "ci_high": 0.46515849201997744,
-    "n_rows": 287,
-    "n_clusters": 46
+    "partial_rho": 0.1425771967182368,
+    "ci_low": 0.054730752085572563,
+    "ci_high": 0.22473382158500346,
+    "n_rows": 1601,
+    "n_clusters": 359
   },
   "permutation": {
-    "rho_obs": 0.5492638124898023,
+    "rho_obs": 0.30400288303798345,
     "p_value": 4.999750012499375e-05,
     "n_perm_valid": 20000
   },
-  "moved_up_auroc": {
-    "auroc": 0.37359690695934145,
-    "ci_low": 0.2686382956469922,
-    "ci_high": 0.4947395718063456,
-    "n_rows": 287,
-    "n_pos": 76
+  "eligible_promotion_auroc": {
+    "auroc": 0.5419264593094185,
+    "ci_low": 0.49165587538848604,
+    "ci_high": 0.5933266325850621,
+    "n_rows": 1004,
+    "n_pos": 483,
+    "note": "eligible drivers only (tier_at_T < S)"
+  },
+  "underrated_resolution": {
+    "resolution_rate": 0.673469387755102,
+    "ci_low": 0.4893498817966903,
+    "ci_high": 0.8478804347826084,
+    "n_underrated": 49,
+    "n_promoted": 33,
+    "n_clusters": 31
+  },
+  "underrated_promotion_auroc": {
+    "auroc": 0.5662878787878788,
+    "ci_low": 0.29719627594627596,
+    "ci_high": 0.8019230769230768,
+    "n_rows": 49,
+    "n_pos": 33
+  },
+  "time_to_promotion": {
+    "median_seasons": 1.0,
+    "mean_seasons": 1.8181818181818181,
+    "n_promoted": 33,
+    "n_underrated": 49
+  },
+  "resolution_by_decade": [
+    {
+      "decade": 1950,
+      "resolution_rate": 1.0,
+      "n_underrated": 2,
+      "n_promoted": 2
+    },
+    {
+      "decade": 1960,
+      "resolution_rate": 0.8333333333333334,
+      "n_underrated": 6,
+      "n_promoted": 5
+    },
+    {
+      "decade": 1970,
+      "resolution_rate": 0.6111111111111112,
+      "n_underrated": 18,
+      "n_promoted": 11
+    },
+    {
+      "decade": 1980,
+      "resolution_rate": 1.0,
+      "n_underrated": 5,
+      "n_promoted": 5
+    },
+    {
+      "decade": 1990,
+      "resolution_rate": 0.5714285714285714,
+      "n_underrated": 7,
+      "n_promoted": 4
+    },
+    {
+      "decade": 2000,
+      "resolution_rate": 0.4,
+      "n_underrated": 5,
+      "n_promoted": 2
+    },
+    {
+      "decade": 2010,
+      "resolution_rate": 0.75,
+      "n_underrated": 4,
+      "n_promoted": 3
+    },
+    {
+      "decade": 2020,
+      "resolution_rate": 0.5,
+      "n_underrated": 2,
+      "n_promoted": 1
+    }
+  ],
+  "underrated_partial_spearman": {
+    "partial_rho": -0.0009895087149926188,
+    "ci_low": -0.3685611845243087,
+    "ci_high": 0.33730168184933884,
+    "n_rows": 49,
+    "n_stratum_rows": 49,
+    "stratum": "underrated_flag",
+    "note": "constructor_tier_score_at_T constant in stratum; using raw Spearman"
+  },
+  "career_summary": {
+    "spearman": 0.30400288303798345,
+    "partial_rho": 0.1425771967182368,
+    "partial_ci_low": 0.054730752085572563,
+    "partial_ci_high": 0.22473382158500346,
+    "perm_p": 4.999750012499375e-05,
+    "cluster_ci_low": 0.20862915278127678,
+    "cluster_ci_high": 0.3923308402088321,
+    "eligible_promotion_auroc": 0.5419264593094185,
+    "cluster_bootstrap": {
+      "rho": 0.30400288303798345,
+      "ci_low": 0.20862915278127678,
+      "ci_high": 0.3923308402088321,
+      "boot_mean": 0.3007713511276743,
+      "boot_std": 0.04663385826739365,
+      "n_clusters": 359,
+      "n_rows": 1601,
+      "n_valid_replicates": 5000
+    },
+    "permutation": {
+      "rho_obs": 0.30400288303798345,
+      "p_value": 4.999750012499375e-05,
+      "n_perm_valid": 20000
+    },
+    "underrated_partial_rho": -0.0009895087149926188,
+    "underrated_partial_ci_low": -0.3685611845243087,
+    "underrated_partial_ci_high": 0.33730168184933884,
+    "rising_underrated_partial_rho": 0.08082645992903403
   },
   "fisher_z_pooled": {
-    "rho_pooled": 0.6184411627150055,
-    "ci_low": 0.5290380500533707,
-    "ci_high": 0.6942662793328745,
-    "z_bar": 0.7224768273638823,
-    "z_se": 0.06819943394704735,
-    "n_seasons": 24,
-    "n_rows_total": 287
+    "rho_pooled": 0.34918343006395447,
+    "ci_low": 0.3023236582251836,
+    "ci_high": 0.3943595095828645,
+    "z_bar": 0.3645134929569834,
+    "z_se": 0.026754805427388343,
+    "n_seasons": 68,
+    "n_rows_total": 1601
   }
 }

@@ -189,4 +189,110 @@
 chain 2:  72%|[34m███████▎  [0m| 2900/4000 [6:01:16<2:17:21,  7.49s/it, (Sampling)][A
 
 
-chain 4:  72%|[34m███████▎  [0m| 2900/4000 [6:01:24<2:17:46,  7.51s/it, (Sampling)][A[A[A
+chain 4:  72%|[34m███████▎  [0m| 2900/4000 [6:01:24<2:17:46,  7.51s/it, (Sampling)][A[A[Achain 1:  72%|[34m███████▎  [0m| 2900/4000 [6:03:27<2:19:07,  7.59s/it, (Sampling)]
+
+chain 3:  72%|[34m███████▎  [0m| 2900/4000 [6:03:51<2:18:37,  7.56s/it, (Sampling)][A[A
+chain 2:  75%|[34m███████▌  [0m| 3000/4000 [6:13:45<2:04:49,  7.49s/it, (Sampling)][A
+
+
+chain 4:  75%|[34m███████▌  [0m| 3000/4000 [6:13:53<2:05:09,  7.51s/it, (Sampling)][A[A[Achain 1:  75%|[34m███████▌  [0m| 3000/4000 [6:16:04<2:06:24,  7.58s/it, (Sampling)]
+
+chain 3:  75%|[34m███████▌  [0m| 3000/4000 [6:16:23<2:05:46,  7.55s/it, (Sampling)][A[A
+chain 2:  78%|[34m███████▊  [0m| 3100/4000 [6:26:14<1:52:22,  7.49s/it, (Sampling)][A
+
+
+chain 4:  78%|[34m███████▊  [0m| 3100/4000 [6:26:25<1:52:40,  7.51s/it, (Sampling)][A[A[Achain 1:  78%|[34m███████▊  [0m| 3100/4000 [6:28:46<1:53:55,  7.59s/it, (Sampling)]
+
+chain 3:  78%|[34m███████▊  [0m| 3100/4000 [6:28:57<1:53:09,  7.54s/it, (Sampling)][A[A
+chain 2:  80%|[34m████████  [0m| 3200/4000 [6:38:43<1:39:53,  7.49s/it, (Sampling)][A
+
+
+chain 4:  80%|[34m████████  [0m| 3200/4000 [6:38:55<1:40:07,  7.51s/it, (Sampling)][A[A[Achain 1:  80%|[34m████████  [0m| 3200/4000 [6:41:22<1:41:07,  7.58s/it, (Sampling)]
+
+chain 3:  80%|[34m████████  [0m| 3200/4000 [6:41:35<1:40:45,  7.56s/it, (Sampling)][A[A
+chain 2:  82%|[34m████████▎ [0m| 3300/4000 [6:51:14<1:27:26,  7.49s/it, (Sampling)][A
+
+
+chain 4:  82%|[34m████████▎ [0m| 3300/4000 [6:51:28<1:27:39,  7.51s/it, (Sampling)][A[A[Achain 1:  82%|[34m████████▎ [0m| 3300/4000 [6:54:02<1:28:33,  7.59s/it, (Sampling)]
+
+chain 3:  82%|[34m████████▎ [0m| 3300/4000 [6:54:12<1:28:12,  7.56s/it, (Sampling)][A[A
+chain 2:  85%|[34m████████▌ [0m| 3400/4000 [7:03:43<1:14:56,  7.49s/it, (Sampling)][A
+
+
+chain 4:  85%|[34m████████▌ [0m| 3400/4000 [7:03:59<1:15:08,  7.51s/it, (Sampling)][A[A[Achain 1:  85%|[34m████████▌ [0m| 3400/4000 [7:06:38<1:15:47,  7.58s/it, (Sampling)]
+
+chain 3:  85%|[34m████████▌ [0m| 3400/4000 [7:06:50<1:15:40,  7.57s/it, (Sampling)][A[A
+chain 2:  88%|[34m████████▊ [0m| 3500/4000 [7:16:13<1:02:27,  7.50s/it, (Sampling)][A
+
+
+chain 4:  88%|[34m████████▊ [0m| 3500/4000 [7:16:28<1:02:33,  7.51s/it, (Sampling)][A[A[Achain 1:  88%|[34m████████▊ [0m| 3500/4000 [7:19:17<1:03:11,  7.58s/it, (Sampling)]
+
+chain 3:  88%|[34m████████▊ [0m| 3500/4000 [7:19:28<1:03:04,  7.57s/it, (Sampling)][A[A
+chain 2:  90%|[34m█████████ [0m| 3600/4000 [7:28:43<49:58,  7.50s/it, (Sampling)]  [A
+
+
+chain 4:  90%|[34m█████████ [0m| 3600/4000 [7:28:58<50:01,  7.50s/it, (Sampling)]  [A[A[Achain 1:  90%|[34m█████████ [0m| 3600/4000 [7:31:55<50:33,  7.58s/it, (Sampling)]  
+
+chain 3:  90%|[34m█████████ [0m| 3600/4000 [7:32:05<50:27,  7.57s/it, (Sampling)]  [A[A
+chain 2:  92%|[34m█████████▎[0m| 3700/4000 [7:41:12<37:28,  7.49s/it, (Sampling)][A
+
+
+chain 4:  92%|[34m█████████▎[0m| 3700/4000 [7:41:29<37:31,  7.51s/it, (Sampling)][A[A[Achain 1:  92%|[34m█████████▎[0m| 3700/4000 [7:44:31<37:52,  7.57s/it, (Sampling)]
+
+chain 3:  92%|[34m█████████▎[0m| 3700/4000 [7:44:40<37:49,  7.56s/it, (Sampling)][A[A
+chain 2:  95%|[34m█████████▌[0m| 3800/4000 [7:53:41<24:58,  7.49s/it, (Sampling)][A
+
+
+chain 4:  95%|[34m█████████▌[0m| 3800/4000 [7:54:00<25:01,  7.51s/it, (Sampling)][A[A[A
+
+chain 3:  95%|[34m█████████▌[0m| 3800/4000 [7:57:16<25:12,  7.56s/it, (Sampling)][A[Achain 1:  95%|[34m█████████▌[0m| 3800/4000 [7:57:17<25:20,  7.60s/it, (Sampling)]
+chain 2:  98%|[34m█████████▊[0m| 3900/4000 [8:06:12<12:30,  7.50s/it, (Sampling)][A
+
+
+chain 4:  98%|[34m█████████▊[0m| 3900/4000 [8:06:31<12:30,  7.51s/it, (Sampling)][A[A[A
+
+chain 3:  98%|[34m█████████▊[0m| 3900/4000 [8:09:49<12:35,  7.55s/it, (Sampling)][A[Achain 1:  98%|[34m█████████▊[0m| 3900/4000 [8:09:51<12:38,  7.58s/it, (Sampling)]
+chain 2: 100%|[34m██████████[0m| 4000/4000 [8:18:43<00:00,  7.50s/it, (Sampling)][A
+
+
+chain 4: 100%|[34m██████████[0m| 4000/4000 [8:19:04<00:00,  7.51s/it, (Sampling)][A[A[A
+
+chain 3: 100%|[34m██████████[0m| 4000/4000 [8:22:24<00:00,  7.55s/it, (Sampling)][A[Achain 1: 100%|[34m██████████[0m| 4000/4000 [8:22:26<00:00,  7.57s/it, (Sampling)]chain 1: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.57s/it, (Sampling completed)]chain 1: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.54s/it, (Sampling completed)]
+
+chain 2: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.50s/it, (Sampling completed)][Achain 2: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.54s/it, (Sampling completed)]
+
+
+chain 3: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.55s/it, (Sampling completed)][A[Achain 3: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.54s/it, (Sampling completed)]
+
+
+
+chain 4: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.51s/it, (Sampling completed)][A[A[Achain 4: 100%|[34m██████████[0m| 4000/4000 [8:22:33<00:00,  7.54s/it, (Sampling completed)]
+                                                                                                                                                                                                                                                                                                                                23:51:24 - cmdstanpy - INFO - CmdStan done processing.
+23:51:24 - cmdstanpy - WARNING - Non-fatal error during sampling:
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 63, column 4 to column 39)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 63, column 4 to column 39)
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 57, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 57, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 57, column 6 to column 53)
+Consider re-running with show_console=True if the above output is unclear!
+23:51:34 - cmdstanpy - WARNING - Some chains may have failed to converge.
+	Chain 1 had 1999 iterations at max treedepth (100.0%)
+	Chain 2 had 1999 iterations at max treedepth (100.0%)
+	Chain 3 had 1999 iterations at max treedepth (100.0%)
+	Chain 4 had 1999 iterations at max treedepth (100.0%)
+	Use the "diagnose()" method on the CmdStanMCMC object to see further information.
+
+wrote export to output/skill_exports/bayesian_ssm (2712 race rows)
+15:57:05 - cmdstanpy - INFO - CmdStan start processing
+chain 1:   0%|[33m          [0m| 0/4000 [00:00<?, ?it/s, (Warmup)]
+chain 2:   0%|[33m          [0m| 0/4000 [00:00<?, ?it/s, (Warmup)][A
+
+chain 3:   0%|[33m          [0m| 0/4000 [00:00<?, ?it/s, (Warmup)][A[A
+
+
+chain 4:   0%|[33m          [0m| 0/4000 [00:00<?, ?it/s, (Warmup)][A[A[A
+
+chain 3:   0%|[33m          [0m| 1/4000 [00:00<06:52,  9.70it/s, (Warmup)][A[A

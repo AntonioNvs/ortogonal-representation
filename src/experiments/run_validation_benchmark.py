@@ -15,6 +15,7 @@ from baselines.skill_loader import load_skill_export
 from data.race_panel import RacePanelConfig, build_race_panel
 from skill.contract import InferenceMode
 from validation.benchmark import benchmark_source, write_benchmark_report
+from validation.career_metrics import parse_horizon_arg
 from validation.team_lineage import lineage_id_by_constructor
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
@@ -33,7 +34,14 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=str, default="output/skill_model/skill_gnn.pth")
     parser.add_argument("--meta", type=str, default="output/skill_model/skill_gnn_meta.json")
     parser.add_argument("--xai-seed", type=int, default=42)
+    parser.add_argument(
+        "--horizon",
+        type=str,
+        default="inf",
+        help="Career forward horizon: 'inf' for rest-of-career (default) or integer seasons",
+    )
     args = parser.parse_args()
+    horizon = parse_horizon_arg(args.horizon)
 
     data_tasks.register_all(
         enriched_db_dir=cfg.ENRICHED_DB_DIR,
@@ -69,6 +77,7 @@ def main() -> None:
             checkpoint_path=args.checkpoint if source == "skill_gnn" else None,
             meta_path=args.meta,
             xai_seed=args.xai_seed,
+            horizon=horizon,
         )
 
     write_benchmark_report(reports, args.output_dir)

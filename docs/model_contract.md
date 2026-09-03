@@ -76,16 +76,30 @@ Artifacts written under `output/skill_exports/{source}/` as `race_skill.parquet`
 - Shapley driver/constructor/context shares
 
 ### 5. Career validity (primary gate)
-- **Partial Spearman ρ ≥ 0.15** with cluster CI low > 0 (skill vs forward tier, controlling tier-at-T)
-- Within-season permutation p-value
-- **Eligible promotion AUROC** (below S-tier at T only)
+
+See **`docs/career_validation_framework.md`** for full methodology.
+
+**Cohort:** drivers with within-season skill ≥ 75th percentile **and** B-tier team at T (`constructor_tier_score_at_T == 1`).
+
+**Outcome:** rest-of-career mean tier score (infinite horizon; all future active seasons until retirement or data cutoff).
+
+**Correction:** `outcome_score > constructor_tier_score_at_T` (tier promotion over remaining career).
+
+| Gate | Criterion |
+|------|-----------|
+| **Underrated resolution rate** | ≥ Bradley–Terry baseline; cluster CI low > 0.5 |
+| **Underrated promotion AUROC** | ≥ Bradley–Terry baseline; cluster CI low > 0.45 |
+| **Partial Spearman (underrated stratum)** | ≥ BT baseline; cluster CI low > −0.1 (small-n stratum) |
+| Partial Spearman (all drivers, inf horizon) | ρ ≥ 0.15 (diagnostic) |
+| Within-season permutation p-value | Diagnostic |
+| Eligible promotion AUROC (below S-tier at T) | Diagnostic |
+
+**Do not gate on:** raw Spearman alone, all-driver moved-up AUROC.
 
 ### 6. Robustness
 - DNF policies (classified / finished / all entries)
 - ≥5 seeds where stochastic
 - Era windows (e.g. hybrid 2014–2021 for Bayesian replication)
-
-**Do not gate on:** raw Spearman alone, all-driver moved-up AUROC.
 
 ## Publication plots (CLI)
 
@@ -109,7 +123,10 @@ python src/experiments/run_bradley_terry.py --max-year 2025 --output-dir output/
 python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2021 --output-dir output/skill_exports/bayesian_ssm
 
 # Unified validation benchmark
-python src/experiments/run_validation_benchmark.py --sources bradley_terry bayesian_ssm
+python src/experiments/run_validation_benchmark.py --sources bradley_terry bayesian_ssm orthogonal_shapley --horizon inf
+
+# Multi-source career comparison (rest-of-career horizon)
+python src/experiments/run_career_comparison.py --sources bradley_terry bayesian_ssm orthogonal_shapley
 
 # Primary GNN (when ready)
 python src/experiments/train_skill_gnn.py --seed 42

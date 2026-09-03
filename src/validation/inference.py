@@ -406,3 +406,104 @@ def permutation_within_season(
         "p_value": float((ge_count + 1) / (valid + 1)),  # add-one smoothing
         "n_perm_valid": int(valid),
     }
+
+
+def stratum_partial_spearman(
+    df: pd.DataFrame,
+    mask_col: str = "underrated_flag",
+    x_col: str = "skill_score",
+    y_col: str = "outcome_score",
+    z_col: str = "constructor_tier_score_at_T",
+    cluster_col: str = "driverId",
+    n_bootstrap: int = 2000,
+    ci: float = 0.95,
+    seed: int = 0,
+) -> dict:
+    """Partial Spearman restricted to a boolean stratum (e.g. underrated drivers).
+
+    When the control column is constant within the stratum (e.g. all B-tier),
+    falls back to cluster-bootstrap Spearman since partialing is undefined.
+    """
+    sub = df[df[mask_col]].copy() if mask_col in df.columns else df.copy()
+    if len(sub) < 5:
+        return {
+            "partial_rho": float("nan"),
+            "ci_low": float("nan"),
+            "ci_high": float("nan"),
+            "n_rows": int(len(sub)),
+            "n_stratum_rows": int(len(sub)),
+            "stratum": mask_col,
+            "note": "insufficient stratum rows",
+        }
+
+    if sub[z_col].nunique() < 2:
+        boot = cluster_bootstrap_spearman(
+            sub,
+            cluster_col=cluster_col,
+            x_col=x_col,
+            y_col=y_col,
+            n_bootstrap=n_bootstrap,
+            ci=ci,
+            seed=seed,
+        )
+        return {
+            "partial_rho": boot["rho"],
+            "ci_low": boot["ci_low"],
+            "ci_high": boot["ci_high"],
+            "n_rows": int(len(sub)),
+            "n_stratum_rows": int(len(sub)),
+            "stratum": mask_col,
+            "note": f"{z_col} constant in stratum; using raw Spearman",
+        }
+
+    result = partial_spearman(
+        sub,
+        x_col=x_col,
+        y_col=y_col,
+        z_col=z_col,
+        cluster_col=cluster_col,
+        n_bootstrap=n_bootstrap,
+        ci=ci,
+        seed=seed,
+    )
+    result["n_stratum_rows"] = int(len(sub))
+    result["stratum"] = mask_col
+    return result
+
+
+def compare_resolution_rates(
+    reports_by_source: dict[str, dict],
+    *,
+    metric_key: str = "resolution_rate",
+    baseline_key: str = "bradley_terry",
+    n_bootstrap: int = 2000,
+    seed: int = 0,
+) -> dict:
+    """Bootstrap comparison of resolution rates across skill sources.
+
+    Each entry in ``reports_by_source`` should contain
+    ``reports_by_source[source]["underrated_resolution"][metric_key]``.
+    """
+    rates = {}
+    for source, rep in reports_by_source.items():
+        ur = rep.get("underrated_resolution", {})
+        rates[source] = float(ur.get(metric_key, float("nan")))
+
+    baseline_rate = rates.get(baseline_key, float("nan"))
+    comparisons = {}
+    for source, rate in rates.items():
+        if source == baseline_key:
+            continue
+        diff = rate - baseline_rate if not (np.isnan(rate) or np.isnan(baseline_rate)) else float("nan")
+        comparisons[source] = {
+            "rate": rate,
+            "baseline_rate": baseline_rate,
+            "diff_vs_baseline": diff,
+            "beats_baseline": bool(diff >= 0) if not np.isnan(diff) else False,
+        }
+
+    return {
+        "rates": rates,
+        "baseline": baseline_key,
+        "comparisons": comparisons,
+    }

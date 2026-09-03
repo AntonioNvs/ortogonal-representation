@@ -34,13 +34,33 @@ def load_skill_by_source(source, db, team_tier=None, **kwargs):
     return season_scores_for_career(export)
 
 
-def join_career(skill: pd.DataFrame, db, team_tier: pd.DataFrame, horizon: int = 3) -> pd.DataFrame:
-    """Join season skill scores to forward tier outcomes."""
-    from validation.career_labels import driver_season_constructor, forward_tier_outcome
+def join_career(
+    skill: pd.DataFrame,
+    db,
+    team_tier: pd.DataFrame,
+    horizon: int | None = None,
+    *,
+    enrich_trajectory: bool = True,
+) -> pd.DataFrame:
+    """Join season skill scores to forward tier outcomes.
+
+    Parameters
+    ----------
+    horizon : int or None
+        If None (default), use rest-of-career mean tier score (infinite horizon).
+        If int, use fixed forward window T+1..T+horizon with require_full_horizon.
+    """
+    from validation.career_labels import career_outcome_labels, driver_season_constructor
+    from validation.skill_trajectory import enrich_career_join
     from validation.team_tiers import TIER_TO_SCORE
 
     ds = driver_season_constructor(db)
-    forward = forward_tier_outcome(ds, team_tier, horizon=horizon, require_full_horizon=True)
+    if horizon is None:
+        forward = career_outcome_labels(ds, team_tier, horizon=None)
+    else:
+        forward = career_outcome_labels(
+            ds, team_tier, horizon=horizon, require_full_horizon=True
+        )
     tier_at_t = team_tier.rename(columns={"season": "season_T"})[
         ["constructorId", "season_T", "tier"]
     ]
@@ -56,6 +76,8 @@ def join_career(skill: pd.DataFrame, db, team_tier: pd.DataFrame, horizon: int =
         on=["driverId", "season_T"],
         how="left",
     )
+    if enrich_trajectory:
+        joined = enrich_career_join(joined, skill)
     return joined
 
 

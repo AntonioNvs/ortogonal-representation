@@ -1,6 +1,5 @@
 # Generated outputs — do not commit artifacts
 output/skill_exports/
-output/validation_benchmark/
 output/plots/
 output/skill_model/*.pth
 output/skill_model/*.pt
@@ -28,6 +27,8 @@ notebooks/output/
 .env
 .claude
 *.parquet
+*.out
+train.txt
 .cursor/
 
 # Project context (local-only, never committed)

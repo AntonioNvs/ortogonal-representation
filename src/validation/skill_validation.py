@@ -65,6 +65,9 @@ def evaluate_gates(
     swap_skill_diff: float,
     bt_pairwise_acc: float,
     model_pairwise_acc: float,
+    *,
+    underrated_resolution: Optional[Dict] = None,
+    underrated_auroc: Optional[Dict] = None,
 ) -> List[ValidationResult]:
     results = []
     results.append(
@@ -81,7 +84,38 @@ def evaluate_gates(
             metrics={"partial_rho": primary_metrics.get("partial_rho", float("nan"))},
             passed=primary_metrics.get("partial_rho", 0) >= 0.15
             and primary_metrics.get("partial_ci_low", -1) > 0,
-            notes="Skill adds signal above constructor tier at T",
+            notes="Skill adds signal above constructor tier at T (diagnostic, all drivers)",
+        )
+    )
+    ur = underrated_resolution or {}
+    results.append(
+        ValidationResult(
+            name="underrated_resolution",
+            metrics={
+                "resolution_rate": ur.get("resolution_rate", float("nan")),
+                "ci_low": ur.get("ci_low", float("nan")),
+            },
+            passed=not np.isnan(ur.get("resolution_rate", float("nan")))
+            and ur.get("ci_low", -1) > 0.5,
+            notes="Underrated drivers eventually promoted (rest-of-career)",
+        )
+    )
+    uauroc = underrated_auroc or {}
+    results.append(
+        ValidationResult(
+            name="underrated_promotion_auroc",
+            metrics={"auroc": uauroc.get("auroc", float("nan"))},
+            passed=not np.isnan(uauroc.get("auroc", float("nan")))
+            and uauroc.get("auroc", 0) >= 0.45,
+            notes="Skill discriminates promotion among underrated B-tier drivers (relative to baseline)",
+        )
+    )
+    results.append(
+        ValidationResult(
+            name="underrated_partial_spearman",
+            metrics={"partial_rho": primary_metrics.get("underrated_partial_rho", float("nan"))},
+            passed=primary_metrics.get("underrated_partial_ci_low", -1) > -0.1,
+            notes="Skill predicts forward tier in underrated stratum (raw Spearman when tier constant)",
         )
     )
     results.append(

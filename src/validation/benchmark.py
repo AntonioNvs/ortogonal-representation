@@ -17,19 +17,18 @@ from explain.skill_gnn_probes import ProbeSampleConfig, infer_claim_level, run_x
 from skill.calibration import distribution_diagnostics
 from skill.contract import InferenceMode, SkillExport
 from skill.decomposition import aggregate_season_shapley, bootstrap_shapley_ci, shapley_variance_shares
-from validation.career_labels import driver_season_constructor, forward_tier_outcome
-from validation.inference import (
-    cluster_bootstrap_spearman,
-    eligible_promotion_auroc,
-    partial_spearman,
-    permutation_within_season,
-)
+from validation.career_metrics import compute_career_metrics
+from validation.inference import compare_resolution_rates
 from validation.metrics import attach_race_positions, race_pl_nll_and_pairwise
-from validation.skill_validation import compare_skill_sources, evaluate_gates
 from validation.team_tiers import TIER_TO_SCORE, compute_constructor_season_points, compute_team_tiers
 
 
-def join_career_from_export(export: SkillExport, db, team_tier: pd.DataFrame, horizon: int = 3) -> pd.DataFrame:
+def join_career_from_export(
+    export: SkillExport,
+    db,
+    team_tier: pd.DataFrame,
+    horizon: int | None = None,
+) -> pd.DataFrame:
     from experiments.evaluate_skill_model import join_career
 
     skill = export.season.copy()
@@ -48,6 +47,7 @@ def benchmark_source(
     meta_path: Optional[str] = None,
     baselines_path: Optional[str] = None,
     xai_seed: int = 42,
+    horizon: int | None = None,
 ) -> Dict:
     """Full benchmark report for one SkillExport."""
     source = export.source
@@ -84,13 +84,28 @@ def benchmark_source(
     report["locked_test"] = race_pl_nll_and_pairwise(race_with_pos, test_years=tuple(cfg.TEST_YEARS))
 
     # Career validity
-    joined = join_career_from_export(export, db, team_tier)
-    career = compare_skill_sources(joined)
-    career["eligible_promotion_auroc"] = eligible_promotion_auroc(joined).get("auroc", float("nan"))
-    career["cluster_bootstrap"] = cluster_bootstrap_spearman(joined)
-    career["permutation"] = permutation_within_season(joined.rename(columns={"season_T": "season_T"}))
-    report["career"] = career
+    joined = join_career_from_export(export, db, team_tier, horizon=horizon)
+    career_report, _ = compute_career_metrics(
+        joined,
+        skill_source=source,
+        horizon=horizon,
+        seed=xai_seed,
+    )
+    report["career"] = career_report["career_summary"]
+    report["career"]["underrated_resolution"] = career_report["underrated_resolution"]
+    report["career"]["underrated_promotion_auroc"] = career_report["underrated_promotion_auroc"]
+    report["career"]["underrated_partial_rho"] = career_report["career_summary"].get(
+        "underrated_partial_rho", float("nan")
+    )
+    report["career"]["underrated_partial_ci_low"] = career_report["career_summary"].get(
+        "underrated_partial_ci_low", float("nan")
+    )
+    career = report["career"]
+    report["career_full"] = {
+        k: v for k, v in career_report.items() if k != "career_summary"
+    }
     report["n_joined"] = len(joined)
+    report["n_underrated"] = career_report.get("n_underrated", 0)
 
     # Mobility
     report["mobility"] = compute_mobility_report(db, SkillDatasetConfig(max_year=export.metadata.max_year)).to_dict()
@@ -141,6 +156,9 @@ def evaluate_benchmark_gates(reports: Dict[str, Dict], *, bt_key: str = "bradley
     bt = reports.get(bt_key, {})
     bt_pl = bt.get("locked_test", {}).get("pl_nll", float("inf"))
     bt_acc = bt.get("locked_test", {}).get("pairwise_acc", 0.0)
+    bt_resolution = bt.get("career", {}).get("underrated_resolution", {}).get(
+        "resolution_rate", float("nan")
+    )
 
     for source, rep in reports.items():
         if source in ("points_share", "constructor_tier"):
@@ -150,14 +168,55 @@ def evaluate_benchmark_gates(reports: Dict[str, Dict], *, bt_key: str = "bradley
         partial_ok = career.get("partial_rho", 0) >= 0.15 and career.get("partial_ci_low", -1) > 0
         pl_ok = locked.get("pl_nll", float("inf")) <= bt_pl + 0.01
         acc_ok = locked.get("pairwise_acc", 0) >= bt_acc - 0.01
+
+        ur = career.get("underrated_resolution", {})
+        resolution_rate = ur.get("resolution_rate", float("nan"))
+        resolution_ci_low = ur.get("ci_low", float("nan"))
+        resolution_ok = (
+            not np.isnan(resolution_rate)
+            and resolution_rate >= bt_resolution
+            and resolution_ci_low > 0.5
+        )
+
+        uauroc = career.get("underrated_promotion_auroc", {})
+        if isinstance(uauroc, dict):
+            uauroc_val = uauroc.get("auroc", float("nan"))
+            uauroc_ci_low = uauroc.get("ci_low", float("nan"))
+        else:
+            uauroc_val = float(uauroc)
+            uauroc_ci_low = float("nan")
+        bt_career = bt.get("career", {})
+        bt_uauroc_obj = bt_career.get("underrated_promotion_auroc", {})
+        bt_auroc_ref = (
+            bt_uauroc_obj.get("auroc", 0)
+            if isinstance(bt_uauroc_obj, dict)
+            else float(bt_uauroc_obj)
+        )
+        uauroc_ok = not np.isnan(uauroc_val) and (
+            source == bt_key
+            or (uauroc_val >= bt_auroc_ref and uauroc_ci_low > 0.45)
+        )
+
+        underrated_partial_ok = (
+            career.get("underrated_partial_rho", 0) >= bt_career.get("underrated_partial_rho", -1)
+            and career.get("underrated_partial_ci_low", -1) > -0.1
+        ) if source != bt_key else True
+
         gates.append(
             {
                 "source": source,
                 "partial_spearman_gate": partial_ok,
+                "underrated_resolution_gate": resolution_ok,
+                "underrated_auroc_gate": uauroc_ok,
+                "underrated_partial_spearman_gate": underrated_partial_ok,
                 "locked_pl_gate": pl_ok,
                 "locked_pairwise_gate": acc_ok,
                 "partial_rho": career.get("partial_rho"),
                 "partial_ci_low": career.get("partial_ci_low"),
+                "resolution_rate": resolution_rate,
+                "resolution_ci_low": resolution_ci_low,
+                "underrated_auroc": uauroc_val,
+                "underrated_partial_rho": career.get("underrated_partial_rho"),
                 "pl_nll": locked.get("pl_nll"),
                 "pairwise_acc": locked.get("pairwise_acc"),
             }
@@ -170,7 +229,10 @@ def write_benchmark_report(reports: Dict[str, Dict], output_dir: str) -> None:
 
     os.makedirs(output_dir, exist_ok=True)
     gates = evaluate_benchmark_gates(reports)
-    payload = {"sources": reports, "gates": gates}
+    resolution_comparison = compare_resolution_rates(
+        {s: r.get("career", {}) for s, r in reports.items()}
+    )
+    payload = {"sources": reports, "gates": gates, "resolution_comparison": resolution_comparison}
     with open(os.path.join(output_dir, "benchmark.json"), "w") as f:
         json.dump(payload, f, indent=2, default=float)
 
@@ -178,13 +240,26 @@ def write_benchmark_report(reports: Dict[str, Dict], output_dir: str) -> None:
     for source, rep in reports.items():
         career = rep.get("career", {})
         locked = rep.get("locked_test", {})
+        ur = career.get("underrated_resolution", {})
         lines.append(f"## {source}")
         lines.append(f"- Partial ρ: {career.get('partial_rho', 'n/a')} (CI low: {career.get('partial_ci_low', 'n/a')})")
+        lines.append(
+            f"- Underrated resolution: {ur.get('resolution_rate', 'n/a')} "
+            f"(CI low: {ur.get('ci_low', 'n/a')}, n={ur.get('n_underrated', 'n/a')})"
+        )
+        uauroc = career.get("underrated_promotion_auroc", {})
+        if isinstance(uauroc, dict):
+            lines.append(f"- Underrated promotion AUROC: {uauroc.get('auroc', 'n/a')}")
         lines.append(f"- Locked PL NLL: {locked.get('pl_nll', 'n/a')}")
         lines.append(f"- Locked pairwise acc: {locked.get('pairwise_acc', 'n/a')}")
         lines.append("")
     lines.append("## Gates")
     for g in gates:
-        lines.append(f"- **{g['source']}**: partial={g['partial_spearman_gate']}, pl={g['locked_pl_gate']}, pairwise={g['locked_pairwise_gate']}")
+        lines.append(
+            f"- **{g['source']}**: partial={g['partial_spearman_gate']}, "
+            f"resolution={g['underrated_resolution_gate']}, "
+            f"underrated_auroc={g['underrated_auroc_gate']}, "
+            f"pl={g['locked_pl_gate']}, pairwise={g['locked_pairwise_gate']}"
+        )
     with open(os.path.join(output_dir, "benchmark.md"), "w") as f:
         f.write("\n".join(lines))
