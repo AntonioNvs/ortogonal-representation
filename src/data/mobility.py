@@ -152,6 +152,43 @@ def compute_mobility_report(
     )
 
 
+def build_race_groups_for_pl(
+    df: pd.DataFrame,
+    drv_idx: Dict[int, int],
+    cs_idx: Dict[Tuple[int, int], int],
+) -> List[dict]:
+    """Plackett-Luce race groups: driver/cs indices and finish ranks per race."""
+    groups: List[dict] = []
+    ranked = df[df["in_race_ranking"]].copy()
+    for _, grp in ranked.groupby("raceId"):
+        grp = grp.sort_values("race_position_order")
+        year = int(grp["year"].iloc[0])
+        driver_ids = grp["driverId"].astype(int).tolist()
+        constructor_ids = grp["constructorId"].astype(int).tolist()
+        ranks = grp["race_position_order"].astype(float).tolist()
+        d_idx = []
+        c_idx = []
+        r_vals = []
+        for did, cid, rank in zip(driver_ids, constructor_ids, ranks):
+            if did not in drv_idx:
+                continue
+            cs_key = (cid, year)
+            if cs_key not in cs_idx:
+                continue
+            d_idx.append(drv_idx[did])
+            c_idx.append(cs_idx[cs_key])
+            r_vals.append(rank)
+        if len(d_idx) >= 2:
+            groups.append(
+                {
+                    "driver_idx": d_idx,
+                    "cs_idx": c_idx,
+                    "ranks": r_vals,
+                }
+            )
+    return groups
+
+
 def build_race_pairs_for_bt(df: pd.DataFrame) -> pd.DataFrame:
     """Bradley–Terry observations: ordered pairs within each race.
 

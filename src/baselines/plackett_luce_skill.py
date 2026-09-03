@@ -1,71 +1,73 @@
-"""Walk-forward race-level Bradley–Terry benchmark with SkillExport."""
+"""Walk-forward race-level Plackett-Luce benchmark with SkillExport."""
 
 from __future__ import annotations
 
-import os
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 import torch
 
 import config as cfg
 from baselines.bradley_terry import BradleyTerry
-from data.mobility import build_race_pairs_for_bt, compute_support_scores
+from data.mobility import build_race_groups_for_pl, compute_support_scores
 from data.race_panel import RacePanelConfig, build_race_panel
+from models.ranking_likelihood import batch_pl_nll
 from relbench.base import Database
 from skill.contract import InferenceMode
 from skill.export import build_skill_export
 
 
-def _fit_bt_on_pairs(
-    pairs: pd.DataFrame,
-    drv_idx: dict,
-    cs_idx: dict,
+def _fit_pl_on_races(
+    race_groups: list[dict],
+    num_drivers: int,
+    num_cs: int,
     *,
     device: torch.device,
-    lr: float = cfg.BT_LR,
-    epochs: int = cfg.BT_EPOCHS_PER_STEP,
+    lr: float = cfg.PL_LR,
+    epochs: int = cfg.PL_EPOCHS_PER_STEP,
+    weight_decay: float = cfg.PL_WEIGHT_DECAY,
+    init_model: Optional[BradleyTerry] = None,
 ) -> BradleyTerry:
-    num_drivers = len(drv_idx)
-    num_cs = len(cs_idx)
-    if pairs.empty or num_drivers == 0:
-        model = BradleyTerry(max(num_drivers, 1), max(num_cs, 1)).to(device)
+    if init_model is not None:
+        model = BradleyTerry(num_drivers, num_cs).to(device)
+        with torch.no_grad():
+            model.theta.weight.copy_(init_model.theta.weight)
+            model.q.weight.copy_(init_model.q.weight)
+    else:
+        model = BradleyTerry(num_drivers, num_cs).to(device)
+
+    if not race_groups:
         return model
 
-    p = pairs.copy()
-    p["cs_A"] = p.apply(lambda r: cs_idx[(int(r["constructorA"]), int(r["year"]))], axis=1)
-    p["cs_B"] = p.apply(lambda r: cs_idx[(int(r["constructorB"]), int(r["year"]))], axis=1)
-    p["idx_A"] = p["driverA"].map(drv_idx)
-    p["idx_B"] = p["driverB"].map(drv_idx)
-
-    driver_A = torch.tensor(p["idx_A"].to_numpy(), dtype=torch.long, device=device)
-    driver_B = torch.tensor(p["idx_B"].to_numpy(), dtype=torch.long, device=device)
-    cs_A = torch.tensor(p["cs_A"].to_numpy(), dtype=torch.long, device=device)
-    cs_B = torch.tensor(p["cs_B"].to_numpy(), dtype=torch.long, device=device)
-    labels = torch.ones(len(p), device=device)
-
-    model = BradleyTerry(num_drivers, num_cs).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     for _ in range(epochs):
-        logits = model.logits(driver_A, driver_B, cs_A, cs_B)
-        loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels)
+        utilities_list = []
+        ranks_list = []
+        for race in race_groups:
+            d_idx = torch.tensor(race["driver_idx"], dtype=torch.long, device=device)
+            c_idx = torch.tensor(race["cs_idx"], dtype=torch.long, device=device)
+            ranks = torch.tensor(race["ranks"], dtype=torch.float32, device=device)
+            utilities_list.append(model.utilities(d_idx, c_idx))
+            ranks_list.append(ranks)
+
+        loss = batch_pl_nll(utilities_list, ranks_list)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
     return model
 
 
-def export_bradley_terry(
+def export_plackett_luce(
     db: Database,
     *,
     max_year: int = 2025,
     inference_mode: InferenceMode = InferenceMode.FILTERED,
     device=None,
-    lr: float = cfg.BT_LR,
-    epochs: int = cfg.BT_EPOCHS_PER_STEP,
+    lr: float = cfg.PL_LR,
+    epochs: int = cfg.PL_EPOCHS_PER_STEP,
+    weight_decay: float = cfg.PL_WEIGHT_DECAY,
 ) -> "SkillExport":
-    """Expanding-window BT: causal as-of-round race export."""
+    """Expanding-window Plackett-Luce: causal as-of-round race export."""
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     else:
@@ -73,7 +75,7 @@ def export_bradley_terry(
 
     panel = build_race_panel(db, RacePanelConfig(max_year=max_year))
     ranked = panel[panel["in_race_ranking"]].copy()
-    pairs_all = build_race_pairs_for_bt(ranked.rename(columns={"season": "year"}))
+    hist_df = ranked.rename(columns={"season": "year"})
 
     drivers = sorted(ranked["driverId"].astype(int).unique())
     cs_keys = sorted(
@@ -81,6 +83,8 @@ def export_bradley_terry(
     )
     drv_idx = {d: i for i, d in enumerate(drivers)}
     cs_idx = {k: i for i, k in enumerate(cs_keys)}
+    num_drivers = len(drivers)
+    num_cs = len(cs_keys)
 
     checkpoints = (
         ranked[["season", "round"]]
@@ -89,14 +93,24 @@ def export_bradley_terry(
     )
 
     rows = []
+    model: Optional[BradleyTerry] = None
     for _, ck in checkpoints.iterrows():
         season, rnd = int(ck["season"]), int(ck["round"])
-        hist = ranked[
-            (ranked["season"] < season)
-            | ((ranked["season"] == season) & (ranked["round"] <= rnd))
+        hist = hist_df[
+            (hist_df["year"] < season)
+            | ((hist_df["year"] == season) & (hist_df["round"] <= rnd))
         ]
-        pairs = build_race_pairs_for_bt(hist.rename(columns={"season": "year"}))
-        model = _fit_bt_on_pairs(pairs, drv_idx, cs_idx, device=device, lr=lr, epochs=epochs)
+        race_groups = build_race_groups_for_pl(hist, drv_idx, cs_idx)
+        model = _fit_pl_on_races(
+            race_groups,
+            num_drivers,
+            num_cs,
+            device=device,
+            lr=lr,
+            epochs=epochs,
+            weight_decay=weight_decay,
+            init_model=model,
+        )
         theta = model.driver_skill().detach().cpu().numpy()
         q = model.q.weight.squeeze(-1).detach().cpu().numpy()
 
@@ -130,8 +144,7 @@ def export_bradley_terry(
             )
 
     race_df = pd.DataFrame(rows)
-    support = compute_support_scores(ranked.rename(columns={"season": "year"}))
-    support = support.rename(columns={"year": "season"})
+    support = compute_support_scores(hist_df)
     race_df = race_df.merge(
         support[["driverId", "season", "support_bucket"]],
         on=["driverId", "season"],
@@ -141,17 +154,8 @@ def export_bradley_terry(
 
     return build_skill_export(
         race_df,
-        skill_source="bradley_terry",
+        skill_source="plackett_luce",
         inference_mode=inference_mode,
         max_year=max_year,
         walk_forward=True,
     )
-
-
-def load_bradley_terry_skill(db: Database, max_year: int = 2025) -> pd.DataFrame:
-    """Backward-compatible season loader."""
-    from baselines.skill_loader import load_skill_export
-
-    export = load_skill_export("bradley_terry", db, max_year=max_year)
-    out = export.season[["driverId", "season", "skill_score", "support_bucket"]].copy()
-    return out.sort_values(["driverId", "season"]).reset_index(drop=True)

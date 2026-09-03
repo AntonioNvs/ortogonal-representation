@@ -25,5 +25,9 @@ class BradleyTerry(nn.Module):
         q = self.q(cs_A) - self.q(cs_B)
         return (theta + q).squeeze(-1)
 
+    def utilities(self, driver_idx: torch.Tensor, cs_idx: torch.Tensor) -> torch.Tensor:
+        """Per-entry race utilities for Plackett-Luce: theta + q."""
+        return (self.theta(driver_idx) + self.q(cs_idx)).squeeze(-1)
+
     def driver_skill(self) -> torch.Tensor:
         return self.theta.weight.squeeze(-1)
