@@ -63,8 +63,8 @@ percentile) distinct from `skill_col` (used for evaluation). Default
 **(b) Paired cluster-bootstrap difference.** Add
 `paired_cluster_bootstrap_diff(df_a, df_b, stat_fn)` to `inference.py`: for each
 bootstrap replicate, resample `driverId` clusters with replacement **once**, evaluate
-`stat_fn` (resolution rate, or partial ρ) on both models over the *same* resampled
-drivers, and record `θ_a − θ_b`. Report:
+`stat_fn` on both models over the *same* resampled drivers, and record `θ_a − θ_b`.
+Report:
 
 - percentile CI on the difference (95%),
 - one-sided p `P(θ_a ≤ θ_b)` (fraction of replicates where Orth does not beat BT).
@@ -72,13 +72,22 @@ drivers, and record `θ_a − θ_b`. Report:
 Because the two models share drivers, this is a paired test — strictly more powerful
 than comparing independent CIs, and it answers "does Orth beat BT on the same people."
 
+**Important correction (implementation).** On a model-free fixed cohort the
+`underrated_flag` and `promoted` labels are *identical* across models, so the
+resolution rate is no longer a model discriminator — pairing on it is degenerate.
+The paired test therefore targets the quantities that still differ across models:
+**within-cohort AUROC** and **within-cohort Spearman**. `compare_resolution_rates`
+is kept for the endogenous (legacy) per-model cohort but is annotated as a point
+comparison only.
+
 ### Deliverables
 
 - `mark_underrated(..., cohort_skill_col=...)`
-- `paired_cluster_bootstrap_diff(...)` in `src/validation/inference.py`
-- Rewrite `compare_resolution_rates` to emit `diff_ci_low/high` + `p_one_sided`,
-  dropping the bare `beats_baseline` boolean.
-- Benchmark report surfaces paired difference for resolution rate and partial ρ.
+- `paired_cluster_bootstrap_diff(...)` and `fixed_cohort_paired_comparison(...)` in
+  `src/validation/inference.py`
+- `compare_resolution_rates` annotated as point-comparison only (legacy endogenous cohort).
+- `--fixed-cohort` flag on `run_validation_benchmark.py`; benchmark report surfaces a
+  `fixed_cohort` block with paired AUROC / Spearman differences.
 
 ---
 
