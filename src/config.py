@@ -112,4 +112,9 @@ DEFAULT_GPU_ID = 7
 # Bradley-Terry walk-forward defaults
 BT_LR = 0.1
 BT_EPOCHS_PER_STEP = 30
+
+# Plackett-Luce walk-forward defaults
+PL_LR = 0.05
+PL_EPOCHS_PER_STEP = 50
+PL_WEIGHT_DECAY = 1e-4
 CAREER_VALIDATION_MIN_YEAR = 2000

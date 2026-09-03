@@ -12,6 +12,7 @@ import config as cfg
 from baselines.bradley_terry_skill import export_bradley_terry
 from baselines.bayesian_ssm import export_bayesian_ssm
 from baselines.orthogonal_shapley_skill import export_orthogonal_shapley
+from baselines.plackett_luce_skill import export_plackett_luce
 from baselines.skill_gnn_skill import export_skill_gnn
 from baselines.teammate_residual import export_teammate_residual
 from data.enriched_dataset import EnrichedF1Dataset
@@ -79,6 +80,8 @@ def load_skill_export(
 
     if source == "bradley_terry":
         export = export_bradley_terry(db, max_year=max_year, inference_mode=inference_mode)
+    elif source == "plackett_luce":
+        export = export_plackett_luce(db, max_year=max_year, inference_mode=inference_mode)
     elif source == "bayesian_ssm" or source == "bayesian_comparator":
         export = export_bayesian_ssm(
             db,

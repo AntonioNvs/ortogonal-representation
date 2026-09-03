@@ -20,7 +20,7 @@ from validation.inference import compare_resolution_rates
 from validation.team_lineage import lineage_id_by_constructor
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
 
-DEFAULT_SOURCES = ["bradley_terry", "bayesian_ssm", "orthogonal_shapley"]
+DEFAULT_SOURCES = ["bradley_terry", "plackett_luce", "bayesian_ssm", "orthogonal_shapley"]
 BASELINE = "bradley_terry"
 
 

@@ -39,6 +39,7 @@ skill_0_10        = 10 * sigmoid(alpha * (f - mu_train) / sigma_train)
 | **Primary skill GNN** | SkillGNN — PL ranking on race results | `src/models/skill_gnn.py` |
 | **GNN baseline (predictive)** | SAGE qualifying regressor (4/128) | `src/models/sage_regressor.py` |
 | **Benchmark BT** | Walk-forward race-level Bradley–Terry | `src/baselines/bradley_terry_skill.py` |
+| **Benchmark PL** | Walk-forward race-level Plackett–Luce | `src/baselines/plackett_luce_skill.py` |
 | **Benchmark Bayesian** | Lindner et al. state-space (Stan/NUTS) | `src/baselines/bayesian_ssm.py` |
 | Simple baseline | Teammate-residual | `src/baselines/teammate_residual.py` |
 | **Candidate (2026-09-01)** | OrthogonalShapleyGNN — SAGE+MLP fusion + coalition Shapley | `src/models/orthogonal_shapley_gnn.py` |
@@ -120,6 +121,7 @@ python -m src.data.pipeline build
 
 # Benchmark baselines (validation-first)
 python src/experiments/run_bradley_terry.py --max-year 2025 --output-dir output/skill_exports/bradley_terry
+python src/experiments/run_plackett_luce.py --max-year 2025 --output-dir output/skill_exports/plackett_luce
 python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2021 --output-dir output/skill_exports/bayesian_ssm
 
 # Unified validation benchmark
