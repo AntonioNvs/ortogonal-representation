@@ -223,9 +223,22 @@ def channel_decomposition(
     }
 
 
-def evaluate_xai_gates(leakage_rho: float, swap_skill_diff: float) -> Dict[str, bool]:
-    """Apply XAI gate thresholds from skill_validation.evaluate_gates."""
-    leakage_pass = abs(leakage_rho) < 0.3 if not np.isnan(leakage_rho) else False
+def evaluate_xai_gates(
+    leakage_rho: float,
+    swap_skill_diff: float,
+    recoverability: Dict[str, Any] | None = None,
+) -> Dict[str, bool]:
+    """Apply XAI gate thresholds.
+
+    When ``recoverability`` (supervised constructor-recoverability probe) is
+    provided, the leakage gate is set from its empirical null (macro-AUC <= null
+    95th percentile) rather than the norm-correlation heuristic. Falls back to
+    ``|leakage_rho| < 0.3`` otherwise.
+    """
+    if recoverability is not None and "leakage" in recoverability:
+        leakage_pass = not bool(recoverability["leakage"])
+    else:
+        leakage_pass = abs(leakage_rho) < 0.3 if not np.isnan(leakage_rho) else False
     swap_pass = swap_skill_diff < 0.05 if not np.isnan(swap_skill_diff) else False
     return {"constructor_leakage": leakage_pass, "swap_invariance": swap_pass}
 
@@ -234,10 +247,12 @@ def infer_claim_level(
     partial_rho: float,
     partial_ci_low: float,
     leakage_rho: float,
+    leakage_pass: bool | None = None,
 ) -> str:
     """Map career + XAI metrics to an allowed claim level."""
     career_pass = partial_rho >= 0.15 and partial_ci_low > 0
-    leakage_pass = abs(leakage_rho) < 0.3 if not np.isnan(leakage_rho) else False
+    if leakage_pass is None:
+        leakage_pass = abs(leakage_rho) < 0.3 if not np.isnan(leakage_rho) else False
 
     if career_pass and leakage_pass:
         return "strong_skill"

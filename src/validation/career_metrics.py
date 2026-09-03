@@ -32,15 +32,41 @@ def compute_career_metrics(
     skill_source: str = "",
     horizon: Optional[int] = None,
     seed: int = 0,
+    cohort_skill_col: str | None = None,
+    min_year: int | None = None,
 ) -> dict:
-    """Full career validation report for one joined table."""
-    marked = mark_underrated(joined)
+    """Full career validation report for one joined table.
+
+    ``cohort_skill_col`` (e.g. ``"cohort_skill_score"``) forces the underrated
+    cohort to be defined on a model-free score column, so the flag is identical
+    across models. When None, the cohort is defined on the model's own
+    ``skill_score`` (endogenous — legacy behaviour).
+
+    ``min_year`` filters rows to ``season_T >= min_year`` **before** flagging, so
+    the within-season skill percentile and underrated flag are recomputed within
+    the window (era stratification).
+    """
+    if min_year is not None and "season_T" in joined.columns:
+        joined = joined[joined["season_T"] >= min_year].copy()
+    marked = mark_underrated(joined, cohort_skill_col=cohort_skill_col)
     career = compare_skill_sources(marked)
     career["eligible_promotion_auroc"] = eligible_promotion_auroc(marked, seed=seed).get(
         "auroc", float("nan")
     )
     career["cluster_bootstrap"] = cluster_bootstrap_spearman(marked)
     career["permutation"] = permutation_within_season(marked)
+
+    # Continuous car-quality control: residualize skill/outcome on the rolling
+    # constructor points-share score (tighter than the 3-bin tier).
+    if "constructor_score_at_T" in marked.columns and marked["constructor_score_at_T"].nunique() >= 2:
+        _cont = partial_spearman(marked, z_col="constructor_score_at_T", seed=seed)
+        career["partial_rho_continuous"] = _cont.get("partial_rho", float("nan"))
+        career["partial_rho_continuous_ci_low"] = _cont.get("ci_low", float("nan"))
+        career["partial_rho_continuous_ci_high"] = _cont.get("ci_high", float("nan"))
+    else:
+        career["partial_rho_continuous"] = float("nan")
+        career["partial_rho_continuous_ci_low"] = float("nan")
+        career["partial_rho_continuous_ci_high"] = float("nan")
 
     underrated_partial = stratum_partial_spearman(marked, seed=seed)
     career["underrated_partial_rho"] = underrated_partial.get("partial_rho", float("nan"))
@@ -58,7 +84,7 @@ def compute_career_metrics(
     else:
         career["rising_underrated_partial_rho"] = float("nan")
 
-    inconsistency = build_inconsistency_report(marked, seed=seed)
+    inconsistency = build_inconsistency_report(marked, seed=seed, cohort_skill_col=cohort_skill_col)
     marked_df = inconsistency.pop("marked_df")
 
     per_season = []

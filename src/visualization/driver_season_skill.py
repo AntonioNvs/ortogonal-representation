@@ -7,9 +7,10 @@ from typing import List, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from utils.naming import resolve_driver_ref
-from visualization.style import apply_plot_style, save_figure
+from visualization.style import apply_plot_style, despine_axes, finalize_axes, save_figure
 
 
 def plot_driver_season_skill(
@@ -30,7 +31,7 @@ def plot_driver_season_skill(
         refs = {str(d): int(d) for d in sub["driverId"].unique()}
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    colors = plt.cm.tab10(np.linspace(0, 0.9, max(len(drivers), 1)))
+    colors = sns.cubehelix_palette(max(len(drivers), 2), rot=-0.25, light=0.7)
 
     for i, query in enumerate(drivers):
         did, _ = resolve_driver_ref(query, refs)
@@ -62,11 +63,22 @@ def plot_driver_season_skill(
                 color=colors[i],
             )
 
-    ax.set_xlabel("Round")
-    ax.set_ylabel("Driver skill (0–10)")
+    ax.set_xlabel("Round", color="dimgrey", labelpad=8)
+    ax.set_ylabel("Driver skill (0–10)", color="dimgrey", labelpad=8)
     ax.set_ylim(0, 10)
-    ax.set_title(f"Driver skill trajectory — {season} season")
-    ax.legend(loc="best", framealpha=0.92)
+    ax.set_title(f"Driver skill trajectory — {season} season", loc="left", pad=7, color="dimgrey")
+    ax.legend(
+        loc="best",
+        frameon=True,
+        facecolor="white",
+        framealpha=0.8,
+        edgecolor="lightgrey",
+        labelcolor="dimgrey",
+    )
+    ax.grid(axis="y", alpha=0.25, linewidth=0.6)
+
+    finalize_axes(ax)
+    despine_axes()
     fig.tight_layout()
     if output_path:
         save_figure(fig, output_path, metadata={"season": season, "drivers": drivers})

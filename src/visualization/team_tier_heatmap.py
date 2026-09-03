@@ -11,12 +11,15 @@ from matplotlib.colors import BoundaryNorm, ListedColormap
 
 from validation.team_lineage import build_lineage_map, lineage_row_label
 from validation.team_tiers import compute_constructor_season_points, compute_team_tiers
-from visualization.style import apply_plot_style, save_figure
+from visualization.style import apply_plot_style, despine_axes, finalize_axes, save_figure
 
 TIER_MAP = {"S": 3, "A": 2, "B": 1}
-TIER_CMAP = ListedColormap(["#d73027", "#fee08b", "#1a9850"])
+# Traffic-light colormap ordered worst → best: B (red), A (amber), S (green).
+TIER_CMAP = ListedColormap(["#e31a1c", "#fdbf6f", "#33a02c"])
 TIER_NORM = BoundaryNorm([0.5, 1.5, 2.5, 3.5], TIER_CMAP.N)
 MISSING_COLOR = "#ececec"
+# White text on the dark cells (red/green), black on the light amber cell.
+_CELL_TEXT = {"S": "white", "B": "white", "A": "black"}
 
 
 def _prepare_tier_matrix(
@@ -81,21 +84,31 @@ def plot_team_tier_heatmap(
     ax.set_xticklabels(pivot.columns.astype(int), rotation=45, ha="right")
     ax.set_yticks(range(len(pivot.index)))
     ax.set_yticklabels([labels[str(lid)] for lid in pivot.index])
-    ax.set_xlabel("Season")
-    ax.set_ylabel("Constructor lineage")
-    ax.set_title(f"Constructor tier heatmap ({start_year}–{end_year})")
-    ax.tick_params(axis="both", length=0)
+    ax.set_xlabel("Season", color="dimgrey", labelpad=8)
+    ax.set_ylabel("Constructor lineage", color="dimgrey", labelpad=8)
+    ax.set_title(
+        f"Constructor tier heatmap ({start_year}–{end_year})",
+        loc="left",
+        pad=7,
+        color="dimgrey",
+    )
 
     for i in range(len(pivot.index)):
         for j in range(len(pivot.columns)):
             val = pivot.iloc[i, j]
             if pd.notna(val):
-                color = "white" if val == "S" else "black"
-                ax.text(j, i, val, ha="center", va="center", color=color, fontsize=9, fontweight="bold")
+                ax.text(
+                    j, i, val, ha="center", va="center",
+                    color=_CELL_TEXT.get(val, "black"), fontsize=9, fontweight="bold",
+                )
 
     cbar = fig.colorbar(im, ax=ax, ticks=[1, 2, 3], fraction=0.03, pad=0.02)
     cbar.ax.set_yticklabels(["B", "A", "S"])
+    cbar.ax.tick_params(length=0, labelcolor="dimgrey")
     cbar.outline.set_visible(False)
+
+    finalize_axes(ax)
+    despine_axes(top=True, right=True)
     fig.tight_layout()
     if output_path:
         save_figure(fig, output_path, metadata={"start_year": start_year, "end_year": end_year})

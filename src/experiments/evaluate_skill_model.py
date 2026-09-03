@@ -41,6 +41,7 @@ def join_career(
     horizon: int | None = None,
     *,
     enrich_trajectory: bool = True,
+    cohort_skill: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """Join season skill scores to forward tier outcomes.
 
@@ -49,6 +50,10 @@ def join_career(
     horizon : int or None
         If None (default), use rest-of-career mean tier score (infinite horizon).
         If int, use fixed forward window T+1..T+horizon with require_full_horizon.
+    cohort_skill : DataFrame or None
+        Optional model-free season scores (``driverId``, ``season``,
+        ``skill_score``) merged in as ``cohort_skill_score`` for a fixed
+        underrated-cohort definition.
     """
     from validation.career_labels import career_outcome_labels, driver_season_constructor
     from validation.skill_trajectory import enrich_career_join
@@ -62,22 +67,28 @@ def join_career(
             ds, team_tier, horizon=horizon, require_full_horizon=True
         )
     tier_at_t = team_tier.rename(columns={"season": "season_T"})[
-        ["constructorId", "season_T", "tier"]
+        ["constructorId", "season_T", "tier", "score"]
     ]
     ds_t = ds.rename(columns={"season": "season_T"})
     ds_t = ds_t.merge(tier_at_t, on=["constructorId", "season_T"], how="left")
     ds_t["constructor_tier_score_at_T"] = ds_t["tier"].map(TIER_TO_SCORE)
+    ds_t["constructor_score_at_T"] = ds_t["score"]
 
     joined = skill.rename(columns={"season": "season_T"}).merge(
         forward, on=["driverId", "season_T"], how="inner"
     )
     joined = joined.merge(
-        ds_t[["driverId", "season_T", "constructor_tier_score_at_T"]],
+        ds_t[["driverId", "season_T", "constructor_tier_score_at_T", "constructor_score_at_T"]],
         on=["driverId", "season_T"],
         how="left",
     )
     if enrich_trajectory:
         joined = enrich_career_join(joined, skill)
+    if cohort_skill is not None:
+        cs = cohort_skill[["driverId", "season", "skill_score"]].rename(
+            columns={"season": "season_T", "skill_score": "cohort_skill_score"}
+        )
+        joined = joined.merge(cs, on=["driverId", "season_T"], how="left")
     return joined
 
 
