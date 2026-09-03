@@ -9,8 +9,9 @@ from typing import Iterable, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
-from visualization.style import save_figure
+from visualization.style import apply_plot_style, despine_axes, finalize_axes, save_figure
 
 logger = logging.getLogger(__name__)
 
@@ -145,22 +146,6 @@ def resolve_driver_labels(
     return out
 
 
-def _apply_plot_style() -> None:
-    try:
-        plt.style.use("seaborn-v0_8-whitegrid")
-    except OSError:
-        plt.style.use("ggplot")
-    plt.rcParams.update(
-        {
-            "font.size": 11,
-            "axes.titlesize": 13,
-            "axes.labelsize": 11,
-            "legend.fontsize": 10,
-            "figure.facecolor": "white",
-        }
-    )
-
-
 def plot_driver_rankings(
     rankings: pd.DataFrame,
     season: int,
@@ -170,7 +155,7 @@ def plot_driver_rankings(
     title: Optional[str] = None,
 ) -> plt.Figure:
     """Dual-panel figure: cumulative rank (inverted y) + per-race skill."""
-    _apply_plot_style()
+    apply_plot_style()
     driver_ids = _resolve_drivers(rankings, drivers, season=season)
     sub = rankings[(rankings["season"] == season) & (rankings["driverId"].isin(driver_ids))].copy()
     if sub.empty:
@@ -185,7 +170,7 @@ def plot_driver_rankings(
         .to_dict("index")
     )
 
-    colors = plt.cm.tab10(np.linspace(0, 0.9, max(len(driver_ids), 1)))
+    colors = sns.cubehelix_palette(max(len(driver_ids), 2), rot=-0.25, light=0.7)
     fig, axes = plt.subplots(2, 1, figsize=(12, 9), sharex=True)
     fig.subplots_adjust(bottom=0.14, hspace=0.28)
 
@@ -241,30 +226,55 @@ def plot_driver_rankings(
         )
 
     ax_rank.invert_yaxis()
-    ax_rank.set_ylabel("Season rank (1 = best)")
+    ax_rank.set_ylabel("Season rank (1 = best)", color="dimgrey", labelpad=8)
     ax_rank.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    ax_rank.set_title("Cumulative season rank (as-of-round)", loc="left", fontsize=12, pad=8)
-    ax_rank.legend(loc="upper right", framealpha=0.92)
-    ax_rank.grid(True, alpha=0.35)
+    ax_rank.set_title("Cumulative season rank (as-of-round)", loc="left", pad=7, color="dimgrey")
+    ax_rank.legend(
+        loc="upper right",
+        frameon=True,
+        facecolor="white",
+        framealpha=0.8,
+        edgecolor="lightgrey",
+        labelcolor="dimgrey",
+    )
+    ax_rank.grid(axis="y", alpha=0.25, linewidth=0.6)
 
-    ax_skill.set_xlabel("Round")
-    ax_skill.set_ylabel("Skill score")
-    ax_skill.set_title("Per-race skill (dashed) and cumulative mean (solid, faint)", loc="left", fontsize=12, pad=8)
-    ax_skill.legend(loc="upper right", framealpha=0.92)
-    ax_skill.grid(True, alpha=0.35)
+    ax_skill.set_xlabel("Round", color="dimgrey", labelpad=8)
+    ax_skill.set_ylabel("Skill score", color="dimgrey", labelpad=8)
+    ax_skill.set_title(
+        "Per-race skill (dashed) and cumulative mean (solid, faint)",
+        loc="left",
+        pad=7,
+        color="dimgrey",
+    )
+    ax_skill.legend(
+        loc="upper right",
+        frameon=True,
+        facecolor="white",
+        framealpha=0.8,
+        edgecolor="lightgrey",
+        labelcolor="dimgrey",
+    )
+    ax_skill.grid(axis="y", alpha=0.25, linewidth=0.6)
+
+    for ax in axes:
+        ax.patch.set_edgecolor("lightgrey")
+        ax.patch.set_linewidth(0.8)
+        finalize_axes(ax)
 
     main_title = title or f"{season} cumulative driver ranking"
-    fig.suptitle(main_title, fontsize=15, fontweight="bold", y=0.98)
+    fig.suptitle(main_title, fontsize=15, y=0.98, color="dimgrey")
     fig.text(
         0.5,
         0.955,
         "Car-adjusted performance f(D,T,R) · rank uses only rounds 1…r (causal as-of-round)",
         ha="center",
         fontsize=10,
-        color="0.35",
+        color="dimgrey",
     )
-    fig.text(0.5, 0.02, BOOTSTRAP_CAPTION, ha="center", fontsize=9, color="0.45", wrap=True)
+    fig.text(0.5, 0.02, BOOTSTRAP_CAPTION, ha="center", fontsize=9, color="dimgrey", wrap=True)
 
+    despine_axes()
     if output_path:
         save_figure(fig, output_path)
     return fig

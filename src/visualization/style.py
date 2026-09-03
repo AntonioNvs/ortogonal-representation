@@ -1,37 +1,35 @@
-"""Shared seaborn styling and figure export."""
+"""Shared seaborn styling and figure export.
+
+Style follows the project's plot style reference: whitegrid theme, DejaVu Sans,
+despined axes, ``dimgrey`` tick/annotation text, and dual PNG/SVG/PDF export.
+"""
 
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 _PLOT_EXTENSIONS = (".png", ".svg", ".pdf", ".jpeg", ".jpg", ".webp")
 
 
 def apply_plot_style() -> None:
-    try:
-        import seaborn as sns
+    """Set the shared figure theme (whitegrid + DejaVu Sans)."""
+    sns.set_theme(font_scale=1.0, style="whitegrid", font="DejaVu Sans")
+    plt.rcParams.update({"figure.facecolor": "white"})
 
-        sns.set_theme(style="whitegrid", context="talk", font_scale=0.85)
-    except ImportError:
-        try:
-            plt.style.use("seaborn-v0_8-whitegrid")
-        except OSError:
-            plt.style.use("ggplot")
-    plt.rcParams.update(
-        {
-            "figure.facecolor": "white",
-            "axes.titlesize": 13,
-            "axes.labelsize": 11,
-            "legend.fontsize": 10,
-            "xtick.labelsize": 9,
-            "ytick.labelsize": 9,
-        }
-    )
+
+def finalize_axes(ax) -> None:
+    """Strip tick marks and soften tick labels for a single axes."""
+    ax.tick_params(axis="both", which="both", length=0, labelcolor="dimgrey")
+
+
+def despine_axes(*, top: bool = False, right: bool = False) -> None:
+    """Remove spines from every axes in the current figure."""
+    sns.despine(left=True, bottom=True, top=top, right=right)
 
 
 def resolve_plot_output_dir(output_path: str) -> Tuple[Path, str]:
