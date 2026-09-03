@@ -20,7 +20,7 @@ from skill.contract import InferenceMode
 def main() -> None:
     parser = argparse.ArgumentParser(description="Bayesian state-space skill model (Stan/NUTS)")
     parser.add_argument("--start-year", type=int, default=2014)
-    parser.add_argument("--end-year", type=int, default=2021)
+    parser.add_argument("--end-year", type=int, default=2025)
     parser.add_argument("--output-dir", type=str, default="output/skill_exports/bayesian_ssm")
     parser.add_argument("--chains", type=int, default=4)
     parser.add_argument("--warmup", type=int, default=2000)

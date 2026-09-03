@@ -174,7 +174,7 @@ def export_bayesian_ssm(
     db: Database,
     *,
     start_year: int = 2014,
-    end_year: int = 2021,
+    end_year: int = 2025,
     inference_mode: InferenceMode = InferenceMode.SMOOTHED,
     output_dir: Optional[str] = None,
     stan_config: Optional[StanFitConfig] = None,
@@ -225,5 +225,5 @@ def load_bayesian_comparator_skill(db: Database, max_year: int = 2025) -> pd.Dat
     """Backward-compatible alias — loads cached bayesian_ssm export if present."""
     from baselines.skill_loader import load_skill_export
 
-    export = load_skill_export("bayesian_ssm", db, max_year=min(max_year, 2021))
+    export = load_skill_export("bayesian_ssm", db, max_year=max_year)
     return export.season[["driverId", "season", "skill_score"]].rename(columns={"skill_score": "skill_score"})

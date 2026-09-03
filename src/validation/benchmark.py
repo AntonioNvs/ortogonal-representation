@@ -104,7 +104,12 @@ def benchmark_source(
     # Era stratification: modern (>=2010) primary, hybrid (>=1990) robustness.
     if era_windows and "season_T" in joined.columns:
         era = {}
-        for label, ymin in (("modern_2010", 2010), ("hybrid_1990", 1990), ("full", None)):
+        for label, ymin in (
+            ("modern_2010", 2010),
+            ("hybrid_1990", 1990),
+            ("common_2014", 2014),
+            ("full", None),
+        ):
             _rep, _ = compute_career_metrics(
                 joined,
                 skill_source=source,

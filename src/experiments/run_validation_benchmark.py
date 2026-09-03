@@ -49,7 +49,7 @@ def main() -> None:
     parser.add_argument(
         "--era-windows",
         action="store_true",
-        help="Also emit era_windows: modern (>=2010), hybrid (>=1990), full",
+        help="Also emit era_windows: modern (>=2010), hybrid (>=1990), common (>=2014), full",
     )
     args = parser.parse_args()
     horizon = parse_horizon_arg(args.horizon)

@@ -86,7 +86,7 @@ def load_skill_export(
         export = export_bayesian_ssm(
             db,
             start_year=2014,
-            end_year=min(2021, max_year),
+            end_year=max_year,
             inference_mode=inference_mode,
             output_dir=cache_dir,
         )
