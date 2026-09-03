@@ -100,7 +100,7 @@ See **`docs/career_validation_framework.md`** for full methodology.
 ### 6. Robustness
 - DNF policies (classified / finished / all entries)
 - ≥5 seeds where stochastic
-- Era windows (e.g. hybrid 2014–2021 for Bayesian replication)
+- Era windows: modern ≥2010 (primary), hybrid ≥1990, common ≥2014 (fair cross-model), full
 
 ## Publication plots (CLI)
 
@@ -122,10 +122,10 @@ python -m src.data.pipeline build
 # Benchmark baselines (validation-first)
 python src/experiments/run_bradley_terry.py --max-year 2025 --output-dir output/skill_exports/bradley_terry
 python src/experiments/run_plackett_luce.py --max-year 2025 --output-dir output/skill_exports/plackett_luce
-python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2021 --output-dir output/skill_exports/bayesian_ssm
+python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025 --output-dir output/skill_exports/bayesian_ssm
 
-# Unified validation benchmark
-python src/experiments/run_validation_benchmark.py --sources bradley_terry bayesian_ssm orthogonal_shapley --horizon inf
+# Unified validation benchmark (era windows incl. common >=2014 for fair cross-model comparison)
+python src/experiments/run_validation_benchmark.py --sources bradley_terry bayesian_ssm orthogonal_shapley --horizon inf --era-windows
 
 # Multi-source career comparison (rest-of-career horizon)
 python src/experiments/run_career_comparison.py --sources bradley_terry bayesian_ssm orthogonal_shapley

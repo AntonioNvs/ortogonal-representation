@@ -1,9 +1,9 @@
 # Career Validation Framework
 
-**Version:** 2.0 (2026-09-02)  
+**Version:** 3.0 (2026-09-03)  
 **Status:** Primary validation gate for MIT Sloan Sports 2027 submission
 
-This document is the methodological reference for career validation. The operational contract lives in [`model_contract.md`](model_contract.md); implementation in [`src/validation/`](../src/validation/).
+This document is the methodological reference for career validation. The operational contract lives in [`model_contract.md`](model_contract.md); implementation in [`src/validation/`](../src/validation/). The six rigor fixes specified in [`docs/plans/2026-09-03-validation-rigor-design.md`](plans/2026-09-03-validation-rigor-design.md) are implemented; v3 reflects them (fixed cohort, continuous car control, censored survival, era windows, supervised leakage probe, sensitivity grid).
 
 ---
 
@@ -58,6 +58,8 @@ AND tier(D, T) == B              # constructor_tier_score_at_T == 1
 ```
 
 **Rationale:** S- and A-tier drivers are already at competitive teams; the market-efficiency test is sharpest for drivers in backmarker seats who the model scores highly.
+
+**Fixed-cohort correction (v3).** Ranking `skill_percentile` on *each model's own* score makes the underrated set model-dependent — BT flags one set of drivers, OrthShapley another, and comparing resolution across *different populations* is not a model comparison. The benchmark therefore supports a **model-free fixed cohort**: the percentile is computed from `teammate_residual` (driver minus teammate mean, pure data), so the underrated **row set is identical** across models and only the *score* differs. On a fixed cohort the `underrated_flag` and `promoted` labels are shared, so the resolution rate is **no longer a discriminator**; the model comparison moves to within-cohort AUROC, within-cohort Spearman (paired cluster-bootstrap), and censored survival (Section 8). `--fixed-cohort` toggles this in `sensitivity_grid.py` and the benchmark.
 
 **Examples (illustrative):**
 - Charles Leclerc at Sauber (2018): high BT skill, B-tier team → promoted to Ferrari.
@@ -124,27 +126,59 @@ All career rows are **clustered by `driverId`** (one driver contributes many sea
 
 | Metric | Formula / method | Primary? |
 |--------|------------------|----------|
-| **Resolution rate** | `mean(promoted \| underrated)` | **Yes** |
-| **Underrated promotion AUROC** | `AUROC(skill, promoted \| underrated)` | **Yes** |
-| **Partial Spearman (underrated)** | `ρ(skill, outcome)` within underrated stratum (tier-at-T is constant B; raw Spearman with cluster-bootstrap) | **Yes** |
-| Partial Spearman (all) | Same, all drivers | Diagnostic |
+| **Survival Cox HR** | Univariate Cox (Breslow) of `skill` on time-to-first-promotion, eligible cohort (tier at T < S); cluster-bootstrap HR CI | **Yes** |
+| **Log-rank (tertiles)** | Permutation log-rank, top vs bottom skill tertile | **Yes** |
+| **Partial Spearman (all, continuous control)** | `ρ(skill, outcome)` residualized on continuous rolling constructor score | **Yes** |
+| Partial Spearman (all, tier control) | Same, residualized on `tier_at_T` ∈ {1,2,3} | Diagnostic |
+| **Underrated Spearman (stratum)** | `ρ(skill, outcome)` within fixed underrated stratum | **Yes** |
+| Underrated promotion AUROC | `AUROC(skill, promoted \| underrated)` | Diagnostic (fixed cohort) |
+| Resolution rate | `mean(promoted \| underrated)` | **Legacy** — identical across models on a fixed cohort |
 | Cluster-bootstrap Spearman CI | Resample drivers with replacement | Diagnostic |
 | Within-season permutation | Shuffle skill within season blocks | Diagnostic |
-| Eligible promotion AUROC | Below S-tier at T, all drivers | Diagnostic |
-| Fisher-z pooled ρ | Per-season ρ pooled across eras | Diagnostic |
+| Paired cluster-bootstrap difference | Orth − BT on identical drivers, one-sided p | **Yes** (fixed cohort) |
 
 **Cluster-bootstrap:** 2000 replicates; resampling unit is the driver, not the row. Percentile CI at 95%.
 
-**Gate thresholds** (calibrated against Bradley–Terry baseline, 2026-09-02):
+### 8.1 Censored survival (primary since v3)
 
-| Gate | Threshold | Empirical (BT / Orthogonal / Bayesian) |
+The binary `promoted` label discards time and misclassifies active drivers at cutoff as never-promoted. `src/validation/survival.py` models time-to-first-promotion directly (hand-rolled, no new dependency):
+
+- **Time origin** = `season_T`; **event** = first `tier(T+k) > tier(T)`; **censoring** = `n_future_seasons`.
+- **KM** curve stratified by skill tertile; **log-rank** (permutation) top-vs-bottom tertile; **Cox** HR with cluster-bootstrap CI.
+
+### 8.2 Continuous car control (primary since v3)
+
+Residualizing on 3-bin tier leaves residual confounding (two B-tier teams can differ 8× in points share). The primary headline now residualizes on the continuous rolling constructor **score** (`partial_rho_continuous`); the tier control is retained as a sensitivity row.
+
+### 8.3 Era windows
+
+Headline metrics stratify into **Modern (≥ 2010, primary)**, **Hybrid (≥ 1990)**, **Common (≥ 2014)**, and **Full history (sensitivity only)**. The market-efficiency claim is coherent only after free agency; pooling 1950–2025 dilutes it. Skill percentiles are recomputed **within** each window (not inherited from full history).
+
+**Common window (≥ 2014)** is the fair like-for-like comparison across *all* models: it is the intersection of full-history coverage (BT/Orthogonal) with the Bayesian SSM's `start_year=2014` floor. The Bayesian SSM now fits through 2025 (the `end_year=2021` cap was removed), but it still has no coverage before 2014 — so a common-≥2014 window is where its HR / partial ρ can be compared to BT/Orthogonal on the *same* seasons. Treat Bayesian's modern-2010 / hybrid-1990 cells with caution: those windows extend earlier than its own fit start and will silently drop its pre-2014 rows.
+
+### 8.4 Sensitivity grid
+
+`src/experiments/sensitivity_grid.py` sweeps `skill_pct_threshold ∈ {0.70, 0.75, 0.80}` × `p_S ∈ {0.25, 0.30, 0.35}`. Claim: the Orth > BT ordering is stable across the grid. On a fixed cohort, only AUROC and within-stratum Spearman are reported (resolution is shared, hence non-discriminating).
+
+### 8.5 Supervised leakage probe (interpretability gate)
+
+Replaces the old norm-correlation gate. A linear probe predicts the constructor from the `driver_state` embedding, held-out, against a permuted-label null. **Current result: gate failed** — held-out macro-AUC 0.988 vs null 95th pct 0.515 → `leakage: true`. This is expected to be partly a *driver-identity* confound (each driver drives one team per season, so "who the driver is" already determines the constructor), and the probe as written predicts constructor **identity** rather than **tier**. Resolving it is the single most important open question (see Limitations #8).
+
+**Gate thresholds** (honest fixed-cohort numbers, 2026-09-03):
+
+| Gate | Threshold | BT / Orthogonal / Bayesian |
 |------|-----------|----------------------------------------|
-| Underrated resolution rate | ≥ BT baseline; CI low > 0.5 | 0.67 / **0.80** / 1.00 (n=6) |
-| Underrated promotion AUROC | ≥ BT baseline; CI low > 0.45 | 0.57 / **0.67** / n/a |
-| Underrated Spearman (stratum) | ≥ BT baseline; CI low > −0.1 | 0.00 / **0.63** / 0.14 |
-| All-driver partial Spearman | ρ ≥ 0.15; CI low > 0 (diagnostic) | 0.14 / **0.27** / 0.43 |
+| Survival Cox HR (eligible) | HR > 1; CI excludes 1 | 1.09 [0.98, 1.22] / **1.43 [1.16, 1.79]** / 5.72† |
+| Survival log-rank p | < 0.05 | 0.0108 / **0.0136** / — |
+| Partial ρ (continuous control) | CI low > 0 | 0.114 / **0.162** / — |
+| Partial ρ (tier control) | ρ ≥ 0.15; CI low > 0 | 0.143 / **0.211** / 0.434 |
+| Underrated Spearman (stratum) | CI low > −0.1 | 0.141 / **0.249** / — |
+| Paired diff (fixed cohort, n=100) | p_one_sided < 0.05 | Spearman +0.108 (p=0.19, n.s.) / AUROC +0.018 (p=0.41, n.s.) |
+| Constructor recoverability | held-out AUC ≤ null p95 | — / **0.988 vs 0.515 (FAIL)** / — |
 
-Orthogonal Shapley beats BT on resolution rate and underrated-stratum Spearman. Bayesian SSM has strong in-window signal but only 6 underrated rows (2014–2021); treat separately.
+† Bayesian's HR/partial-ρ are estimated on a 2014–2025 window only (no pre-2014 coverage); at small n its HR CI can be wide. Compare it to BT/Orthogonal on the **common ≥ 2014** window, not the full-history cells.
+
+**Reading:** Orthogonal Shapley beats Bradley–Terry on the *censored survival* test (HR 1.43 excluding 1, BT's straddling 1) and on *continuous car control* (CI excludes 0). The *strictest paired test* — within-cohort Spearman on the same 100 drivers — favors Orth (+0.108) but is **not significant** (p=0.19). The claim is therefore "Orth predicts promotion *timing* better" (survival), not "Orth discriminates the underrated cohort better."
 
 ---
 
@@ -152,10 +186,12 @@ Orthogonal Shapley beats BT on resolution rate and underrated-stratum Spearman. 
 
 1. **Relative tiers** — S/A/B are within-season percentiles; cross-era comparison of raw tier labels is invalid.
 2. **Constructor assignment** — Mode constructor per season; mid-season moves are lost.
-3. **Censoring at data cutoff** — Active drivers at end of dataset have incomplete futures; their `outcome` uses available seasons only.
-4. **Bayesian SSM window** — Export covers 2014–2021 only; career joins exclude later seasons for that source.
+3. **Censoring at data cutoff** — Active drivers at end of dataset have incomplete futures. The v3 survival analysis models this as right-censoring; the legacy `promoted`/`resolution` path still treats them as never-promoted (retained only as sensitivity).
+4. **Bayesian SSM window** — Export now fits 2014–2025 (the `end_year=2021` cap was removed), so it is directly comparable to BT/Orthogonal on the **common ≥ 2014** window. It still has no coverage before 2014, so its `hybrid_1990`/`modern_2010`/`full` cells undercount relative to BT/Orthogonal — compare those with caution. Its high partial ρ and HR are *within-window* on a modern-only sample; the HR CI can still be wide at small n.
 5. **No telemetry** — Claims are "car-adjusted performance," not strategy/reliability isolation.
-6. **Underrated definition** — Top-25% threshold is a design choice; sensitivity to 20%/30% should be reported in robustness.
+6. **Underrated definition** — Top-25% threshold is a design choice; sensitivity to 20%/30% is reported in the grid (§8.4).
+7. **Paired test power** — On the fixed cohort the within-cohort Orth-vs-BT difference (+0.108 Spearman) is not significant at n=100 drivers. The Orth edge is in survival *timing* and continuous car control, not within-cohort discrimination.
+8. **Constructor recoverability (open)** — The interpretability probe fails (held-out AUC 0.988 vs null p95 0.515). This is likely partly a *driver-identity* confound (constructor identity is recoverable from "who the driver is"), because the probe predicts constructor **identity** not **tier**. Until the probe is re-run predicting tier with driver-identity controlled, the strongest defensible claim is **"car-adjusted performance"**, not "pure driver skill."
 
 ---
 
@@ -170,10 +206,23 @@ python src/experiments/career_validation.py --skill-source bayesian_ssm
 # Legacy fixed horizon (sensitivity)
 python src/experiments/career_validation.py --skill-source bradley_terry --horizon 3
 
-# Multi-source benchmark
+# Multi-source benchmark (era windows incl. common >=2014 for fair cross-model comparison)
 python src/experiments/run_validation_benchmark.py \
   --sources bradley_terry bayesian_ssm orthogonal_shapley \
-  --horizon inf
+  --horizon inf --era-windows
+
+# Bayesian SSM now fits through 2025 (drop the old 2021 cap)
+python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025
+
+# Sensitivity grid (fixed cohort — model-free underrated set)
+python src/experiments/sensitivity_grid.py \
+  --sources bradley_terry orthogonal_shapley \
+  --baseline bradley_terry --fixed-cohort
+
+# Publication figures (post-hoc, from JSON — no DB/model re-run)
+python src/experiments/plots/plot_validation_figures.py \
+  --benchmark-json output/validation_benchmark/benchmark.json \
+  --sensitivity-json output/sensitivity_grid/sensitivity_grid.json
 ```
 
 ---
@@ -197,12 +246,16 @@ Unified benchmark: `output/validation_benchmark/benchmark.json` includes `resolu
 
 ## 12. Interpreting results
 
-**High resolution rate + high underrated AUROC:** The model identifies hidden talent in weak teams, and higher skill scores discriminate who gets promoted.
+**Cox HR > 1 with CI excluding 1 (eligible cohort):** Higher skill predicts *faster* time-to-first-promotion. This is the primary fair-market claim — the skill score carries signal about who the market will promote.
 
-**High partial ρ (underrated) with CI excluding zero:** Skill adds forward-tier signal beyond current team tier within the target cohort.
+**Log-rank p < 0.05 (top vs bottom tertile):** The KM curves separate — high-skill drivers promote faster than low-skill drivers at the same career stage.
 
-**Resolution rate below BT baseline:** Model's underrated flags are less predictive of career promotion than the benchmark.
+**Partial ρ (continuous control) CI excluding 0:** Skill adds forward-tier signal *above* the continuous car-quality control — the "skill is more than the car" test.
+
+**Paired diff significant (p < 0.05):** Orth beats BT on the *same* drivers. When non-significant, the model edge is only in survival timing / car control, not within-cohort discrimination.
+
+**Recoverability AUC ≤ null p95:** The driver embedding does not leak the constructor; the "isolated skill" interpretation is defensible. **AUC ≫ p95:** interpretability claim must be downgraded to "car-adjusted performance" (see Limitations #8).
 
 **Low n_underrated:** Sparse cohort; widen CI or pool decades for stability.
 
-Compare sources on equal footing: note year coverage (Bayesian 2014–2021 vs full history for BT/Orthogonal).
+Compare sources on equal footing: note year coverage (Bayesian 2014–2025 vs full history for BT/Orthogonal) and window — **common ≥ 2014** is the fair cross-model window; modern ≥ 2010 is primary for the market claim.
