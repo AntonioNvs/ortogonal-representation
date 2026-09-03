@@ -86,7 +86,12 @@ def main() -> None:
         import pandas as pd
 
         grid_df = pd.DataFrame(grid.get("grid", []))
-        for metric in _SENSITIVITY_METRICS:
+        metrics = _SENSITIVITY_METRICS
+        if grid.get("fixed_cohort"):
+            # Resolution rate is shared across sources on a fixed cohort — its
+            # diff is identically zero, so it is not a discriminator to plot.
+            metrics = tuple(m for m in metrics if m != "resolution")
+        for metric in metrics:
             try:
                 plot_sensitivity_diff(
                     grid_df, metric=metric, source=_PRIMARY, baseline=_BASELINE,

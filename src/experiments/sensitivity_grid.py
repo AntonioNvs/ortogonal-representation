@@ -52,6 +52,12 @@ def main() -> None:
     parser.add_argument("--output-dir", type=str, default="output/sensitivity_grid")
     parser.add_argument("--horizon", type=str, default="inf")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--max-year", type=int, default=2025)
+    parser.add_argument(
+        "--fixed-cohort",
+        action="store_true",
+        help="Define underrated cohort on model-free teammate_residual so the flag is shared across sources",
+    )
     args = parser.parse_args()
     horizon = parse_horizon_arg(args.horizon)
 
@@ -68,8 +74,18 @@ def main() -> None:
     # Precompute skill exports once (independent of p_S / threshold).
     skills = {}
     for source in args.sources:
-        export = load_skill_export(source, db)
+        export = load_skill_export(source, db, max_year=args.max_year)
         skills[source] = season_scores_for_career(export)
+
+    # Model-free cohort (Section 1 fix): flag on teammate_residual so the
+    # underrated set is identical across sources.
+    cohort_skill = None
+    cohort_skill_col = None
+    if args.fixed_cohort:
+        cohort_skill = season_scores_for_career(
+            load_skill_export("teammate_residual", db, max_year=args.max_year)
+        )
+        cohort_skill_col = "cohort_skill_score"
 
     cells = []
     for p_S in P_S_GRID:
@@ -77,14 +93,15 @@ def main() -> None:
             compute_constructor_season_points(db), lineage=lineage, p_S=p_S, p_A=0.35
         )
         joined_by_source = {
-            source: join_career(skills[source], db, team_tier, horizon=horizon)
+            source: join_career(skills[source], db, team_tier, horizon=horizon, cohort_skill=cohort_skill)
             for source in args.sources
         }
         for threshold in SKILL_PCTS:
             row = {"p_S": p_S, "skill_pct_threshold": threshold}
             for source in args.sources:
                 marked = mark_underrated(
-                    joined_by_source[source], skill_pct_threshold=threshold
+                    joined_by_source[source], skill_pct_threshold=threshold,
+                    cohort_skill_col=cohort_skill_col,
                 )
                 res = underrated_resolution_rate(marked, seed=args.seed)
                 auroc = underrated_promotion_auroc(marked, seed=args.seed)
@@ -98,12 +115,18 @@ def main() -> None:
     import pandas as pd
 
     grid = pd.DataFrame(cells)
+    # On a fixed cohort the flag/promoted labels are shared, so resolution rate
+    # is identical across sources and is NOT a discriminator (Section 1). Only
+    # AUROC and within-stratum Spearman differ; report those as the summary.
+    discriminator_metrics = ("auroc", "partial_rho") if args.fixed_cohort else (
+        "resolution", "auroc", "partial_rho",
+    )
     summary = {}
     for source in args.sources:
         if source == args.baseline:
             continue
         base = args.baseline
-        for metric in ("resolution", "auroc", "partial_rho"):
+        for metric in discriminator_metrics:
             wins = (
                 (grid[f"{source}_{metric}"] >= grid[f"{base}_{metric}"])
                 & ~grid[f"{source}_{metric}"].isna()
@@ -117,6 +140,8 @@ def main() -> None:
     os.makedirs(args.output_dir, exist_ok=True)
     payload = {
         "baseline": args.baseline,
+        "fixed_cohort": bool(args.fixed_cohort),
+        "cohort_skill_col": cohort_skill_col,
         "grid": grid.to_dict(orient="records"),
         "stability_summary": summary,
     }
