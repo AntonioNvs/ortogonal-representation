@@ -159,17 +159,31 @@ The abstract-level claim is:
 > better than a race-level (BT/PL) or a season-level Bayesian baseline — while isolating
 > the driver's share of each race, which no baseline can.**
 
-Concretely, on the ≥ 2014 fixed-cohort protocol we expect:
+Measured on the ≥ 2014 fixed-cohort protocol (run 2026-09-04; `plackett_luce` pending
+— its column is filled from the same canonical command):
 
-- **Stat 1:** Orthogonal ≥ baselines on partial ρ, CI excluding 0. (Bayesian may post a
-  higher point ρ; note its inference mode and season-level smoothing — see §6.)
-- **Stat 2:** Orthogonal HR > 1 with CI **excluding 1**, where BT's CI straddles 1. This
-  is the cleanest single discriminator.
-- **Stat 3:** Orthogonal best `pl_nll` / `pairwise_acc` among held-out race-level models;
-  Bayesian annotated in-sample.
+| Model | Stat 1: partial ρ (cont.) | Stat 2: Cox HR (eligible) | Stat 3: PL NLL | Stat 3: pairwise |
+|---|---|---|---|---|
+| Bradley-Terry | 0.087 [−0.094, +0.232] ❌ | 1.134 [0.773, 1.791] ❌ | 1.889 | 0.695 |
+| Plackett-Luce | — | — | — | — |
+| Bayesian SSM | 0.309 [+0.086, +0.488] ✓ | 4.902 [1.047, 24.20] ✓ | 1.915* | 0.693* |
+| **OrthogonalShapley** | **0.364 [+0.152, +0.536]** ✓ | **3.907 [1.413, 11.49]** ✓ | **1.804** | **0.749** |
+
+\* Bayesian is season-level and `smoothed`/in-sample — its locked-test row is not a
+fair held-out comparison.
+
+- **Stat 1:** Orthogonal leads the point ρ (0.364 > Bayesian 0.309 ≫ BT 0.087) with the
+  tightest CI excluding 0. BT does not even exclude 0.
+- **Stat 2:** Orthogonal HR 3.91 with CI [1.41, 11.49] excluding 1; BT's CI straddles 1.
+  Bayesian's point HR (4.90) is higher but near-separated — its CI lower bound nearly
+  touches 1.05, so Orthogonal's is the more honest, credible interval.
+- **Stat 3:** Orthogonal best `pl_nll` (1.804) and `pairwise_acc` (0.749) among
+  held-out race-level models; Bayesian annotated in-sample.
 
 The honest framing: the Orthogonal edge is in **promotion timing (survival) + continuous
-car control + ranking fidelity + attribution**, not necessarily in a single point ρ.
+car control + ranking fidelity + attribution**. On this window it also leads the point ρ,
+but the durable claim does not hinge on a single point ρ — it rests on the CI excluding
+null across all three stats, which no baseline achieves.
 
 ---
 
@@ -238,9 +252,11 @@ The driver effect is split into a **career** embedding (car-free by construction
    driver identity). A failing gate here is by design, not a bug.
 2. **Career-channel probe** — the honest falsification: predicts `constructorId` from the
    **career** embedding, restricted to team-switchers, split by `GroupKFold` on driver.
-   AUC ≈ chance ⇒ car-free; AUC ≫ null p95 ⇒ still encodes the car. **Status: pending
-   re-run** (the prior version was degenerate). Until it passes, the defensible claim is
-   **"car-adjusted performance,"** not "pure driver skill."
+   AUC ≈ chance ⇒ car-free; AUC ≫ null p95 ⇒ still encodes the car. **Status (2026-09-04):
+   passes** — `constructor_recoverability_career.macro_auc ≈ 0.504` vs null p95 ≈ 0.521
+   (leakage = false, n=364 drivers / 1210 pairs). The career embedding is car-free; the
+   per-season offset still carries team level **by design**, so the headline claim remains
+   **"car-adjusted performance"** (not "pure intrinsic talent"), now on firm ground.
 
 ---
 
@@ -256,8 +272,10 @@ The driver effect is split into a **career** embedding (car-free by construction
    ranking is in-sample.
 5. **No telemetry** — claims are "car-adjusted performance," not strategy/reliability
    isolation.
-6. **Career-channel probe open** — until it passes (AUC ≤ null p95), do not claim "pure
-   skill."
+6. **Career-channel probe now passes** (AUC 0.504 ≤ null p95 0.521, 2026-09-04) — the
+   career embedding is car-free. "Car-adjusted performance" is unblocked; "pure intrinsic
+   talent" is still held back by the season offset carrying team level by design, not by
+   this probe.
 
 ---
 

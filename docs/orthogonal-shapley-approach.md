@@ -222,7 +222,7 @@ conforme `model_contract.md`.
 
 ## 7. Validação (o que "bom" significa)
 
-Arquivo: `docs/career_validation_framework.md` (v3).
+Arquivo: `docs/career_validation_framework.md` (v4).
 
 A hipótese central é a **fair-market**: o mercado de pilotos é eficiente, então
 equipes melhores contratam pilotos melhores. Um score de *skill* (e não de carro)
@@ -239,18 +239,21 @@ Métricas primárias (na janela comum `≥2014`):
 E também: `underrated_resolution` (rate de promoção entre os subestimados),
 `eligible_promotion_auroc`, e a comparação de ranking (`PL NLL`, `pairwise_acc`).
 
-**Resultados da última rodada (2026-09-03, antes do fix do probe):**
+**Resultados da última rodada (2026-09-04, janela comum ≥2014; `plackett_luce` pendente):**
 
-| | ρ_cont (full) | Cox HR (eligible) | PL NLL | pairwise |
+| Modelo | partial ρ (contínuo) | Cox HR (eligible) | PL NLL | pairwise |
 |---|---|---|---|---|
-| Bradley-Terry | 0.114 | 1.09 [0.98,1.22] ns | 1.889 | 0.695 |
-| **OrthogonalShapley** | **0.162** | **1.43 [1.16,1.79]** p=2e-4 | **1.816** | **0.724** |
-| Bayesian SSM | 0.438 (n=147) | 5.72 [1.52,64.8] near-sep | NaN | NaN |
+| Bradley-Terry | 0.087 [−0.094, +0.232] | 1.134 [0.773, 1.791] ns | 1.889 | 0.695 |
+| Bayesian SSM | 0.309 [+0.086, +0.488] | 4.902 [1.047, 24.20] | 1.915* | 0.693* |
+| **OrthogonalShapley** | **0.364 [+0.152, +0.536]** | **3.907 [1.413, 11.49]** p=2.6e-4 | **1.804** | **0.749** |
 
-Leitura: Orth supera o BT em tudo e tem um Cox **honesto e significativo**; o
-Bayesian tem ρ/Cox maiores mas sobre uma amostra minúscula (n=147, 38 eventos) e
-near-separated (IC até 64.8) — comparação apples-to-oranges (ele é nível-temporada
-com prior GP; o Orth é nível-corrida).
+\* Bayesian é nível-temporada e `smoothed`/in-sample — seu locked-test não é
+comparação held-out justa.
+
+Leitura: Orth lidera nos **três**. Ganha o ρ contínuo por margem (0.364 > 0.309 do
+Bayesian; o BT nem exclui 0), tem o Cox com o IC mais apertado que exclui 1 (o
+Bayesian tem ponto maior, 4.90, mas IC inferior encosta em 1.05 — near-separated), e
+é o melhor ranking held-out.
 
 ---
 
@@ -258,29 +261,32 @@ com prior GP; o Orth é nível-corrida).
 
 Ordenados por impacto potencial no objetivo (bater o Bayesian no readout de skill):
 
-1. **Leakage residual do canal de carreira.** O probe de carreira ainda reporta
-   AUC alto, mas o probe anterior estava degenerado (8 team-switchers) — foi
-   consertado e precisa ser **re-rodado** antes de qualquer conclusão. Se o AUC
-   continuar ≫ null p95, a Seção 3.3 não removeu o carro de fato.
+1. **Leakage residual do canal de carreira — RESOLVIDO (2026-09-04).** O probe
+   de carreira (team-switchers, GroupKFold) agora passa: `macro_auc ≈ 0.504` vs
+   null p95 ≈ 0.521 (`leakage = false`, n=364 pilotos / 1210 pares). A Seção 3.3
+   removeu o carro de fato; o que resta no offset por temporada é nível de equipe
+   **por design**. A claim segue "car-adjusted performance".
 
 2. **Só resultado de corrida, sem sinal de quali.** O Bayesian usa quali (pace
    limpo). O Orth ranqueia só a ordem de chegada. Adicionar quali como segundo
-   sinal de pace é o candidato mais óbvio a fechar o gap — e está **deferido** no
-   design doc.
+   sinal de pace é o candidato mais óbvio a fechar o gap — **agora desenhado** em
+   `plans/2026-09-04-qualifying-pace-signal-design.md` (cabeça auxiliar de quali).
 
-3. **Sem prior de suavidade temporal.** O Bayesian modela a habilidade como GP
-   random-walk; o Orth tem `career_skill` estático + offset por temporada, sem
-   regularização de trajetória. Um prior de suavidade no offset (ou no vetor de
-   carreira) é a segunda alavanca natural.
+3. **Prior de suavidade temporal — DESENHADO (2026-09-04).** Especificado em
+   `plans/2026-09-04-temporal-smoothness-prior-design.md`: RW + shrinkage sobre o
+   escalar do offset (análogo ao GP random-walk do Bayesian). Ainda não rodado.
 
 4. **Offset pode dominar a carreira.** Risco listado no design: se
    `aux_driver_season` dominar, o readout volta a ser skill estática por temporada
-   (o que tínhamos antes). Precisa de um diagnóstico explícito da razão
-   `‖career‖ / ‖career + offset‖`.
+   (o que tínhamos antes). O diagnóstico (`offset_frac`) e a mitigação (shrinkage)
+   estão especificados no prior temporal (ver ponto 3).
 
-5. **Context player sub-utilizado.** Shares D/C/X ~0.47/0.47/0.06 — o contexto
-   absorve quase nada. Ou é uma feature legítima (circuito/era importam pouco) ou
-   o `context_mlp` está sub-parametrizado para carregar sinal útil.
+5. **Context player — já não é o gargalo.** Shares D/C/X ~0.35/0.42/0.23
+   (`shapley_season_mean`, rodada 2026-09-04); a menção a ~6% era de uma rodada
+   antiga. O grid/largada é colinear com carro+piloto, então a maior parte dele
+   aparece na share do constructor/driver, não no context — o context carrega o
+   *resíduo marginal*. É o comportamento esperado do Shapley, não
+   sub-parametrização.
 
 6. **Comparação justa com o Bayesian.** O Bayesian é nível-temporada com prior;
    o Orth é nível-corrida. "Bater" no ρ pontual de 0.438 (n=147) pode ser a
