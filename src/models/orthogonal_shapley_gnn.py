@@ -249,5 +249,27 @@ class OrthogonalShapleyGNN(nn.Module):
     dot_dx = torch.sum(z_drv_ctx * z_ctx, dim=-1)
     return torch.mean(dot_dc ** 2 + dot_dx ** 2)
 
+  def temporal_smoothness_loss(
+    self,
+    x_dict: Dict[str, torch.Tensor],
+    chain_edge_index: torch.Tensor,
+    node_mask: torch.Tensor | None = None,
+  ) -> Tuple[torch.Tensor, torch.Tensor]:
+    """(L_rw, L_shrink) over the scalar per-race driver offset.
+
+    GP random-walk analogue: penalizes jumps of the offset between consecutive
+    races of the same driver (RW) and the offset level (shrinkage), pushing the
+    driver identity into the car-free career embedding.
+    """
+    u = self.aux_driver_season(x_dict["driver_state"]).squeeze(-1)  # (N_ds,)
+    src, dst = chain_edge_index[0], chain_edge_index[1]
+    if node_mask is not None:
+      keep = node_mask[src] & node_mask[dst]
+      src, dst = src[keep], dst[keep]
+    rw = torch.mean((u[dst] - u[src]) ** 2) if src.numel() > 0 else u.new_zeros(())
+    u_shrink = u[node_mask] if node_mask is not None else u
+    shrink = torch.mean(u_shrink ** 2) if u_shrink.numel() > 0 else u.new_zeros(())
+    return rw, shrink
+
   def forward(self, tf_dict, edge_index_dict):
     return self.encode(tf_dict, edge_index_dict)

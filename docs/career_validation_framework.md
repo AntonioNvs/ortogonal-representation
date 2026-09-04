@@ -1,9 +1,9 @@
 # Career Validation Framework
 
-**Version:** 3.0 (2026-09-03)  
+**Version:** 3.1 (2026-09-04)  
 **Status:** Primary validation gate for MIT Sloan Sports 2027 submission
 
-This document is the methodological reference for career validation. The operational contract lives in [`model_contract.md`](model_contract.md); implementation in [`src/validation/`](../src/validation/). The six rigor fixes specified in [`docs/plans/2026-09-03-validation-rigor-design.md`](plans/2026-09-03-validation-rigor-design.md) are implemented; v3 reflects them (fixed cohort, continuous car control, censored survival, era windows, supervised leakage probe, sensitivity grid).
+This document is the methodological reference for career validation. The operational contract lives in [`model_contract.md`](model_contract.md); implementation in [`src/validation/`](../src/validation/). The six rigor fixes specified in [`docs/plans/2026-09-03-validation-rigor-design.md`](plans/2026-09-03-validation-rigor-design.md) are implemented; v3 reflects them (fixed cohort, continuous car control, censored survival, era windows, supervised leakage probe, sensitivity grid). v3.1 splits the leakage probe into a **season-state** and a **career-channel** probe, reflecting the hard-identification split (`docs/plans/2026-09-03-hard-identification-design.md`) where the driver effect = car-free career embedding + per-season offset.
 
 ---
 
@@ -162,7 +162,13 @@ Headline metrics stratify into **Modern (≥ 2010, primary)**, **Hybrid (≥ 199
 
 ### 8.5 Supervised leakage probe (interpretability gate)
 
-Replaces the old norm-correlation gate. A linear probe predicts the constructor from the `driver_state` embedding, held-out, against a permuted-label null. **Current result: gate failed** — held-out macro-AUC 0.988 vs null 95th pct 0.515 → `leakage: true`. This is expected to be partly a *driver-identity* confound (each driver drives one team per season, so "who the driver is" already determines the constructor), and the probe as written predicts constructor **identity** rather than **tier**. Resolving it is the single most important open question (see Limitations #8).
+Replaces the old norm-correlation gate. Two supervised probes predict the constructor from a driver embedding, held-out, against a permuted-label null (`src/explain/orthogonal_shapley_probes.py`):
+
+1. **Season-state probe** (`constructor_recoverability_probe`) — predicts `constructorId` from the **`driver_state`** (per-season) embedding, deduplicated by season-long state, `StratifiedKFold`. This is the *season* channel, which under hard identification is **allowed** to carry constructor level (the offset is what absorbs team strength), and is further confounded by driver identity (each driver drives one team per season). **Current result: gate failed** — held-out macro-AUC 0.988 vs null 95th pct 0.515 → `leakage: true`. This is *expected* by design, not a bug: it tests the wrong channel for the car-free claim.
+
+2. **Career-channel probe** (`constructor_recoverability_career_probe`) — the honest falsification for hard identification. The driver effect is split into a **career** embedding (car-free by construction: `nn.Embedding` outside `HeteroConv`, receives no constructor messages) plus a per-season offset. The probe predicts `constructorId` from the **career** embedding **restricted to team-switchers** (drivers with ≥2 constructors), aggregated to one `(driver, constructor)` pair each with equal weight, and split by **`GroupKFold` on driver** so a driver's embedding is never seen at train time. AUC ≈ chance (0.5) ⇒ the career channel is car-free; AUC ≫ null p95 ⇒ it still encodes the car. **Result: pending re-run** — the prior career probe was degenerate (sampled only the 2024–2025 test window, leaving 8 team-switchers) and has been rewritten against the full results table; the number must be regenerated before any conclusion about the car-free claim.
+
+**Gate thresholds** (honest fixed-cohort numbers, 2026-09-03; career probe pending):
 
 **Gate thresholds** (honest fixed-cohort numbers, 2026-09-03):
 
@@ -174,7 +180,8 @@ Replaces the old norm-correlation gate. A linear probe predicts the constructor 
 | Partial ρ (tier control) | ρ ≥ 0.15; CI low > 0 | 0.143 / **0.211** / 0.434 |
 | Underrated Spearman (stratum) | CI low > −0.1 | 0.141 / **0.249** / — |
 | Paired diff (fixed cohort, n=100) | p_one_sided < 0.05 | Spearman +0.108 (p=0.19, n.s.) / AUROC +0.018 (p=0.41, n.s.) |
-| Constructor recoverability | held-out AUC ≤ null p95 | — / **0.988 vs 0.515 (FAIL)** / — |
+| Constructor recoverability (season) | held-out AUC ≤ null p95 | — / **0.988 vs 0.515 (FAIL — expected)** / — |
+| Constructor recoverability (career) | held-out AUC ≤ null p95 | — / **pending re-run** / — |
 
 † Bayesian's HR/partial-ρ are estimated on a 2014–2025 window only (no pre-2014 coverage); at small n its HR CI can be wide. Compare it to BT/Orthogonal on the **common ≥ 2014** window, not the full-history cells.
 
@@ -191,7 +198,7 @@ Replaces the old norm-correlation gate. A linear probe predicts the constructor 
 5. **No telemetry** — Claims are "car-adjusted performance," not strategy/reliability isolation.
 6. **Underrated definition** — Top-25% threshold is a design choice; sensitivity to 20%/30% is reported in the grid (§8.4).
 7. **Paired test power** — On the fixed cohort the within-cohort Orth-vs-BT difference (+0.108 Spearman) is not significant at n=100 drivers. The Orth edge is in survival *timing* and continuous car control, not within-cohort discrimination.
-8. **Constructor recoverability (open)** — The interpretability probe fails (held-out AUC 0.988 vs null p95 0.515). This is likely partly a *driver-identity* confound (constructor identity is recoverable from "who the driver is"), because the probe predicts constructor **identity** not **tier**. Until the probe is re-run predicting tier with driver-identity controlled, the strongest defensible claim is **"car-adjusted performance"**, not "pure driver skill."
+8. **Constructor recoverability (open)** — The *season-state* interpretability probe fails (held-out AUC 0.988 vs null p95 0.515). Under hard identification this is expected: the season channel is supposed to carry constructor level, and it is further confounded by driver identity. The clean falsification is the **career-channel probe** (Section 8.5.2), which tests the car-free career embedding restricted to team-switchers with driver-grouped folds. Its result is **pending re-run** (the prior version was degenerate). Until it passes (AUC ≤ null p95), the strongest defensible claim is **"car-adjusted performance"**, not "pure driver skill."
 
 ---
 
@@ -254,7 +261,7 @@ Unified benchmark: `output/validation_benchmark/benchmark.json` includes `resolu
 
 **Paired diff significant (p < 0.05):** Orth beats BT on the *same* drivers. When non-significant, the model edge is only in survival timing / car control, not within-cohort discrimination.
 
-**Recoverability AUC ≤ null p95:** The driver embedding does not leak the constructor; the "isolated skill" interpretation is defensible. **AUC ≫ p95:** interpretability claim must be downgraded to "car-adjusted performance" (see Limitations #8).
+**Recoverability AUC ≤ null p95:** The relevant embedding does not leak the constructor. For the hard-identification claim the gate is the **career-channel** probe (Section 8.5.2); the season-state probe is expected to leak by design. **Career AUC ≫ p95:** the "isolated skill" claim must be downgraded to "car-adjusted performance" (see Limitations #8).
 
 **Low n_underrated:** Sparse cohort; widen CI or pool decades for stability.
 

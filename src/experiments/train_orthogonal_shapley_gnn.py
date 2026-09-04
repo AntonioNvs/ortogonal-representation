@@ -357,6 +357,31 @@ def top3_auroc(
   return float(roc_auc_score(labels, scores))
 
 
+def offset_frac_diagnostic(
+  model: OrthogonalShapleyGNN,
+  x_dict: dict,
+  res,
+  row_mask: torch.Tensor,
+  device: torch.device,
+) -> float:
+  """std(u_season) / (std(u_career) + std(u_season)) over the given rows.
+
+  High value means the per-race offset still dominates the driver identity;
+  shrinkage should push it down toward the car-free career channel.
+  """
+  idx = row_mask.nonzero(as_tuple=True)[0]
+  if idx.numel() == 0:
+    return float("nan")
+  d_emb = x_dict["driver_state"][res.driver_state_idx[idx].to(device)]
+  u_season = model.aux_driver_season(d_emb).squeeze(-1)
+  if model.driver_career is None or not hasattr(res, "driver_career_idx"):
+    return float("nan")
+  career_emb = model.driver_career(res.driver_career_idx[idx].to(device))
+  u_career = model.aux_driver_career(career_emb).squeeze(-1)
+  denom = u_career.std() + u_season.std() + 1e-9
+  return float((u_season.std() / denom).item())
+
+
 def orth_lambda_at_epoch(epoch: int, target: float, warmup_epochs: int) -> float:
   """Linear warmup for orthogonal penalty (avoids early gradient domination)."""
   if warmup_epochs <= 0:
@@ -394,6 +419,8 @@ def train_one_config(
   smoke_test: bool = False,
   max_grad_norm: float = 1.0,
   orth_warmup_epochs: int = 10,
+  lambda_rw: float = 0.5,
+  lambda_shrink: float = 0.05,
 ) -> Dict:
   set_seed(seed)
 
@@ -439,6 +466,20 @@ def train_one_config(
 
   tf_dict = {nt: graph_data[nt].tf.to(device) for nt in graph_data.node_types}
   edge_index_dict = {et: ei.to(device) for et, ei in graph_data.edge_index_dict.items()}
+
+  # Temporal random-walk chain (consecutive races of the same driver) and the
+  # driver_state mask restricted to the training window. Both are built once and
+  # reused every epoch by temporal_smoothness_loss.
+  chain = torch.cat(
+    [
+      edge_index_dict[("driver_state", "same_driver", "driver_state")],
+      edge_index_dict[("driver_state", "same_driver_cross", "driver_state")],
+    ],
+    dim=1,
+  )
+  n_ds = graph_data["driver_state"].num_nodes
+  train_ds_mask = torch.zeros(n_ds, dtype=torch.bool, device=device)
+  train_ds_mask[res.driver_state_idx[train_mask].to(device)] = True
 
   optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
   scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -494,7 +535,13 @@ def train_one_config(
       target_constructor_share=target_constructor_share,
       attr_seed=seed + epoch,
     )
-    total_loss = train_total + lam * orth_loss
+    rw_loss, shrink_loss = model.temporal_smoothness_loss(x_dict, chain, train_ds_mask)
+    total_loss = (
+      train_total
+      + lam * orth_loss
+      + lambda_rw * rw_loss
+      + lambda_shrink * shrink_loss
+    )
     total_loss.backward()
     if max_grad_norm > 0:
       params = [p for p in model.parameters() if p.grad is not None]
@@ -543,6 +590,7 @@ def train_one_config(
       share_d, share_c, share_x = mean_attribution_shares(
         model, x_dict, res, val_mask, device, val_baselines, seed=seed + epoch
       )
+      offset_frac = offset_frac_diagnostic(model, x_dict, res, train_mask, device)
 
     val_score = composite_val_score(val_pl.item(), val_acc)
     scheduler.step(val_pl.item())
@@ -558,6 +606,8 @@ def train_one_config(
     print(
       f"epoch {epoch+1:3d} | train PL {pl_loss.item():.4f} | "
       f"orth {orth_loss.item():.4f} (λ={lam:.2f}) | attr {attr_loss.item():.4f} | "
+      f"rw {rw_loss.item():.4f} | shrink {shrink_loss.item():.4f} | "
+      f"off_frac {offset_frac:.2f} | "
       f"val PL {val_pl.item():.4f} | val pairwise {val_acc:.4f} | "
       f"val score {val_score:.4f} | shares D/C/X {share_d:.2f}/{share_c:.2f}/{share_x:.2f} | "
       f"top3 AUROC {val_auroc:.4f} (diag)",
@@ -604,6 +654,7 @@ def train_one_config(
     test_share_d, test_share_c, test_share_x = mean_attribution_shares(
       model, x_dict, res, test_mask, device, baselines, max_races=100, seed=seed
     )
+    final_offset_frac = offset_frac_diagnostic(model, x_dict, res, train_mask, device)
 
   os.makedirs(output_dir, exist_ok=True)
   ckpt_path = os.path.join(output_dir, "orthogonal_shapley.pth")
@@ -634,6 +685,8 @@ def train_one_config(
       "use_additive_readout": use_additive_readout,
       "orth_warmup_epochs": orth_warmup_epochs,
       "max_grad_norm": max_grad_norm,
+      "lambda_rw": lambda_rw,
+      "lambda_shrink": lambda_shrink,
       "seed": seed,
     },
     "metrics": {
@@ -647,6 +700,7 @@ def train_one_config(
       "test_driver_share": test_share_d,
       "test_constructor_share": test_share_c,
       "test_context_share": test_share_x,
+      "offset_frac_train": final_offset_frac,
     },
     "coalition_baselines_path": baselines_path,
   }
@@ -723,6 +777,18 @@ def main() -> None:
     default=10,
     help="linear warmup epochs for lambda_orth",
   )
+  parser.add_argument(
+    "--lambda-rw",
+    type=float,
+    default=0.5,
+    help="random-walk smoothness weight on the driver season offset",
+  )
+  parser.add_argument(
+    "--lambda-shrink",
+    type=float,
+    default=0.05,
+    help="shrinkage weight on the driver season offset level",
+  )
   args = parser.parse_args()
 
   device = get_device(args.gpu_id)
@@ -752,6 +818,8 @@ def main() -> None:
     smoke_test=args.smoke_test,
     max_grad_norm=args.max_grad_norm,
     orth_warmup_epochs=args.orth_warmup_epochs,
+    lambda_rw=args.lambda_rw,
+    lambda_shrink=args.lambda_shrink,
   )
 
   if len(lambdas) == 1:
