@@ -15,19 +15,22 @@
     "use_additive_readout": true,
     "orth_warmup_epochs": 10,
     "max_grad_norm": 1.0,
+    "lambda_rw": 0.5,
+    "lambda_shrink": 0.05,
     "seed": 42
   },
   "metrics": {
-    "best_val_score": 4.695373285845451,
-    "best_val_pl": 4.579256534576416,
-    "test_pl": 4.646439552307129,
-    "test_pairwise_acc": 0.7418230864336293,
-    "test_top3_auroc": 0.8797315575229256,
-    "test_orth_loss": 0.006062575150281191,
+    "best_val_score": 4.647205294691367,
+    "best_val_pl": 4.543540954589844,
+    "test_pl": 4.578660488128662,
+    "test_pairwise_acc": 0.7729571765763741,
+    "test_top3_auroc": 0.8969201597193909,
+    "test_orth_loss": 0.0002216141001554206,
     "test_attr_loss": 0.0,
-    "test_driver_share": 0.4823655208288613,
-    "test_constructor_share": 0.4174182526135849,
-    "test_context_share": 0.10021623886995397
+    "test_driver_share": 0.39782953969502854,
+    "test_constructor_share": 0.47189738992917335,
+    "test_context_share": 0.13027309159101066,
+    "offset_frac_train": 0.6204507350921631
   },
   "coalition_baselines_path": "output/orthogonal_shapley_model/coalition_baselines.json"
 }

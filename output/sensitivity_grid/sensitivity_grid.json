@@ -1,0 +1,123 @@
+{
+  "baseline": "bradley_terry",
+  "fixed_cohort": true,
+  "cohort_skill_col": "cohort_skill_score",
+  "grid": [
+    {
+      "p_S": 0.25,
+      "skill_pct_threshold": 0.7,
+      "bradley_terry_n": 147,
+      "bradley_terry_resolution": 0.673469387755102,
+      "bradley_terry_auroc": 0.6327861952861953,
+      "bradley_terry_partial_rho": 0.18903792752265416,
+      "orthogonal_shapley_n": 147,
+      "orthogonal_shapley_resolution": 0.673469387755102,
+      "orthogonal_shapley_auroc": 0.6696127946127945,
+      "orthogonal_shapley_partial_rho": 0.23928113506473708
+    },
+    {
+      "p_S": 0.25,
+      "skill_pct_threshold": 0.75,
+      "bradley_terry_n": 122,
+      "bradley_terry_resolution": 0.6885245901639344,
+      "bradley_terry_auroc": 0.6719924812030076,
+      "bradley_terry_partial_rho": 0.22158112531204457,
+      "orthogonal_shapley_n": 122,
+      "orthogonal_shapley_resolution": 0.6885245901639344,
+      "orthogonal_shapley_auroc": 0.6663533834586466,
+      "orthogonal_shapley_partial_rho": 0.24811215624560148
+    },
+    {
+      "p_S": 0.25,
+      "skill_pct_threshold": 0.8,
+      "bradley_terry_n": 94,
+      "bradley_terry_resolution": 0.7553191489361702,
+      "bradley_terry_auroc": 0.6331904470300062,
+      "bradley_terry_partial_rho": 0.13420997096718665,
+      "orthogonal_shapley_n": 94,
+      "orthogonal_shapley_resolution": 0.7553191489361702,
+      "orthogonal_shapley_auroc": 0.6638089406001224,
+      "orthogonal_shapley_partial_rho": 0.21195497369730976
+    },
+    {
+      "p_S": 0.3,
+      "skill_pct_threshold": 0.7,
+      "bradley_terry_n": 121,
+      "bradley_terry_resolution": 0.6776859504132231,
+      "bradley_terry_auroc": 0.58223889931207,
+      "bradley_terry_partial_rho": 0.12933192909267227,
+      "orthogonal_shapley_n": 121,
+      "orthogonal_shapley_resolution": 0.6776859504132231,
+      "orthogonal_shapley_auroc": 0.6288305190744214,
+      "orthogonal_shapley_partial_rho": 0.24586001445172673
+    },
+    {
+      "p_S": 0.3,
+      "skill_pct_threshold": 0.75,
+      "bradley_terry_n": 100,
+      "bradley_terry_resolution": 0.68,
+      "bradley_terry_auroc": 0.5988051470588235,
+      "bradley_terry_partial_rho": 0.141227435692011,
+      "orthogonal_shapley_n": 100,
+      "orthogonal_shapley_resolution": 0.68,
+      "orthogonal_shapley_auroc": 0.6167279411764706,
+      "orthogonal_shapley_partial_rho": 0.24900032074671635
+    },
+    {
+      "p_S": 0.3,
+      "skill_pct_threshold": 0.8,
+      "bradley_terry_n": 77,
+      "bradley_terry_resolution": 0.7532467532467533,
+      "bradley_terry_auroc": 0.5607985480943738,
+      "bradley_terry_partial_rho": 0.07290100592371451,
+      "orthogonal_shapley_n": 77,
+      "orthogonal_shapley_resolution": 0.7532467532467533,
+      "orthogonal_shapley_auroc": 0.6279491833030852,
+      "orthogonal_shapley_partial_rho": 0.22818704601631382
+    },
+    {
+      "p_S": 0.35,
+      "skill_pct_threshold": 0.7,
+      "bradley_terry_n": 102,
+      "bradley_terry_resolution": 0.7058823529411765,
+      "bradley_terry_auroc": 0.6004629629629629,
+      "bradley_terry_partial_rho": 0.11793624707348967,
+      "orthogonal_shapley_n": 102,
+      "orthogonal_shapley_resolution": 0.7058823529411765,
+      "orthogonal_shapley_auroc": 0.6027777777777779,
+      "orthogonal_shapley_partial_rho": 0.19426817881015623
+    },
+    {
+      "p_S": 0.35,
+      "skill_pct_threshold": 0.75,
+      "bradley_terry_n": 86,
+      "bradley_terry_resolution": 0.7093023255813954,
+      "bradley_terry_auroc": 0.6268852459016393,
+      "bradley_terry_partial_rho": 0.14888403982251522,
+      "orthogonal_shapley_n": 86,
+      "orthogonal_shapley_resolution": 0.7093023255813954,
+      "orthogonal_shapley_auroc": 0.5803278688524589,
+      "orthogonal_shapley_partial_rho": 0.18839579419144814
+    },
+    {
+      "p_S": 0.35,
+      "skill_pct_threshold": 0.8,
+      "bradley_terry_n": 65,
+      "bradley_terry_resolution": 0.7846153846153846,
+      "bradley_terry_auroc": 0.5546218487394957,
+      "bradley_terry_partial_rho": 0.05128718556893844,
+      "orthogonal_shapley_n": 65,
+      "orthogonal_shapley_resolution": 0.7846153846153846,
+      "orthogonal_shapley_auroc": 0.5546218487394958,
+      "orthogonal_shapley_partial_rho": 0.14336649556722558
+    }
+  ],
+  "stability_summary": {
+    "orthogonal_shapley": {
+      "auroc_beats_baseline_frac": 0.7777777777777778,
+      "auroc_n_cells": 9,
+      "partial_rho_beats_baseline_frac": 1.0,
+      "partial_rho_n_cells": 9
+    }
+  }
+}

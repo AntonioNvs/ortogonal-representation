@@ -350,3 +350,248 @@ wrote export to output/skill_exports/bayesian_ssm (2712 race rows)
 
 chain 4:  22%|[33m██▎       [0m| 900/4000 [3:09:10<10:56:24, 12.70s/it, (Warmup)][A[A[Achain 1:  22%|[33m██▎       [0m| 900/4000 [3:09:10<10:55:04, 12.68s/it, (Warmup)]
 chain 2:  22%|[33m██▎       [0m| 900/4000 [3:09:54<10:57:41, 12.73s/it, (Warmup)][A
+
+chain 3:  25%|[33m██▌       [0m| 1000/4000 [3:30:02<10:35:20, 12.71s/it, (Warmup)][A[Achain 1:  25%|[33m██▌       [0m| 1000/4000 [3:30:22<10:34:31, 12.69s/it, (Warmup)]
+
+
+chain 4:  25%|[33m██▌       [0m| 1000/4000 [3:30:27<10:36:17, 12.73s/it, (Warmup)][A[A[A
+chain 2:  25%|[33m██▌       [0m| 1000/4000 [3:31:14<10:37:32, 12.75s/it, (Warmup)][A
+
+chain 3:  28%|[33m██▊       [0m| 1100/4000 [3:51:16<10:14:41, 12.72s/it, (Warmup)][A[Achain 1:  28%|[33m██▊       [0m| 1100/4000 [3:51:31<10:13:26, 12.69s/it, (Warmup)]
+
+
+chain 4:  28%|[33m██▊       [0m| 1100/4000 [3:51:44<10:15:45, 12.74s/it, (Warmup)][A[A[A
+chain 2:  28%|[33m██▊       [0m| 1100/4000 [3:52:33<10:16:54, 12.76s/it, (Warmup)][A
+
+chain 3:  30%|[33m███       [0m| 1200/4000 [4:12:29<9:53:43, 12.72s/it, (Warmup)] [A[Achain 1:  30%|[33m███       [0m| 1200/4000 [4:12:45<9:52:55, 12.71s/it, (Warmup)] 
+
+
+chain 4:  30%|[33m███       [0m| 1200/4000 [4:13:02<9:55:03, 12.75s/it, (Warmup)] [A[A[A
+chain 2:  30%|[33m███       [0m| 1200/4000 [4:13:53<9:56:10, 12.78s/it, (Warmup)] [A
+
+chain 3:  32%|[33m███▎      [0m| 1300/4000 [4:33:43<9:32:44, 12.73s/it, (Warmup)][A[Achain 1:  32%|[33m███▎      [0m| 1300/4000 [4:33:57<9:31:56, 12.71s/it, (Warmup)]
+
+
+chain 4:  32%|[33m███▎      [0m| 1300/4000 [4:34:22<9:34:29, 12.77s/it, (Warmup)][A[A[A
+chain 2:  32%|[33m███▎      [0m| 1300/4000 [4:35:15<9:35:24, 12.79s/it, (Warmup)][A
+
+chain 3:  35%|[33m███▌      [0m| 1400/4000 [4:54:58<9:11:42, 12.73s/it, (Warmup)][A[Achain 1:  35%|[33m███▌      [0m| 1400/4000 [4:55:07<9:10:38, 12.71s/it, (Warmup)]
+
+
+chain 4:  35%|[33m███▌      [0m| 1400/4000 [4:55:41<9:13:33, 12.77s/it, (Warmup)][A[A[A
+chain 2:  35%|[33m███▌      [0m| 1400/4000 [4:56:34<9:14:14, 12.79s/it, (Warmup)][A
+
+chain 3:  38%|[33m███▊      [0m| 1500/4000 [5:16:14<8:50:52, 12.74s/it, (Warmup)][A[Achain 1:  38%|[33m███▊      [0m| 1500/4000 [5:16:16<8:49:18, 12.70s/it, (Warmup)]
+
+
+chain 4:  38%|[33m███▊      [0m| 1500/4000 [5:17:01<8:52:30, 12.78s/it, (Warmup)][A[A[A
+chain 2:  38%|[33m███▊      [0m| 1500/4000 [5:17:54<8:53:01, 12.79s/it, (Warmup)][A
+
+chain 3:  40%|[33m████      [0m| 1600/4000 [5:37:27<8:29:33, 12.74s/it, (Warmup)][A[Achain 1:  40%|[33m████      [0m| 1600/4000 [5:37:28<8:28:18, 12.71s/it, (Warmup)]
+
+
+chain 4:  40%|[33m████      [0m| 1600/4000 [5:38:19<8:31:12, 12.78s/it, (Warmup)][A[A[A
+chain 2:  40%|[33m████      [0m| 1600/4000 [5:39:14<8:31:49, 12.80s/it, (Warmup)][A
+
+chain 3:  42%|[33m████▎     [0m| 1700/4000 [5:58:40<8:08:11, 12.74s/it, (Warmup)][A[Achain 1:  42%|[33m████▎     [0m| 1700/4000 [5:58:44<8:07:40, 12.72s/it, (Warmup)]
+
+
+chain 4:  42%|[33m████▎     [0m| 1700/4000 [5:59:36<8:09:50, 12.78s/it, (Warmup)][A[A[A
+chain 2:  42%|[33m████▎     [0m| 1700/4000 [6:00:32<8:10:14, 12.79s/it, (Warmup)][A
+
+chain 3:  45%|[33m████▌     [0m| 1800/4000 [6:19:54<7:47:03, 12.74s/it, (Warmup)][A[Achain 1:  45%|[33m████▌     [0m| 1800/4000 [6:19:56<7:46:28, 12.72s/it, (Warmup)]
+
+
+chain 4:  45%|[33m████▌     [0m| 1800/4000 [6:20:53<7:48:25, 12.78s/it, (Warmup)][A[A[A
+chain 2:  45%|[33m████▌     [0m| 1800/4000 [6:21:49<7:48:46, 12.78s/it, (Warmup)][A
+
+chain 3:  48%|[33m████▊     [0m| 1900/4000 [6:41:08<7:25:48, 12.74s/it, (Warmup)][A[Achain 1:  48%|[33m████▊     [0m| 1900/4000 [6:41:10<7:25:27, 12.73s/it, (Warmup)]
+
+
+chain 4:  48%|[33m████▊     [0m| 1900/4000 [6:42:10<7:27:08, 12.78s/it, (Warmup)][A[A[A
+chain 2:  48%|[33m████▊     [0m| 1900/4000 [6:43:08<7:27:32, 12.79s/it, (Warmup)][A
+
+chain 3:  50%|[33m█████     [0m| 2000/4000 [7:02:11<7:03:29, 12.70s/it, (Warmup)][A[Achain 1:  50%|[33m█████     [0m| 2000/4000 [7:02:11<7:03:04, 12.69s/it, (Warmup)]
+
+chain 3:  50%|[34m█████     [0m| 2000/4000 [7:02:23<7:03:29, 12.70s/it, (Sampling)][A[A
+
+chain 3:  50%|[34m█████     [0m| 2001/4000 [7:02:23<7:03:16, 12.70s/it, (Sampling)][A[Achain 1:  50%|[34m█████     [0m| 2000/4000 [7:02:24<7:03:04, 12.69s/it, (Sampling)]chain 1:  50%|[34m█████     [0m| 2001/4000 [7:02:24<7:02:52, 12.69s/it, (Sampling)]
+
+
+chain 4:  50%|[33m█████     [0m| 2000/4000 [7:03:15<7:04:34, 12.74s/it, (Warmup)][A[A[A
+
+
+chain 4:  50%|[34m█████     [0m| 2000/4000 [7:03:28<7:04:34, 12.74s/it, (Sampling)][A[A[A
+
+
+chain 4:  50%|[34m█████     [0m| 2001/4000 [7:03:28<7:04:21, 12.74s/it, (Sampling)][A[A[A
+chain 2:  50%|[33m█████     [0m| 2000/4000 [7:04:19<7:05:27, 12.76s/it, (Warmup)][A
+chain 2:  50%|[34m█████     [0m| 2000/4000 [7:04:32<7:05:27, 12.76s/it, (Sampling)][A
+chain 2:  50%|[34m█████     [0m| 2001/4000 [7:04:32<7:05:15, 12.76s/it, (Sampling)][A
+
+chain 3:  52%|[34m█████▎    [0m| 2100/4000 [7:23:29<6:43:13, 12.73s/it, (Sampling)][A[Achain 1:  52%|[34m█████▎    [0m| 2100/4000 [7:23:31<6:43:12, 12.73s/it, (Sampling)]
+
+
+chain 4:  52%|[34m█████▎    [0m| 2100/4000 [7:24:43<6:45:00, 12.79s/it, (Sampling)][A[A[A
+chain 2:  52%|[34m█████▎    [0m| 2100/4000 [7:25:45<6:45:20, 12.80s/it, (Sampling)][A
+
+chain 3:  55%|[34m█████▌    [0m| 2200/4000 [7:44:43<6:22:06, 12.74s/it, (Sampling)][A[Achain 1:  55%|[34m█████▌    [0m| 2200/4000 [7:44:47<6:22:20, 12.74s/it, (Sampling)]
+
+
+chain 4:  55%|[34m█████▌    [0m| 2200/4000 [7:46:01<6:23:34, 12.79s/it, (Sampling)][A[A[A
+chain 2:  55%|[34m█████▌    [0m| 2200/4000 [7:47:14<6:24:57, 12.83s/it, (Sampling)][A/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:70: UserWarning: There exist node types ({'circuit', 'results', 'constructor_results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking bradley_terry...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking bayesian_ssm...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking orthogonal_shapley...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+wrote output/validation_benchmark/benchmark.json and benchmark.md
+chain 1:  57%|[34m█████▊    [0m| 2300/4000 [8:06:01<6:01:02, 12.74s/it, (Sampling)]
+
+chain 3:  57%|[34m█████▊    [0m| 2300/4000 [8:06:02<6:01:19, 12.75s/it, (Sampling)][A[A
+
+
+chain 4:  57%|[34m█████▊    [0m| 2300/4000 [8:07:15<6:01:51, 12.77s/it, (Sampling)][A[A[A
+chain 2:  57%|[34m█████▊    [0m| 2300/4000 [8:08:41<6:03:56, 12.84s/it, (Sampling)][Achain 1:  60%|[34m██████    [0m| 2400/4000 [8:27:15<5:39:45, 12.74s/it, (Sampling)]
+
+chain 3:  60%|[34m██████    [0m| 2400/4000 [8:27:18<5:40:10, 12.76s/it, (Sampling)][A[A
+
+
+chain 4:  60%|[34m██████    [0m| 2400/4000 [8:28:29<5:40:17, 12.76s/it, (Sampling)][A[A[A
+chain 2:  60%|[34m██████    [0m| 2400/4000 [8:30:05<5:42:26, 12.84s/it, (Sampling)][A
+
+chain 3:  62%|[34m██████▎   [0m| 2500/4000 [8:48:33<5:18:51, 12.75s/it, (Sampling)][A[Achain 1:  62%|[34m██████▎   [0m| 2500/4000 [8:48:37<5:19:09, 12.77s/it, (Sampling)]
+
+
+chain 4:  62%|[34m██████▎   [0m| 2500/4000 [8:49:44<5:18:55, 12.76s/it, (Sampling)][A[A[A
+chain 2:  62%|[34m██████▎   [0m| 2500/4000 [8:51:34<5:21:23, 12.86s/it, (Sampling)][A
+
+chain 3:  65%|[34m██████▌   [0m| 2600/4000 [9:09:48<4:57:36, 12.75s/it, (Sampling)][A[Achain 1:  65%|[34m██████▌   [0m| 2600/4000 [9:10:02<4:58:29, 12.79s/it, (Sampling)]
+
+
+chain 4:  65%|[34m██████▌   [0m| 2600/4000 [9:10:59<4:57:38, 12.76s/it, (Sampling)][A[A[A
+chain 2:  65%|[34m██████▌   [0m| 2600/4000 [9:12:59<4:59:58, 12.86s/it, (Sampling)][A
+
+chain 3:  68%|[34m██████▊   [0m| 2700/4000 [9:31:03<4:36:18, 12.75s/it, (Sampling)][A[Achain 1:  68%|[34m██████▊   [0m| 2700/4000 [9:31:21<4:37:07, 12.79s/it, (Sampling)]
+
+
+chain 4:  68%|[34m██████▊   [0m| 2700/4000 [9:32:12<4:36:12, 12.75s/it, (Sampling)][A[A[A
+chain 2:  68%|[34m██████▊   [0m| 2700/4000 [9:34:23<4:38:25, 12.85s/it, (Sampling)][A
+
+chain 3:  70%|[34m███████   [0m| 2800/4000 [9:52:19<4:15:03, 12.75s/it, (Sampling)][A[Achain 1:  70%|[34m███████   [0m| 2800/4000 [9:52:41<4:15:53, 12.79s/it, (Sampling)]
+
+
+chain 4:  70%|[34m███████   [0m| 2800/4000 [9:53:27<4:14:58, 12.75s/it, (Sampling)][A[A[A
+chain 2:  70%|[34m███████   [0m| 2800/4000 [9:55:50<4:17:08, 12.86s/it, (Sampling)][A
+
+chain 3:  72%|[34m███████▎  [0m| 2900/4000 [10:13:34<3:53:47, 12.75s/it, (Sampling)][A[Achain 1:  72%|[34m███████▎  [0m| 2900/4000 [10:14:01<3:54:35, 12.80s/it, (Sampling)]
+
+
+chain 4:  72%|[34m███████▎  [0m| 2900/4000 [10:14:41<3:53:41, 12.75s/it, (Sampling)][A[A[A
+chain 2:  72%|[34m███████▎  [0m| 2900/4000 [10:17:14<3:55:36, 12.85s/it, (Sampling)][A
+
+chain 3:  75%|[34m███████▌  [0m| 3000/4000 [10:34:50<3:32:35, 12.76s/it, (Sampling)][A[Achain 1:  75%|[34m███████▌  [0m| 3000/4000 [10:35:16<3:33:01, 12.78s/it, (Sampling)]
+
+
+chain 4:  75%|[34m███████▌  [0m| 3000/4000 [10:35:58<3:32:32, 12.75s/it, (Sampling)][A[A[A
+chain 2:  75%|[34m███████▌  [0m| 3000/4000 [10:38:38<3:34:09, 12.85s/it, (Sampling)][A
+
+chain 3:  78%|[34m███████▊  [0m| 3100/4000 [10:56:05<3:11:17, 12.75s/it, (Sampling)][A[Achain 1:  78%|[34m███████▊  [0m| 3100/4000 [10:56:35<3:11:47, 12.79s/it, (Sampling)]
+
+
+chain 4:  78%|[34m███████▊  [0m| 3100/4000 [10:57:15<3:11:22, 12.76s/it, (Sampling)][A[A[A
+chain 2:  78%|[34m███████▊  [0m| 3100/4000 [11:00:05<3:12:49, 12.86s/it, (Sampling)][A
+
+chain 3:  80%|[34m████████  [0m| 3200/4000 [11:17:19<2:50:01, 12.75s/it, (Sampling)][A[Achain 1:  80%|[34m████████  [0m| 3200/4000 [11:17:48<2:50:14, 12.77s/it, (Sampling)]
+
+
+chain 4:  80%|[34m████████  [0m| 3200/4000 [11:18:31<2:50:07, 12.76s/it, (Sampling)][A[A[A
+chain 2:  80%|[34m████████  [0m| 3200/4000 [11:21:36<2:51:35, 12.87s/it, (Sampling)][A
+
+chain 3:  82%|[34m████████▎ [0m| 3300/4000 [11:38:35<2:28:46, 12.75s/it, (Sampling)][A[Achain 1:  82%|[34m████████▎ [0m| 3300/4000 [11:39:02<2:28:50, 12.76s/it, (Sampling)]
+
+
+chain 4:  82%|[34m████████▎ [0m| 3300/4000 [11:39:45<2:28:47, 12.75s/it, (Sampling)][A[A[A
+chain 2:  82%|[34m████████▎ [0m| 3300/4000 [11:43:04<2:30:10, 12.87s/it, (Sampling)][A
+
+chain 3:  85%|[34m████████▌ [0m| 3400/4000 [11:59:49<2:07:29, 12.75s/it, (Sampling)][A[Achain 1:  85%|[34m████████▌ [0m| 3400/4000 [12:00:23<2:07:45, 12.78s/it, (Sampling)]
+
+
+chain 4:  85%|[34m████████▌ [0m| 3400/4000 [12:00:58<2:07:27, 12.75s/it, (Sampling)][A[A[A
+chain 2:  85%|[34m████████▌ [0m| 3400/4000 [12:04:27<2:08:35, 12.86s/it, (Sampling)][A
+
+chain 3:  88%|[34m████████▊ [0m| 3500/4000 [12:21:04<1:46:14, 12.75s/it, (Sampling)][A[Achain 1:  88%|[34m████████▊ [0m| 3500/4000 [12:21:40<1:46:26, 12.77s/it, (Sampling)]
+
+
+chain 4:  88%|[34m████████▊ [0m| 3500/4000 [12:22:13<1:46:13, 12.75s/it, (Sampling)][A[A[A
+chain 2:  88%|[34m████████▊ [0m| 3500/4000 [12:25:43<1:46:55, 12.83s/it, (Sampling)][A
+
+chain 3:  90%|[34m█████████ [0m| 3600/4000 [12:42:21<1:25:01, 12.75s/it, (Sampling)][A[Achain 1:  90%|[34m█████████ [0m| 3600/4000 [12:43:05<1:25:18, 12.80s/it, (Sampling)]
+
+
+chain 4:  90%|[34m█████████ [0m| 3600/4000 [12:43:27<1:24:58, 12.75s/it, (Sampling)][A[A[A
+chain 2:  90%|[34m█████████ [0m| 3600/4000 [12:47:01<1:25:26, 12.82s/it, (Sampling)][A
+
+chain 3:  92%|[34m█████████▎[0m| 3700/4000 [13:03:37<1:03:47, 12.76s/it, (Sampling)][A[Achain 1:  92%|[34m█████████▎[0m| 3700/4000 [13:04:26<1:03:59, 12.80s/it, (Sampling)]
+
+
+chain 4:  92%|[34m█████████▎[0m| 3700/4000 [13:04:42<1:03:43, 12.75s/it, (Sampling)][A[A[A
+chain 2:  92%|[34m█████████▎[0m| 3700/4000 [13:08:28<1:04:09, 12.83s/it, (Sampling)][A
+
+chain 3:  95%|[34m█████████▌[0m| 3800/4000 [13:24:57<42:33, 12.77s/it, (Sampling)]  [A[Achain 1:  95%|[34m█████████▌[0m| 3800/4000 [13:25:42<42:37, 12.79s/it, (Sampling)]  
+
+
+chain 4:  95%|[34m█████████▌[0m| 3800/4000 [13:25:56<42:28, 12.74s/it, (Sampling)]  [A[A[A
+chain 2:  95%|[34m█████████▌[0m| 3800/4000 [13:29:50<42:45, 12.83s/it, (Sampling)]  [A
+
+chain 3:  98%|[34m█████████▊[0m| 3900/4000 [13:46:18<21:18, 12.78s/it, (Sampling)][A[Achain 1:  98%|[34m█████████▊[0m| 3900/4000 [13:47:05<21:20, 12.80s/it, (Sampling)]
+
+
+chain 4:  98%|[34m█████████▊[0m| 3900/4000 [13:47:10<21:14, 12.74s/it, (Sampling)][A[A[A
+chain 2:  98%|[34m█████████▊[0m| 3900/4000 [13:51:11<21:22, 12.82s/it, (Sampling)][A
+
+chain 3: 100%|[34m██████████[0m| 4000/4000 [14:07:36<00:00, 12.78s/it, (Sampling)][A[Achain 1: 100%|[34m██████████[0m| 4000/4000 [14:08:22<00:00, 12.79s/it, (Sampling)]
+
+
+chain 4: 100%|[34m██████████[0m| 4000/4000 [14:08:25<00:00, 12.75s/it, (Sampling)][A[A[A
+chain 2: 100%|[34m██████████[0m| 4000/4000 [14:12:31<00:00, 12.81s/it, (Sampling)][Achain 1: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.79s/it, (Sampling completed)]chain 1: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.79s/it, (Sampling completed)]
+
+chain 2: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.81s/it, (Sampling completed)][Achain 2: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.79s/it, (Sampling completed)]
+
+
+chain 3: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.78s/it, (Sampling completed)][A[Achain 3: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.79s/it, (Sampling completed)]
+
+
+
+chain 4: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.75s/it, (Sampling completed)][A[A[Achain 4: 100%|[34m██████████[0m| 4000/4000 [14:12:43<00:00, 12.79s/it, (Sampling completed)]
+                                                                                                                                                                                                                                                                                                                                06:09:49 - cmdstanpy - INFO - CmdStan done processing.
+06:09:49 - cmdstanpy - WARNING - Non-fatal error during sampling:
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 63, column 4 to column 39)
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 57, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 57, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+	Exception: normal_lpdf: Scale parameter is 0, but must be positive! (in 'bayesian_ssm.stan', line 51, column 6 to column 53)
+Consider re-running with show_console=True if the above output is unclear!
+06:10:09 - cmdstanpy - WARNING - Some chains may have failed to converge.
+	Chain 1 had 1999 iterations at max treedepth (100.0%)
+	Chain 2 had 1999 iterations at max treedepth (100.0%)
+	Chain 3 had 1999 iterations at max treedepth (100.0%)
+	Chain 4 had 1999 iterations at max treedepth (100.0%)
+	Use the "diagnose()" method on the CmdStanMCMC object to see further information.
+/data/antonioneves/ortogonal-representation/venv/lib/python3.11/site-packages/arviz/__init__.py:50: FutureWarning: 
+ArviZ is undergoing a major refactor to improve flexibility and extensibility while maintaining a user-friendly interface.
+Some upcoming changes may be backward incompatible.
+For details and migration guidance, visit: https://python.arviz.org/en/latest/user_guide/migration_guide.html
+  warn(
+
+wrote export to output/skill_exports/bayesian_ssm (4332 race rows)
