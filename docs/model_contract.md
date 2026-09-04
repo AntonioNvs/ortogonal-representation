@@ -78,24 +78,37 @@ Artifacts written under `output/skill_exports/{source}/` as `race_skill.parquet`
 
 ### 5. Career validity (primary gate)
 
-See **`docs/career_validation_framework.md`** for full methodology.
+See **`docs/career_validation_framework.md`** (v4) for full methodology. v4 leads with
+**three headline statistics** on **one fixed protocol** (era ≥ 2014 + model-free fixed
+cohort, so the same career transitions are scored across all four models). Everything
+below the headline is retained as diagnostics.
 
-**Cohort:** drivers with within-season skill ≥ 75th percentile **and** B-tier team at T (`constructor_tier_score_at_T == 1`).
+**Protocol:** era window ≥ 2014; underrated cohort and `promoted` label defined once from
+`teammate_residual` (model-free) so the row set is identical across models.
 
-**Outcome:** rest-of-career mean tier score (infinite horizon; all future active seasons until retirement or data cutoff).
+**Outcome:** rest-of-career mean tier score (infinite horizon; all future active seasons).
 
-**Correction:** `outcome_score > constructor_tier_score_at_T` (tier promotion over remaining career).
+| Headline gate | Criterion | JSON key |
+|---------------|-----------|----------|
+| **Partial ρ (continuous car control)** | ρ > 0; cluster CI low > 0 | `career.partial_rho_continuous` |
+| **Cox HR (censored time-to-promotion, eligible)** | HR > 1; cluster CI **excludes 1** | `survival.eligible.cox.hazard_ratio` |
+| **Locked-test ranking (2024–25)** | Orth ≤ BT PL-NLL (±0.01) and ≥ BT − 0.01 pairwise | `locked_test.{pl_nll, pairwise_acc}` |
 
-| Gate | Criterion |
-|------|-----------|
-| **Underrated resolution rate** | ≥ Bradley–Terry baseline; cluster CI low > 0.5 |
-| **Underrated promotion AUROC** | ≥ Bradley–Terry baseline; cluster CI low > 0.45 |
-| **Partial Spearman (underrated stratum)** | ≥ BT baseline; cluster CI low > −0.1 (small-n stratum) |
-| Partial Spearman (all drivers, inf horizon) | ρ ≥ 0.15 (diagnostic) |
-| Within-season permutation p-value | Diagnostic |
-| Eligible promotion AUROC (below S-tier at T) | Diagnostic |
+Locked-test comparability: BT/PL/Orthogonal are `filtered` (held-out); the Bayesian SSM
+is `smoothed`/in-sample (`walk_forward=False`) — annotate its ranking number as in-sample,
+do not treat it as a fair held-out comparison.
 
-**Do not gate on:** raw Spearman alone, all-driver moved-up AUROC.
+| Diagnostic (non-headline) | Criterion |
+|---------------------------|-----------|
+| Underrated resolution rate | shared across models on a fixed cohort — non-discriminating |
+| Underrated promotion AUROC | ≥ BT; cluster CI low > 0.45 |
+| Partial Spearman (underrated stratum) | ≥ BT; cluster CI low > −0.1 (small-n) |
+| Partial ρ (tier control) | ρ ≥ 0.15 |
+| Within-season permutation p-value | era-robust null |
+| Eligible promotion AUROC (below S-tier at T) | diagnostic |
+
+**Do not gate on:** raw Spearman alone, all-driver moved-up AUROC, or resolution rate on
+a fixed cohort.
 
 ### 6. Robustness
 - DNF policies (classified / finished / all entries)
@@ -104,12 +117,21 @@ See **`docs/career_validation_framework.md`** for full methodology.
 
 ## Publication plots (CLI)
 
+**Abstract headline trio** (the three essential figures — see career framework v4 §4):
+
+| Figure | Statistic | Command |
+|--------|-----------|---------|
+| Fair-market forest (partial ρ + Cox HR, 4 models) | Stats 1 & 2 | `python src/experiments/plots/plot_validation_figures.py --benchmark-json output/validation_benchmark/benchmark.json` |
+| Time-to-promotion KM by skill tertile | Stat 2 | *(same command — emits `survival_km_<m>`)* |
+| Shapley attribution bars (Orthogonal only) | attribution | `python src/experiments/plots/plot_entity_attribution.py --source orthogonal_shapley --season 2024` |
+
+**Supporting plots:**
+
 | Plot | Command |
 |------|---------|
 | Team tier heatmap | `python src/experiments/plots/plot_team_tier_heatmap.py` |
 | Season skill trajectory | `python src/experiments/plots/plot_driver_season_skill.py` |
 | Multi-season rank panels | `python src/experiments/plots/plot_driver_rank_evolution.py` |
-| Shapley attribution bars | `python src/experiments/plots/plot_entity_attribution.py` |
 
 All plots: seaborn styling, English labels, DB-backed proper names, PNG+SVG+PDF, sidecar metadata JSON.
 
@@ -124,11 +146,15 @@ python src/experiments/run_bradley_terry.py --max-year 2025 --output-dir output/
 python src/experiments/run_plackett_luce.py --max-year 2025 --output-dir output/skill_exports/plackett_luce
 python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025 --output-dir output/skill_exports/bayesian_ssm
 
-# Unified validation benchmark (era windows incl. common >=2014 for fair cross-model comparison)
-python src/experiments/run_validation_benchmark.py --sources bradley_terry bayesian_ssm orthogonal_shapley --horizon inf --era-windows
+# Canonical validation benchmark — 4 models, fixed ≥2014 protocol, fixed cohort.
+# Regenerates benchmark.json (career + survival + partial_rho_continuous + era_windows)
+# AND the 4 skill-export caches (incl. the orthogonal_shapley race parquet the Shapley plot needs).
+python src/experiments/run_validation_benchmark.py \
+  --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley \
+  --horizon inf --min-year 2014 --fixed-cohort --era-windows
 
 # Multi-source career comparison (rest-of-career horizon)
-python src/experiments/run_career_comparison.py --sources bradley_terry bayesian_ssm orthogonal_shapley
+python src/experiments/run_career_comparison.py --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley
 
 # Primary GNN (when ready)
 python src/experiments/train_skill_gnn.py --seed 42

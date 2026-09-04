@@ -57,6 +57,13 @@ _METRICS: dict[str, dict] = {
         "ci_low": ("career", "partial_rho_continuous_ci_low"),
         "ci_high": ("career", "partial_rho_continuous_ci_high"),
     },
+    "survival_hr": {
+        "label": "Cox HR (skill → time-to-promotion)",
+        "null": 1.0,
+        "value": ("survival", "eligible", "cox", "hazard_ratio"),
+        "ci_low": ("survival", "eligible", "cox", "hr_lo"),
+        "ci_high": ("survival", "eligible", "cox", "hr_hi"),
+    },
 }
 
 # Source -> colour. Orthogonal Shapley is the primary; Bradley-Terry the
@@ -166,7 +173,7 @@ def plot_benchmark_forest(
 
     axes[-1].set_xlabel("Estimate ± 95% cluster-bootstrap CI", color="dimgrey", labelpad=8)
     fig.suptitle(
-        "Fair-market validation: does skill predict promotion above the car?",
+        "Fair-market validation: does skill predict promotion — and its timing — above the car?",
         fontsize=13, y=0.995, color="dimgrey",
     )
     fig.text(

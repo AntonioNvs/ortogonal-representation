@@ -8,11 +8,15 @@ model, so the figures are bit-for-bit reproducible from the JSON.
 
 Figures emitted to ``output/plots/validation/``:
 
-    fair_market_forest   — anchor: Orth vs BT (vs Bayesian) on the underrated
-                           trio + continuous car control, with bootstrap CIs.
+    fair_market_forest   — anchor: the two headline stats (partial ρ under
+                           continuous car control + Cox HR for promotion timing)
+                           across all 4 models, with bootstrap CIs.
     survival_km_<source> — KM time-to-promotion by skill tertile (anchor pair).
     sensitivity_diff_<m> — Orth − BT divergence heatmap across the threshold grid.
     recoverability_probe — constructor recoverability null vs held-out AUC.
+
+The Shapley attribution figure (plot 3) is emitted separately by
+``plot_entity_attribution.py`` — it needs the race parquet, not this JSON.
 
 Run:
     python src/experiments/plots/plot_validation_figures.py \
@@ -58,11 +62,12 @@ def main() -> None:
     benchmark = _load_json(args.benchmark_json)
     sources = benchmark.get("sources", {})
 
-    # 1. Anchor forest: the fair-market metrics with honest CIs.
+    # 1. Anchor forest: the two headline stats with honest CIs — skill predicts
+    #    the forward tier above the car (partial ρ) and predicts promotion timing
+    #    (Cox HR). Locked-test ranking (stat 3) stays tabular (no CI).
     plot_benchmark_forest(
         sources,
-        metric=["underrated_resolution", "underrated_auroc",
-                "underrated_partial_rho", "partial_rho_continuous"],
+        metric=["partial_rho_continuous", "survival_hr"],
         primary_key=_PRIMARY,
         output_path=os.path.join(args.output_dir, "fair_market_forest"),
     )
