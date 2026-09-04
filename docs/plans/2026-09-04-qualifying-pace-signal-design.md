@@ -2,7 +2,7 @@
 
 **Branch:** `sage-position-regression`
 **Data:** 2026-09-04
-**Status:** desenhado; ainda não rodado no A100
+**Status:** implementado; ainda não rodado no A100
 **Antecessor:** `plans/2026-09-04-temporal-smoothness-prior-design.md` (prior de
 suavidade temporal, segunda alavanca). Este documento especifica a **terceira
 alavanca** — a cabeça auxiliar de qualifying, o "2º sinal de pace" — o maior gap

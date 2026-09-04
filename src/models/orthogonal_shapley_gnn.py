@@ -100,6 +100,11 @@ class OrthogonalShapleyGNN(nn.Module):
     self.aux_constructor = nn.Linear(hidden_dim, 1)
     self.aux_context = nn.Linear(context_dim, 1)
     self.driver_ctx_orth = nn.Linear(hidden_dim, context_dim)
+    # Qualifying pace head (2nd pace signal). Reads the fused ``qualifying`` node
+    # (which already aggregates driver_state + constructor_state + race) and
+    # predicts the normalized quali position. It is NOT part of ``utility_additive``,
+    # so it injects gradient into the shared encoder without entering the Shapley sum.
+    self.quali_readout = nn.Linear(hidden_dim, 1)
 
   def encode(self, tf_dict, edge_index_dict) -> Dict[str, torch.Tensor]:
     x_dict = self.encoder(tf_dict)

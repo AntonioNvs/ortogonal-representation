@@ -421,6 +421,7 @@ def train_one_config(
   orth_warmup_epochs: int = 10,
   lambda_rw: float = 0.5,
   lambda_shrink: float = 0.05,
+  lambda_quali: float = 0.0,
 ) -> Dict:
   set_seed(seed)
 
@@ -481,6 +482,16 @@ def train_one_config(
   train_ds_mask = torch.zeros(n_ds, dtype=torch.bool, device=device)
   train_ds_mask[res.driver_state_idx[train_mask].to(device)] = True
 
+  # Qualifying pace head target + training mask (2nd pace signal). Captured once,
+  # reused every epoch. The mask is the same era window as the ranking train mask
+  # (year <= train_max_year), so the auxiliary head never sees the held-out seasons.
+  quali_y = graph_data["qualifying"].y.to(device)
+  train_max_year = max(cfg.TRAIN_YEARS)
+  quali_train_mask = graph_data["qualifying"].year.to(device) <= train_max_year
+  quali_val_mask = year_mask(
+    graph_data["qualifying"].year, cfg.VAL_YEARS
+  ).to(device)
+
   optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
   scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode="min", factor=0.5, patience=5, min_lr=1e-5
@@ -536,11 +547,18 @@ def train_one_config(
       attr_seed=seed + epoch,
     )
     rw_loss, shrink_loss = model.temporal_smoothness_loss(x_dict, chain, train_ds_mask)
+    quali_loss = torch.zeros((), device=device)
+    if lambda_quali > 0:
+      qpred = model.quali_readout(x_dict["qualifying"]).squeeze(-1)
+      quali_loss = torch.nn.functional.mse_loss(
+        qpred[quali_train_mask], quali_y[quali_train_mask]
+      )
     total_loss = (
       train_total
       + lam * orth_loss
       + lambda_rw * rw_loss
       + lambda_shrink * shrink_loss
+      + lambda_quali * quali_loss
     )
     total_loss.backward()
     if max_grad_norm > 0:
@@ -607,6 +625,7 @@ def train_one_config(
       f"epoch {epoch+1:3d} | train PL {pl_loss.item():.4f} | "
       f"orth {orth_loss.item():.4f} (λ={lam:.2f}) | attr {attr_loss.item():.4f} | "
       f"rw {rw_loss.item():.4f} | shrink {shrink_loss.item():.4f} | "
+      f"quali {quali_loss.item():.4f} | "
       f"off_frac {offset_frac:.2f} | "
       f"val PL {val_pl.item():.4f} | val pairwise {val_acc:.4f} | "
       f"val score {val_score:.4f} | shares D/C/X {share_d:.2f}/{share_c:.2f}/{share_x:.2f} | "
@@ -655,6 +674,14 @@ def train_one_config(
       model, x_dict, res, test_mask, device, baselines, max_races=100, seed=seed
     )
     final_offset_frac = offset_frac_diagnostic(model, x_dict, res, train_mask, device)
+    final_val_quali_loss = (
+      torch.nn.functional.mse_loss(
+        model.quali_readout(x_dict["qualifying"]).squeeze(-1)[quali_val_mask],
+        quali_y[quali_val_mask],
+      )
+      if lambda_quali > 0
+      else torch.zeros((), device=device)
+    )
 
   os.makedirs(output_dir, exist_ok=True)
   ckpt_path = os.path.join(output_dir, "orthogonal_shapley.pth")
@@ -687,6 +714,7 @@ def train_one_config(
       "max_grad_norm": max_grad_norm,
       "lambda_rw": lambda_rw,
       "lambda_shrink": lambda_shrink,
+      "lambda_quali": lambda_quali,
       "seed": seed,
     },
     "metrics": {
@@ -701,6 +729,7 @@ def train_one_config(
       "test_constructor_share": test_share_c,
       "test_context_share": test_share_x,
       "offset_frac_train": final_offset_frac,
+      "quali_val_mse": float(final_val_quali_loss.item()),
     },
     "coalition_baselines_path": baselines_path,
   }
@@ -789,6 +818,12 @@ def main() -> None:
     default=0.05,
     help="shrinkage weight on the driver season offset level",
   )
+  parser.add_argument(
+    "--lambda-quali",
+    type=float,
+    default=0.0,
+    help="MSE weight on the auxiliary qualifying pace head (0 = disabled)",
+  )
   args = parser.parse_args()
 
   device = get_device(args.gpu_id)
@@ -820,6 +855,7 @@ def main() -> None:
     orth_warmup_epochs=args.orth_warmup_epochs,
     lambda_rw=args.lambda_rw,
     lambda_shrink=args.lambda_shrink,
+    lambda_quali=args.lambda_quali,
   )
 
   if len(lambdas) == 1:

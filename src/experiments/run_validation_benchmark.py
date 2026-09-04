@@ -105,9 +105,15 @@ def main() -> None:
         if args.fixed_cohort:
             from validation.benchmark import join_career_from_export
 
-            joined_by_source[source] = join_career_from_export(
+            joined = join_career_from_export(
                 export, db, team_tier, horizon=horizon, cohort_skill=cohort_skill
             )
+            # Apply the same era window as the career/survival blocks so the
+            # fixed cohort is the >=min_year underrated set (the within-season
+            # percentile is recomputed inside mark_underrated on the window).
+            if args.min_year is not None and "season_T" in joined.columns:
+                joined = joined[joined["season_T"] >= args.min_year]
+            joined_by_source[source] = joined
 
     extra = {}
     if args.fixed_cohort and len(joined_by_source) >= 2:
