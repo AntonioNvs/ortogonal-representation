@@ -196,7 +196,7 @@ def constructor_recoverability_career_probe(
   tf_dict,
   edge_index_dict,
   device: torch.device,
-  sample_idx: torch.Tensor,
+  sample_idx: torch.Tensor | None = None,
   *,
   seed: int = 42,
   null_perm: int = 50,
@@ -210,58 +210,80 @@ def constructor_recoverability_career_probe(
   switched teams: for those drivers the embedding cannot vary between teams, so a
   held-out AUC near chance (~0.5) means the career channel is car-free, while an
   AUC well above the null p95 means it still encodes the car.
+
+  The pool is built from the **full** results table (not the 2024-2025 probe
+  sample), because the career embedding is constant per driver and we want every
+  team-switcher. Rows are aggregated to one (driver, constructor) pair each with
+  equal weight, so a driver's multi-season stint at a dominant team does not swamp
+  a short stint at a second team. Held-out splits are grouped by **driver**
+  (GroupKFold), so a driver's embedding is never seen at train time — the AUC
+  measures cross-driver recoverability, not memorisation of driver identity.
   """
   from sklearn.linear_model import LogisticRegression
   from sklearn.metrics import roc_auc_score
-  from sklearn.model_selection import StratifiedKFold
+  from sklearn.model_selection import GroupKFold
   from sklearn.preprocessing import StandardScaler
 
-  if model.driver_career is None or not hasattr(res := graph_data["results"], "driver_career_idx"):
+  res = graph_data["results"]
+  if model.driver_career is None or not hasattr(res, "driver_career_idx"):
     return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
             "note": "career embedding not present"}
 
-  if sample_idx.numel() < 20:
+  valid = (
+    res.in_ranking
+    & (res.driver_career_idx >= 0)
+    & (res.constructor_state_idx >= 0)
+    & (res.constructor_id >= 0)
+  )
+  pos = valid.nonzero(as_tuple=True)[0]
+  if pos.numel() < 20:
     return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
             "n_drivers": 0, "note": "insufficient rows"}
 
-  x_dict = model.encode(tf_dict, edge_index_dict)
-  career_idx = res.driver_career_idx[sample_idx]
-  c_id = res.constructor_id[sample_idx]
-  driver_id = res.driver_id[sample_idx]
+  career_idx = res.driver_career_idx[pos].cpu().numpy()
+  c_id = res.constructor_id[pos].cpu().numpy()
+  driver_id = res.driver_id[pos].cpu().numpy()
 
-  emb = model.driver_career(career_idx.to(device)).cpu().numpy()
-  labels = c_id.cpu().numpy()
-  drivers = driver_id.cpu().numpy()
-
-  # Restrict to team-switchers: drivers who appear under >=2 constructors. Only
-  # for these is "recover the constructor from a career-constant embedding" a
-  # meaningful leak test (a one-team driver's team is trivially the driver).
-  df = pd.DataFrame({"driver": drivers, "label": labels, "emb": list(emb)})
-  n_teams = df.groupby("driver")["label"].nunique()
+  # Team-switchers only: a career-constant embedding is only a meaningful leak
+  # signal for drivers who drove for >=2 constructors.
+  df = pd.DataFrame({"driver": driver_id, "constructor": c_id, "career": career_idx})
+  n_teams = df.groupby("driver")["constructor"].nunique()
   switchers = n_teams[n_teams >= 2].index
   df = df[df["driver"].isin(switchers)].reset_index(drop=True)
 
-  if len(df) < 20 or df["label"].nunique() < 2:
+  if df.empty:
     return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
-            "n_drivers": int(switchers.size), "note": "too few team-switchers"}
+            "n_drivers": int(switchers.size), "note": "no team-switchers"}
 
-  X = np.vstack(df["emb"].to_numpy())
-  y = df["label"].to_numpy()
-  counts = pd.Series(y).value_counts()
-  keep = pd.Series(y).isin(counts[counts >= 2].index).to_numpy()
-  X, y = X[keep], y[keep]
-  if len(np.unique(y)) < 2 or len(y) < 20:
+  # Aggregate to one (driver, constructor) pair with equal weight; the career
+  # embedding is constant per driver so a single representative index suffices.
+  pairs = df.groupby(["driver", "constructor"], as_index=False)["career"].first()
+  # Drop constructor classes with <2 drivers (one-vs-rest needs a non-trivial +).
+  counts = pairs["constructor"].value_counts()
+  pairs = pairs[pairs["constructor"].isin(counts[counts >= 2].index)].reset_index(drop=True)
+
+  n_drivers = int(pairs["driver"].nunique())
+  if n_drivers < 5 or pairs["constructor"].nunique() < 2 or len(pairs) < 10:
     return {"macro_auc": float("nan"), "null_auc_p95": float("nan"),
-            "n_drivers": int(switchers.size), "note": "too few separable classes"}
+            "n_drivers": n_drivers, "n_pairs": int(len(pairs)),
+            "note": "too few team-switchers or pairs"}
+
+  emb = model.driver_career(
+    torch.from_numpy(pairs["career"].to_numpy()).to(device)
+  ).cpu().numpy()
+  X = emb
+  y = pairs["constructor"].to_numpy()
+  groups = pairs["driver"].to_numpy()
 
   scaler = StandardScaler().fit(X)
   Xs = scaler.transform(X)
 
+  n_splits = min(5, n_drivers)
+
   def _macro_auc(yy):
-    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
+    gkf = GroupKFold(n_splits=n_splits)
     aucs = []
-    classes = np.unique(yy)
-    for tr, te in skf.split(Xs, yy):
+    for tr, te in gkf.split(Xs, yy, groups=groups):
       clf = LogisticRegression(max_iter=1000, C=1.0)
       clf.fit(Xs[tr], yy[tr])
       probs = clf.predict_proba(Xs[te])
@@ -289,8 +311,8 @@ def constructor_recoverability_career_probe(
     "null_auc_p95": null_p95,
     "null_aucs": [float(a) for a in null_aucs],
     "leakage": bool(not np.isnan(macro_auc) and not np.isnan(null_p95) and macro_auc > null_p95),
-    "n_drivers": int(switchers.size),
-    "n_states": int(len(y)),
+    "n_drivers": n_drivers,
+    "n_pairs": int(len(pairs)),
     "n_classes": int(np.unique(y).size),
     "restricted_to_team_switchers": True,
   }
@@ -420,7 +442,7 @@ def run_orthogonal_shapley_probes(
     model, graph_data, tf_dict, edge_index_dict, device, sample_idx, seed=config.seed
   )
   career_recoverability = constructor_recoverability_career_probe(
-    model, graph_data, tf_dict, edge_index_dict, device, sample_idx, seed=config.seed
+    model, graph_data, tf_dict, edge_index_dict, device, seed=config.seed
   )
   swap = swap_invariance_test(
     model, graph_data, tf_dict, edge_index_dict, device, baselines, sample_idx, config
