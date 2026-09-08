@@ -1,5 +1,12 @@
 # Validation benchmark report
 
+## orthogonal_shapley
+- Partial ρ: 0.3999437620155319 (CI low: 0.19421245305179574)
+- Underrated resolution: 0.46153846153846156 (CI low: 0.18518518518518517, n=26)
+- Underrated promotion AUROC: 0.6785714285714286
+- Locked PL NLL: 1.8035427331924438
+- Locked pairwise acc: 0.7491744634012107
+
 ## bradley_terry
 - Partial ρ: 0.1066283886947603 (CI low: -0.07794884501343767)
 - Underrated resolution: 0.46153846153846156 (CI low: 0.18518518518518517, n=26)
@@ -14,14 +21,7 @@
 - Locked PL NLL: 1.915357232093811
 - Locked pairwise acc: 0.6927627958172813
 
-## orthogonal_shapley
-- Partial ρ: 0.3999437620155319 (CI low: 0.19421245305179574)
-- Underrated resolution: 0.46153846153846156 (CI low: 0.18518518518518517, n=26)
-- Underrated promotion AUROC: 0.6785714285714286
-- Locked PL NLL: 1.8035427331924438
-- Locked pairwise acc: 0.7491744634012107
-
 ## Gates
+- **orthogonal_shapley**: partial=True, resolution=False, underrated_auroc=False, pl=True, pairwise=True
 - **bradley_terry**: partial=False, resolution=False, underrated_auroc=True, pl=True, pairwise=True
 - **bayesian_ssm**: partial=True, resolution=False, underrated_auroc=True, pl=False, pairwise=True
-- **orthogonal_shapley**: partial=True, resolution=False, underrated_auroc=False, pl=True, pairwise=True
