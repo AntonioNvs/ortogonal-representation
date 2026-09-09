@@ -33,6 +33,12 @@ def main() -> None:
     parser.add_argument("--force-recompute", action="store_true")
     parser.add_argument("--checkpoint", type=str, default="output/skill_model/skill_gnn.pth")
     parser.add_argument("--meta", type=str, default="output/skill_model/skill_gnn_meta.json")
+    parser.add_argument(
+        "--baselines",
+        type=str,
+        default=None,
+        help="coalition baselines JSON for orthogonal_shapley (default: from meta)",
+    )
     parser.add_argument("--xai-seed", type=int, default=42)
     parser.add_argument(
         "--horizon",
@@ -88,14 +94,16 @@ def main() -> None:
             force_recompute=args.force_recompute,
             checkpoint_path=args.checkpoint,
             meta_path=args.meta,
+            baselines_path=args.baselines if source == "orthogonal_shapley" else None,
         )
         reports[source] = benchmark_source(
             export,
             db,
             team_tier,
             panel,
-            checkpoint_path=args.checkpoint if source == "skill_gnn" else None,
-            meta_path=args.meta,
+            checkpoint_path=args.checkpoint if source in ("skill_gnn", "orthogonal_shapley") else None,
+            meta_path=args.meta if source in ("skill_gnn", "orthogonal_shapley") else None,
+            baselines_path=args.baselines if source == "orthogonal_shapley" else None,
             xai_seed=args.xai_seed,
             horizon=horizon,
             cohort_skill=cohort_skill,
