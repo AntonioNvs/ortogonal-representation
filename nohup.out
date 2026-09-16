@@ -597,3 +597,11 @@ For details and migration guidance, visit: https://python.arviz.org/en/latest/us
 wrote export to output/skill_exports/bayesian_ssm (4332 race rows)
 [temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
 wrote export to output/skill_exports/plackett_luce (16223 race rows)
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking bradley_terry...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking bayesian_ssm...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking orthogonal_shapley...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+wrote output/validation_benchmark/benchmark.json and benchmark.md
