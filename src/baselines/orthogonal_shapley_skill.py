@@ -84,6 +84,8 @@ def load_orthogonal_shapley_model_and_graph(
     node_to_col_stats = enc["node_to_col_stats"]
 
   config = meta.get("config", {})
+  state = torch.load(checkpoint_path, map_location=device, weights_only=True)
+  use_quali_readout = any(k.startswith("quali_readout.") for k in state)
   model = OrthogonalShapleyGNN(
     node_to_col_names_dict=node_to_col_names_dict,
     node_to_col_stats=node_to_col_stats,
@@ -92,8 +94,9 @@ def load_orthogonal_shapley_model_and_graph(
     mlp_hidden=config.get("mlp_hidden", 128),
     use_additive_readout=config.get("use_additive_readout", False),
     num_drivers=int(getattr(graph_data, "num_drivers", 0)),
+    use_quali_readout=use_quali_readout,
   ).to(device)
-  model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
+  model.load_state_dict(state)
   model.eval()
 
   tf_dict = {nt: graph_data[nt].tf.to(device) for nt in graph_data.node_types}

@@ -463,6 +463,7 @@ def train_one_config(
     mlp_hidden=mlp_hidden,
     use_additive_readout=use_additive_readout,
     num_drivers=int(getattr(graph_data, "num_drivers", 0)),
+    use_quali_readout=lambda_quali > 0,
   ).to(device)
 
   tf_dict = {nt: graph_data[nt].tf.to(device) for nt in graph_data.node_types}

@@ -1,0 +1,435 @@
+{
+  "config": {
+    "checkpoint": "output/orthogonal_shapley_model/orthogonal_shapley.pth",
+    "meta": "output/orthogonal_shapley_model/orthogonal_shapley_meta.json",
+    "baselines": "output/orthogonal_shapley_model/coalition_baselines.json",
+    "max_year": 2026,
+    "min_backtest_year": 2000,
+    "horizon": 3,
+    "top_k": 5,
+    "output_dir": "output/applications/undervalued"
+  },
+  "backtest": {
+    "summary": {
+      "n_origins": 24,
+      "mean_auroc": 0.7390006290006289,
+      "mean_lift": 1.4321573334073332,
+      "mean_base_rate": 0.6186966803860902,
+      "mean_precision_at_k": 0.875
+    },
+    "rows": [
+      {
+        "season_T": 2000,
+        "n_drivers": 20,
+        "base_promotion_rate": 0.55,
+        "precision_at_k": 0.6,
+        "lift": 1.0909090909090908,
+        "auroc": 0.4949494949494949,
+        "topk_drivers": [
+          "Ralf Schumacher",
+          "Jacques Villeneuve",
+          "Eddie Irvine",
+          "Heinz-Harald Frentzen",
+          "Giancarlo Fisichella"
+        ]
+      },
+      {
+        "season_T": 2001,
+        "n_drivers": 20,
+        "base_promotion_rate": 0.65,
+        "precision_at_k": 1.0,
+        "lift": 1.5384615384615383,
+        "auroc": 0.6813186813186813,
+        "topk_drivers": [
+          "Kimi R\u00e4ikk\u00f6nen",
+          "Juan Pablo Montoya",
+          "Ralf Schumacher",
+          "Fernando Alonso",
+          "Nick Heidfeld"
+        ]
+      },
+      {
+        "season_T": 2002,
+        "n_drivers": 17,
+        "base_promotion_rate": 0.7058823529411765,
+        "precision_at_k": 1.0,
+        "lift": 1.4166666666666665,
+        "auroc": 0.8500000000000001,
+        "topk_drivers": [
+          "Jenson Button",
+          "Juan Pablo Montoya",
+          "Felipe Massa",
+          "Heinz-Harald Frentzen",
+          "Giancarlo Fisichella"
+        ]
+      },
+      {
+        "season_T": 2003,
+        "n_drivers": 19,
+        "base_promotion_rate": 0.47368421052631576,
+        "precision_at_k": 0.8,
+        "lift": 1.688888888888889,
+        "auroc": 0.8999999999999999,
+        "topk_drivers": [
+          "Mark Webber",
+          "Fernando Alonso",
+          "Jenson Button",
+          "Jacques Villeneuve",
+          "Olivier Panis"
+        ]
+      },
+      {
+        "season_T": 2004,
+        "n_drivers": 17,
+        "base_promotion_rate": 0.5882352941176471,
+        "precision_at_k": 1.0,
+        "lift": 1.7,
+        "auroc": 0.9714285714285715,
+        "topk_drivers": [
+          "Mark Webber",
+          "Jenson Button",
+          "Fernando Alonso",
+          "Felipe Massa",
+          "Giancarlo Fisichella"
+        ]
+      },
+      {
+        "season_T": 2005,
+        "n_drivers": 22,
+        "base_promotion_rate": 0.5454545454545454,
+        "precision_at_k": 1.0,
+        "lift": 1.8333333333333335,
+        "auroc": 0.8500000000000001,
+        "topk_drivers": [
+          "Felipe Massa",
+          "Ralf Schumacher",
+          "David Coulthard",
+          "Jenson Button",
+          "Jarno Trulli"
+        ]
+      },
+      {
+        "season_T": 2006,
+        "n_drivers": 18,
+        "base_promotion_rate": 0.7777777777777778,
+        "precision_at_k": 1.0,
+        "lift": 1.2857142857142856,
+        "auroc": 0.5535714285714286,
+        "topk_drivers": [
+          "Ralf Schumacher",
+          "David Coulthard",
+          "Robert Kubica",
+          "Nick Heidfeld",
+          "Mark Webber"
+        ]
+      },
+      {
+        "season_T": 2007,
+        "n_drivers": 21,
+        "base_promotion_rate": 0.6190476190476191,
+        "precision_at_k": 0.8,
+        "lift": 1.2923076923076924,
+        "auroc": 0.7211538461538461,
+        "topk_drivers": [
+          "Sebastian Vettel",
+          "Mark Webber",
+          "Nico Rosberg",
+          "David Coulthard",
+          "Nick Heidfeld"
+        ]
+      },
+      {
+        "season_T": 2008,
+        "n_drivers": 19,
+        "base_promotion_rate": 0.7368421052631579,
+        "precision_at_k": 0.8,
+        "lift": 1.0857142857142859,
+        "auroc": 0.8428571428571429,
+        "topk_drivers": [
+          "Sebastian Vettel",
+          "Mark Webber",
+          "Nico Rosberg",
+          "Lewis Hamilton",
+          "Fernando Alonso"
+        ]
+      },
+      {
+        "season_T": 2009,
+        "n_drivers": 20,
+        "base_promotion_rate": 0.5,
+        "precision_at_k": 1.0,
+        "lift": 2.0,
+        "auroc": 0.79,
+        "topk_drivers": [
+          "Sebastian Vettel",
+          "Nico Rosberg",
+          "Fernando Alonso",
+          "Jenson Button",
+          "Mark Webber"
+        ]
+      },
+      {
+        "season_T": 2010,
+        "n_drivers": 23,
+        "base_promotion_rate": 0.4782608695652174,
+        "precision_at_k": 0.4,
+        "lift": 0.8363636363636364,
+        "auroc": 0.36363636363636365,
+        "topk_drivers": [
+          "Nico H\u00fclkenberg",
+          "S\u00e9bastien Buemi",
+          "Rubens Barrichello",
+          "Adrian Sutil",
+          "Heikki Kovalainen"
+        ]
+      },
+      {
+        "season_T": 2011,
+        "n_drivers": 21,
+        "base_promotion_rate": 0.7142857142857143,
+        "precision_at_k": 1.0,
+        "lift": 1.4,
+        "auroc": 0.7000000000000001,
+        "topk_drivers": [
+          "Kamui Kobayashi",
+          "Daniel Ricciardo",
+          "Sergio P\u00e9rez",
+          "Paul di Resta",
+          "Heikki Kovalainen"
+        ]
+      },
+      {
+        "season_T": 2012,
+        "n_drivers": 18,
+        "base_promotion_rate": 0.7222222222222222,
+        "precision_at_k": 0.8,
+        "lift": 1.1076923076923078,
+        "auroc": 0.7076923076923076,
+        "topk_drivers": [
+          "Daniel Ricciardo",
+          "Kamui Kobayashi",
+          "Nico H\u00fclkenberg",
+          "Kimi R\u00e4ikk\u00f6nen",
+          "Jean-\u00c9ric Vergne"
+        ]
+      },
+      {
+        "season_T": 2013,
+        "n_drivers": 18,
+        "base_promotion_rate": 0.5,
+        "precision_at_k": 0.8,
+        "lift": 1.6,
+        "auroc": 0.7777777777777778,
+        "topk_drivers": [
+          "Lewis Hamilton",
+          "Daniel Ricciardo",
+          "Nico H\u00fclkenberg",
+          "Valtteri Bottas",
+          "Jean-\u00c9ric Vergne"
+        ]
+      },
+      {
+        "season_T": 2014,
+        "n_drivers": 18,
+        "base_promotion_rate": 0.5555555555555556,
+        "precision_at_k": 1.0,
+        "lift": 1.7999999999999998,
+        "auroc": 0.8500000000000001,
+        "topk_drivers": [
+          "Valtteri Bottas",
+          "Nico H\u00fclkenberg",
+          "Felipe Massa",
+          "Daniil Kvyat",
+          "Lewis Hamilton"
+        ]
+      },
+      {
+        "season_T": 2015,
+        "n_drivers": 17,
+        "base_promotion_rate": 0.5882352941176471,
+        "precision_at_k": 1.0,
+        "lift": 1.7,
+        "auroc": 0.7285714285714284,
+        "topk_drivers": [
+          "Max Verstappen",
+          "Carlos Sainz",
+          "Sebastian Vettel",
+          "Valtteri Bottas",
+          "Nico H\u00fclkenberg"
+        ]
+      },
+      {
+        "season_T": 2016,
+        "n_drivers": 19,
+        "base_promotion_rate": 0.7368421052631579,
+        "precision_at_k": 0.8,
+        "lift": 1.0857142857142859,
+        "auroc": 0.657142857142857,
+        "topk_drivers": [
+          "Carlos Sainz",
+          "Max Verstappen",
+          "Fernando Alonso",
+          "Sebastian Vettel",
+          "Romain Grosjean"
+        ]
+      },
+      {
+        "season_T": 2017,
+        "n_drivers": 20,
+        "base_promotion_rate": 0.7,
+        "precision_at_k": 1.0,
+        "lift": 1.4285714285714286,
+        "auroc": 0.8571428571428572,
+        "topk_drivers": [
+          "Max Verstappen",
+          "Carlos Sainz",
+          "Nico H\u00fclkenberg",
+          "Fernando Alonso",
+          "Sebastian Vettel"
+        ]
+      },
+      {
+        "season_T": 2018,
+        "n_drivers": 16,
+        "base_promotion_rate": 0.625,
+        "precision_at_k": 1.0,
+        "lift": 1.6,
+        "auroc": 0.8833333333333334,
+        "topk_drivers": [
+          "Carlos Sainz",
+          "Charles Leclerc",
+          "Fernando Alonso",
+          "Max Verstappen",
+          "Nico H\u00fclkenberg"
+        ]
+      },
+      {
+        "season_T": 2019,
+        "n_drivers": 20,
+        "base_promotion_rate": 0.7,
+        "precision_at_k": 1.0,
+        "lift": 1.4285714285714286,
+        "auroc": 0.75,
+        "topk_drivers": [
+          "Carlos Sainz",
+          "Max Verstappen",
+          "Kimi R\u00e4ikk\u00f6nen",
+          "Lando Norris",
+          "Daniel Ricciardo"
+        ]
+      },
+      {
+        "season_T": 2020,
+        "n_drivers": 19,
+        "base_promotion_rate": 0.5263157894736842,
+        "precision_at_k": 0.8,
+        "lift": 1.5200000000000002,
+        "auroc": 0.8222222222222223,
+        "topk_drivers": [
+          "Max Verstappen",
+          "Carlos Sainz",
+          "Lando Norris",
+          "Daniel Ricciardo",
+          "Kimi R\u00e4ikk\u00f6nen"
+        ]
+      },
+      {
+        "season_T": 2021,
+        "n_drivers": 17,
+        "base_promotion_rate": 0.6470588235294118,
+        "precision_at_k": 0.8,
+        "lift": 1.2363636363636363,
+        "auroc": 0.6363636363636365,
+        "topk_drivers": [
+          "Sebastian Vettel",
+          "Lando Norris",
+          "Max Verstappen",
+          "Fernando Alonso",
+          "Pierre Gasly"
+        ]
+      },
+      {
+        "season_T": 2022,
+        "n_drivers": 19,
+        "base_promotion_rate": 0.6842105263157895,
+        "precision_at_k": 0.8,
+        "lift": 1.1692307692307693,
+        "auroc": 0.6923076923076924,
+        "topk_drivers": [
+          "Valtteri Bottas",
+          "Nyck de Vries",
+          "Charles Leclerc",
+          "Max Verstappen",
+          "Fernando Alonso"
+        ]
+      },
+      {
+        "season_T": 2023,
+        "n_drivers": 21,
+        "base_promotion_rate": 0.5238095238095238,
+        "precision_at_k": 0.8,
+        "lift": 1.5272727272727273,
+        "auroc": 0.6545454545454545,
+        "topk_drivers": [
+          "Fernando Alonso",
+          "Daniel Ricciardo",
+          "Liam Lawson",
+          "Lando Norris",
+          "Nico H\u00fclkenberg"
+        ]
+      }
+    ]
+  },
+  "watchlist": {
+    "as_of_season": 2026,
+    "requested_max_year": 2026,
+    "note": "prospective forecast; not a confirmed outcome",
+    "watchlist": [
+      {
+        "driver_name": "Arvid Lindblad",
+        "driverRef": "arvid_lindblad",
+        "constructorId": 211,
+        "tier": "A",
+        "skill_score": 0.3944758176803589,
+        "car_strength": 0.03491262100862811,
+        "uv": 1.352990805322717
+      },
+      {
+        "driver_name": "Max Verstappen",
+        "driverRef": "max_verstappen",
+        "constructorId": 8,
+        "tier": "A",
+        "skill_score": 1.1606186628341675,
+        "car_strength": 0.1777936788219651,
+        "uv": 1.150892091815611
+      },
+      {
+        "driver_name": "Liam Lawson",
+        "driverRef": "lawson",
+        "constructorId": 211,
+        "tier": "A",
+        "skill_score": 0.2271386682987213,
+        "car_strength": 0.03491262100862811,
+        "uv": 1.0678323294439855
+      },
+      {
+        "driver_name": "Carlos Sainz",
+        "driverRef": "sainz",
+        "constructorId": 2,
+        "tier": "B",
+        "skill_score": 0.01613624021410942,
+        "car_strength": 0.022350753534424252,
+        "uv": 0.8408167295291447
+      },
+      {
+        "driver_name": "Nico H\u00fclkenberg",
+        "driverRef": "hulkenberg",
+        "constructorId": 212,
+        "tier": "B",
+        "skill_score": -0.13217756152153015,
+        "car_strength": 0.012527076479128369,
+        "uv": 0.691735179572953
+      }
+    ]
+  }
+}

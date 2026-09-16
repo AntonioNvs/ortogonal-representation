@@ -49,12 +49,14 @@ class OrthogonalShapleyGNN(nn.Module):
     context_dim: int = CONTEXT_DIM,
     use_additive_readout: bool = False,
     num_drivers: int = 0,
+    use_quali_readout: bool = False,
   ):
     super().__init__()
     self.hidden_dim = hidden_dim
     self.context_dim = context_dim
     self.arch_version = ARCH_VERSION
     self.use_additive_readout = use_additive_readout
+    self.use_quali_readout = use_quali_readout
 
     self.encoder = HeteroEncoder(
       channels=hidden_dim,
@@ -104,7 +106,8 @@ class OrthogonalShapleyGNN(nn.Module):
     # (which already aggregates driver_state + constructor_state + race) and
     # predicts the normalized quali position. It is NOT part of ``utility_additive``,
     # so it injects gradient into the shared encoder without entering the Shapley sum.
-    self.quali_readout = nn.Linear(hidden_dim, 1)
+    if use_quali_readout:
+      self.quali_readout = nn.Linear(hidden_dim, 1)
 
   def encode(self, tf_dict, edge_index_dict) -> Dict[str, torch.Tensor]:
     x_dict = self.encoder(tf_dict)

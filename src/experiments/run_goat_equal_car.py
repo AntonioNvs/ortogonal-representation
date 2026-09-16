@@ -74,7 +74,7 @@ def champion_peak_seasons(db, *, min_champ_year: int = 1980) -> pd.DataFrame:
     ``champion_years``, ``peak_season`` and ``peak_share``.
     """
     standings = db.table_dict["standings"].df
-    races = db.table_dict["races"].df[["raceId", "year"]]
+    races = db.table_dict["races"].df[["raceId", "year", "round"]]
     names = build_driver_name_map(db.table_dict["drivers"].df)
 
     df = standings.merge(races, on="raceId", how="inner")
