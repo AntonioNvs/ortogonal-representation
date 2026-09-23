@@ -1,0 +1,42 @@
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'circuit', 'constructor_results', 'results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'circuit', 'constructor_results', 'results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+-> detecting post-1980 world champions ...
+   19 champions
+-> exporting skill scores from frozen model ...
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+   calibrated beta = 0.1625
+-> assigning peak seasons (best_wdc_skill) ...
+-> loading model for common-car 2025 forward pass ...
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+-> common_car_2025 Monte Carlo: 19 drivers, 24 races from 2025
+wrote output/applications/goat_equal_car/goat_equal_car.png
+
+=== Equal-car GOAT [common_car_2025] (top 6) ===
+ driverId        driver_name                             champion_years  n_title_seasons  peak_season  peak_share    skill  p_title  expected_wins  expected_points  points_lo95  points_hi95
+      829     Max Verstappen                   [2021, 2022, 2023, 2024]                4         2023    0.233930 1.474847      1.0       19.42325        544.92425   489.073294   600.775206
+        0     Lewis Hamilton [2008, 2014, 2015, 2017, 2018, 2019, 2020]                7         2018    0.192362 1.251016      0.0        1.75350        349.79675   297.606475   401.987025
+       29 Michael Schumacher [1994, 1995, 2000, 2001, 2002, 2003, 2004]                7         1994    0.221154 1.509364      0.0        1.07700        306.78750   254.337360   359.237640
+       19   Sebastian Vettel                   [2010, 2011, 2012, 2013]                4         2011    0.204273 1.432300      0.0        0.51925        234.70125   181.069601   288.332899
+      844       Lando Norris                                     [2025]                1         2025    0.160227 0.844700      0.0        0.24425        164.02700   110.916053   217.137947
+        7     Kimi Räikkönen                                     [2007]                1         2007    0.165913 0.917994      0.0        0.20075        147.89725    95.773992   200.020508
+
+controls: {
+  "shift_invariance": {
+    "max_abs_delta_p_title": 0.0,
+    "pass": true
+  },
+  "symmetry": {
+    "p_title_pair": [
+      0.5105,
+      0.4895
+    ],
+    "max_abs_delta": 0.020999999999999963,
+    "pass": true
+  }
+}
+wrote output/applications/goat_equal_car/goat_equal_car.json

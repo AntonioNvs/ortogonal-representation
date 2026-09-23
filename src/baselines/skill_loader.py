@@ -37,6 +37,7 @@ def load_skill_export(
     meta_path: str = "output/skill_model/skill_gnn_meta.json",
     baselines_path: Optional[str] = None,
     force_recompute: bool = False,
+    gpu_id: Optional[int] = None,
 ) -> SkillExport:
     """Load or compute a validated SkillExport for the given source."""
     if db is None:
@@ -111,6 +112,7 @@ def load_skill_export(
             baselines_path=baselines_path,
             max_year=max_year,
             inference_mode=inference_mode,
+            gpu_id=gpu_id,
         )
     elif source == "teammate_residual":
         export = export_teammate_residual(db, max_year=max_year)

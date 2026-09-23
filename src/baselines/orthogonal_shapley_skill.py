@@ -57,6 +57,7 @@ def load_orthogonal_shapley_model_and_graph(
   checkpoint_path: str = "output/orthogonal_shapley_model/orthogonal_shapley.pth",
   meta_path: str = "output/orthogonal_shapley_model/orthogonal_shapley_meta.json",
   baselines_path: str | None = None,
+  gpu_id: int | None = None,
 ) -> Tuple[OrthogonalShapleyGNN, Any, Dict, Dict, torch.device, CoalitionBaselines]:
   if not os.path.isfile(checkpoint_path):
     raise FileNotFoundError(
@@ -64,7 +65,7 @@ def load_orthogonal_shapley_model_and_graph(
       "Train with: python src/experiments/train_orthogonal_shapley_gnn.py --seed 42"
     )
 
-  device = get_device()
+  device = get_device(gpu_id)
   with open(meta_path) as f:
     meta = json.load(f)
 
@@ -198,6 +199,7 @@ def export_orthogonal_shapley(
   baselines_path: str | None = None,
   max_year: int = 2025,
   inference_mode=None,
+  gpu_id: int | None = None,
 ) -> "SkillExport":
   from data.race_panel import RacePanelConfig, build_race_panel
   from skill.contract import InferenceMode
@@ -210,6 +212,7 @@ def export_orthogonal_shapley(
       checkpoint_path=checkpoint_path,
       meta_path=meta_path,
       baselines_path=baselines_path,
+      gpu_id=gpu_id,
     )
   )
   panel = build_race_panel(db, RacePanelConfig(max_year=max_year))

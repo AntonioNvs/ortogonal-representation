@@ -1,0 +1,13 @@
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+benchmarking orthogonal_shapley...
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'circuit', 'constructor_results', 'results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'circuit', 'constructor_results', 'results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+wrote output/validation_benchmark/orthogonal_shapley_no_attr/benchmark.json and benchmark.md

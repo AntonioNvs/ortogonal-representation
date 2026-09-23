@@ -696,8 +696,12 @@ def train_one_config(
   with open(baselines_path, "w") as f:
     json.dump(baselines.to_dict(), f, indent=2)
 
+  ablation_label = (
+    "no_attribution_balance" if float(lambda_attr) == 0.0 else "attribution_balance"
+  )
   meta = {
     "arch_version": ARCH_VERSION,
+    "ablation": ablation_label,
     "config": {
       "hidden_dim": hidden_dim,
       "num_layers": num_layers,

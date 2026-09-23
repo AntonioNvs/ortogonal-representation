@@ -7,429 +7,2369 @@
     "min_backtest_year": 2000,
     "horizon": 3,
     "top_k": 5,
+    "min_races": 5,
+    "min_career_seasons": 0,
+    "exclude_s_tier_within": 2,
+    "max_age": 25.0,
     "output_dir": "output/applications/undervalued"
+  },
+  "provenance": {
+    "run_utc": "2026-09-17T22:52:54.965692+00:00",
+    "db_max_year": 2026,
+    "claim_level": "car_adjusted_performance",
+    "repository": "https://github.com/AntonioNvs/ortogonal-representation"
   },
   "backtest": {
     "summary": {
-      "n_origins": 24,
-      "mean_auroc": 0.7390006290006289,
-      "mean_lift": 1.4321573334073332,
-      "mean_base_rate": 0.6186966803860902,
-      "mean_precision_at_k": 0.875
+      "n_origins": 25,
+      "n_full_horizon_origins": 23,
+      "mean_auroc": 0.6620465786226655,
+      "mean_lift": 1.1700172532781228,
+      "mean_base_rate": 0.6906569276134493,
+      "mean_precision_at_k": 0.8000000000000003,
+      "method": "retrospective_frozen_model",
+      "note": "Single frozen checkpoint scored at each historical origin T; not a walk-forward refit. Origins through max(season)-1 use partial future windows when fewer than 3 post-T seasons exist; summary stats prefer full-3 origins."
     },
     "rows": [
       {
         "season_T": 2000,
-        "n_drivers": 20,
-        "base_promotion_rate": 0.55,
-        "precision_at_k": 0.6,
-        "lift": 1.0909090909090908,
-        "auroc": 0.4949494949494949,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2001.0,
+          2002.0,
+          2003.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.6666666666666666,
+        "precision_at_k": 0.4,
+        "lift": 0.6000000000000001,
+        "auroc": 0.11111111111111112,
         "topk_drivers": [
-          "Ralf Schumacher",
-          "Jacques Villeneuve",
-          "Eddie Irvine",
-          "Heinz-Harald Frentzen",
-          "Giancarlo Fisichella"
+          "Giancarlo Fisichella",
+          "Jean Alesi",
+          "Jenson Button",
+          "Jos Verstappen",
+          "Pedro de la Rosa"
+        ],
+        "topk": [
+          {
+            "driver_name": "Giancarlo Fisichella",
+            "uv": 0.5802209801096738,
+            "tier": "A",
+            "age": 27.460643394934976,
+            "promoted": false
+          },
+          {
+            "driver_name": "Jean Alesi",
+            "uv": 0.5138345526346728,
+            "tier": "B",
+            "age": 36.054757015742645,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 0.393273615183301,
+            "tier": "A",
+            "age": 20.449007529089666,
+            "promoted": false
+          },
+          {
+            "driver_name": "Jos Verstappen",
+            "uv": 0.007169745093671409,
+            "tier": "B",
+            "age": 28.32580424366872,
+            "promoted": false
+          },
+          {
+            "driver_name": "Pedro de la Rosa",
+            "uv": -0.07594340583161396,
+            "tier": "B",
+            "age": 29.349760438056126,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2001,
-        "n_drivers": 20,
-        "base_promotion_rate": 0.65,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2002.0,
+          2003.0,
+          2004.0
+        ],
+        "n_drivers": 10,
+        "base_promotion_rate": 0.7,
         "precision_at_k": 1.0,
-        "lift": 1.5384615384615383,
-        "auroc": 0.6813186813186813,
+        "lift": 1.4285714285714286,
+        "auroc": 0.8095238095238095,
         "topk_drivers": [
           "Kimi R\u00e4ikk\u00f6nen",
-          "Juan Pablo Montoya",
-          "Ralf Schumacher",
           "Fernando Alonso",
-          "Nick Heidfeld"
+          "Nick Heidfeld",
+          "Jacques Villeneuve",
+          "Jenson Button"
+        ],
+        "topk": [
+          {
+            "driver_name": "Kimi R\u00e4ikk\u00f6nen",
+            "uv": 1.3637343001056248,
+            "tier": "B",
+            "age": 21.7056810403833,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.7958226111208452,
+            "tier": "B",
+            "age": 19.923340177960302,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nick Heidfeld",
+            "uv": 0.7040951869996495,
+            "tier": "B",
+            "age": 24.142368240930868,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jacques Villeneuve",
+            "uv": 0.6700829492923783,
+            "tier": "B",
+            "age": 30.22861054072553,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 0.39314712059616735,
+            "tier": "A",
+            "age": 21.44832306639288,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2002,
-        "n_drivers": 17,
-        "base_promotion_rate": 0.7058823529411765,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2003.0,
+          2004.0,
+          2005.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.8888888888888888,
         "precision_at_k": 1.0,
-        "lift": 1.4166666666666665,
-        "auroc": 0.8500000000000001,
+        "lift": 1.125,
+        "auroc": 0.75,
         "topk_drivers": [
           "Jenson Button",
-          "Juan Pablo Montoya",
           "Felipe Massa",
-          "Heinz-Harald Frentzen",
-          "Giancarlo Fisichella"
+          "Giancarlo Fisichella",
+          "Nick Heidfeld",
+          "Mark Webber"
+        ],
+        "topk": [
+          {
+            "driver_name": "Jenson Button",
+            "uv": 0.8634517831021917,
+            "tier": "A",
+            "age": 22.4476386036961,
+            "promoted": true
+          },
+          {
+            "driver_name": "Felipe Massa",
+            "uv": 0.8097331339674553,
+            "tier": "B",
+            "age": 21.182751540041068,
+            "promoted": true
+          },
+          {
+            "driver_name": "Giancarlo Fisichella",
+            "uv": 0.6091952228780073,
+            "tier": "A",
+            "age": 29.45927446954141,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nick Heidfeld",
+            "uv": 0.47246512329334517,
+            "tier": "B",
+            "age": 25.141683778234086,
+            "promoted": true
+          },
+          {
+            "driver_name": "Mark Webber",
+            "uv": 0.3555802698266369,
+            "tier": "B",
+            "age": 25.842573579739906,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2003,
-        "n_drivers": 19,
-        "base_promotion_rate": 0.47368421052631576,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2004.0,
+          2005.0,
+          2006.0
+        ],
+        "n_drivers": 10,
+        "base_promotion_rate": 0.8,
         "precision_at_k": 0.8,
-        "lift": 1.688888888888889,
-        "auroc": 0.8999999999999999,
+        "lift": 1.0,
+        "auroc": 0.75,
         "topk_drivers": [
           "Mark Webber",
           "Fernando Alonso",
           "Jenson Button",
           "Jacques Villeneuve",
           "Olivier Panis"
+        ],
+        "topk": [
+          {
+            "driver_name": "Mark Webber",
+            "uv": 1.3913277975976293,
+            "tier": "B",
+            "age": 26.84188911704312,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 1.2077192044042793,
+            "tier": "A",
+            "age": 21.921971252566735,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 0.8012527834098871,
+            "tier": "A",
+            "age": 23.446954140999317,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jacques Villeneuve",
+            "uv": 0.5196640167911278,
+            "tier": "A",
+            "age": 32.22724161533196,
+            "promoted": true
+          },
+          {
+            "driver_name": "Olivier Panis",
+            "uv": 0.5098362834552848,
+            "tier": "B",
+            "age": 36.82683093771389,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2004,
-        "n_drivers": 17,
-        "base_promotion_rate": 0.5882352941176471,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2005.0,
+          2006.0,
+          2007.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.8888888888888888,
         "precision_at_k": 1.0,
-        "lift": 1.7,
-        "auroc": 0.9714285714285715,
+        "lift": 1.125,
+        "auroc": 0.75,
         "topk_drivers": [
           "Mark Webber",
           "Jenson Button",
           "Fernando Alonso",
           "Felipe Massa",
           "Giancarlo Fisichella"
+        ],
+        "topk": [
+          {
+            "driver_name": "Mark Webber",
+            "uv": 1.4305107632790093,
+            "tier": "B",
+            "age": 27.84394250513347,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 1.2208616736833757,
+            "tier": "A",
+            "age": 24.449007529089666,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 1.1361517391010754,
+            "tier": "A",
+            "age": 22.924024640657084,
+            "promoted": true
+          },
+          {
+            "driver_name": "Felipe Massa",
+            "uv": 0.9996263630808861,
+            "tier": "A",
+            "age": 23.184120465434635,
+            "promoted": true
+          },
+          {
+            "driver_name": "Giancarlo Fisichella",
+            "uv": 0.5634461948448917,
+            "tier": "A",
+            "age": 31.460643394934976,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2005,
-        "n_drivers": 22,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2006.0,
+          2007.0,
+          2008.0
+        ],
+        "n_drivers": 11,
         "base_promotion_rate": 0.5454545454545454,
         "precision_at_k": 1.0,
         "lift": 1.8333333333333335,
-        "auroc": 0.8500000000000001,
+        "auroc": 0.8333333333333334,
         "topk_drivers": [
           "Felipe Massa",
-          "Ralf Schumacher",
-          "David Coulthard",
           "Jenson Button",
-          "Jarno Trulli"
+          "Jarno Trulli",
+          "Jacques Villeneuve",
+          "Robert Doornbos"
+        ],
+        "topk": [
+          {
+            "driver_name": "Felipe Massa",
+            "uv": 1.2866106224275597,
+            "tier": "B",
+            "age": 24.18343600273785,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 1.0191949272297813,
+            "tier": "A",
+            "age": 25.44832306639288,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jarno Trulli",
+            "uv": 0.8017077383486846,
+            "tier": "A",
+            "age": 30.967830253251197,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jacques Villeneuve",
+            "uv": 0.6787655949669611,
+            "tier": "B",
+            "age": 34.22861054072553,
+            "promoted": true
+          },
+          {
+            "driver_name": "Robert Doornbos",
+            "uv": 0.3933723835617402,
+            "tier": "B",
+            "age": 23.770020533880903,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2006,
-        "n_drivers": 18,
-        "base_promotion_rate": 0.7777777777777778,
-        "precision_at_k": 1.0,
-        "lift": 1.2857142857142856,
-        "auroc": 0.5535714285714286,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2007.0,
+          2008.0,
+          2009.0
+        ],
+        "n_drivers": 10,
+        "base_promotion_rate": 0.8,
+        "precision_at_k": 0.6,
+        "lift": 0.7499999999999999,
+        "auroc": 0.375,
         "topk_drivers": [
-          "Ralf Schumacher",
-          "David Coulthard",
           "Robert Kubica",
           "Nick Heidfeld",
-          "Mark Webber"
+          "Mark Webber",
+          "Jenson Button",
+          "Nico Rosberg"
+        ],
+        "topk": [
+          {
+            "driver_name": "Robert Kubica",
+            "uv": 0.7316022727482175,
+            "tier": "A",
+            "age": 21.56331279945243,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nick Heidfeld",
+            "uv": 0.7006250406225868,
+            "tier": "A",
+            "age": 29.141683778234086,
+            "promoted": true
+          },
+          {
+            "driver_name": "Mark Webber",
+            "uv": 0.68535004496959,
+            "tier": "A",
+            "age": 29.842573579739906,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 0.4432265656708248,
+            "tier": "A",
+            "age": 26.4476386036961,
+            "promoted": false
+          },
+          {
+            "driver_name": "Nico Rosberg",
+            "uv": 0.41872238830606934,
+            "tier": "A",
+            "age": 21.010266940451746,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2007,
-        "n_drivers": 21,
-        "base_promotion_rate": 0.6190476190476191,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2008.0,
+          2009.0,
+          2010.0
+        ],
+        "n_drivers": 13,
+        "base_promotion_rate": 0.6923076923076923,
         "precision_at_k": 0.8,
-        "lift": 1.2923076923076924,
-        "auroc": 0.7211538461538461,
+        "lift": 1.1555555555555557,
+        "auroc": 0.7777777777777778,
         "topk_drivers": [
           "Sebastian Vettel",
           "Mark Webber",
           "Nico Rosberg",
           "David Coulthard",
           "Nick Heidfeld"
-        ]
-      },
-      {
-        "season_T": 2008,
-        "n_drivers": 19,
-        "base_promotion_rate": 0.7368421052631579,
-        "precision_at_k": 0.8,
-        "lift": 1.0857142857142859,
-        "auroc": 0.8428571428571429,
-        "topk_drivers": [
-          "Sebastian Vettel",
-          "Mark Webber",
-          "Nico Rosberg",
-          "Lewis Hamilton",
-          "Fernando Alonso"
+        ],
+        "topk": [
+          {
+            "driver_name": "Sebastian Vettel",
+            "uv": 1.5449082749205862,
+            "tier": "B",
+            "age": 19.994524298425734,
+            "promoted": true
+          },
+          {
+            "driver_name": "Mark Webber",
+            "uv": 0.9192388581364008,
+            "tier": "B",
+            "age": 30.84188911704312,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico Rosberg",
+            "uv": 0.9103936230193583,
+            "tier": "B",
+            "age": 22.00958247775496,
+            "promoted": true
+          },
+          {
+            "driver_name": "David Coulthard",
+            "uv": 0.5864647914420383,
+            "tier": "B",
+            "age": 36.26283367556468,
+            "promoted": false
+          },
+          {
+            "driver_name": "Nick Heidfeld",
+            "uv": 0.4475744073752855,
+            "tier": "A",
+            "age": 30.140999315537304,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2009,
-        "n_drivers": 20,
-        "base_promotion_rate": 0.5,
-        "precision_at_k": 1.0,
-        "lift": 2.0,
-        "auroc": 0.79,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2010.0,
+          2011.0,
+          2012.0
+        ],
+        "n_drivers": 10,
+        "base_promotion_rate": 0.6,
+        "precision_at_k": 0.8,
+        "lift": 1.3333333333333335,
+        "auroc": 0.6666666666666666,
         "topk_drivers": [
           "Sebastian Vettel",
           "Nico Rosberg",
-          "Fernando Alonso",
           "Jenson Button",
-          "Mark Webber"
+          "Mark Webber",
+          "Rubens Barrichello"
+        ],
+        "topk": [
+          {
+            "driver_name": "Sebastian Vettel",
+            "uv": 1.9007261226812453,
+            "tier": "A",
+            "age": 21.9958932238193,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico Rosberg",
+            "uv": 1.4556648900345261,
+            "tier": "B",
+            "age": 24.01095140314853,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jenson Button",
+            "uv": 1.0508383501651701,
+            "tier": "A",
+            "age": 29.44832306639288,
+            "promoted": true
+          },
+          {
+            "driver_name": "Mark Webber",
+            "uv": 0.9131454065634416,
+            "tier": "A",
+            "age": 32.84325804243669,
+            "promoted": true
+          },
+          {
+            "driver_name": "Rubens Barrichello",
+            "uv": 0.7238871895013186,
+            "tier": "A",
+            "age": 37.106091718001366,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2010,
-        "n_drivers": 23,
-        "base_promotion_rate": 0.4782608695652174,
-        "precision_at_k": 0.4,
-        "lift": 0.8363636363636364,
-        "auroc": 0.36363636363636365,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2011.0,
+          2012.0,
+          2013.0
+        ],
+        "n_drivers": 15,
+        "base_promotion_rate": 0.26666666666666666,
+        "precision_at_k": 0.2,
+        "lift": 0.75,
+        "auroc": 0.38636363636363635,
         "topk_drivers": [
           "Nico H\u00fclkenberg",
           "S\u00e9bastien Buemi",
           "Rubens Barrichello",
           "Adrian Sutil",
-          "Heikki Kovalainen"
+          "Jaime Alguersuari"
+        ],
+        "topk": [
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.8977997434392331,
+            "tier": "A",
+            "age": 22.86652977412731,
+            "promoted": false
+          },
+          {
+            "driver_name": "S\u00e9bastien Buemi",
+            "uv": 0.8968483039729149,
+            "tier": "B",
+            "age": 21.66461327857632,
+            "promoted": false
+          },
+          {
+            "driver_name": "Rubens Barrichello",
+            "uv": 0.8811753785966809,
+            "tier": "A",
+            "age": 38.105407255304584,
+            "promoted": false
+          },
+          {
+            "driver_name": "Adrian Sutil",
+            "uv": 0.6838577115182137,
+            "tier": "B",
+            "age": 27.468856947296374,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jaime Alguersuari",
+            "uv": 0.4862160439724809,
+            "tier": "B",
+            "age": 20.27378507871321,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2011,
-        "n_drivers": 21,
-        "base_promotion_rate": 0.7142857142857143,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2012.0,
+          2013.0,
+          2014.0
+        ],
+        "n_drivers": 13,
+        "base_promotion_rate": 0.6153846153846154,
         "precision_at_k": 1.0,
-        "lift": 1.4,
-        "auroc": 0.7000000000000001,
+        "lift": 1.625,
+        "auroc": 0.8,
         "topk_drivers": [
           "Kamui Kobayashi",
           "Daniel Ricciardo",
           "Sergio P\u00e9rez",
           "Paul di Resta",
-          "Heikki Kovalainen"
+          "Adrian Sutil"
+        ],
+        "topk": [
+          {
+            "driver_name": "Kamui Kobayashi",
+            "uv": 0.9521385263539027,
+            "tier": "A",
+            "age": 24.79671457905544,
+            "promoted": true
+          },
+          {
+            "driver_name": "Daniel Ricciardo",
+            "uv": 0.7060826518214496,
+            "tier": "B",
+            "age": 21.998631074606433,
+            "promoted": true
+          },
+          {
+            "driver_name": "Sergio P\u00e9rez",
+            "uv": 0.6512582392208361,
+            "tier": "A",
+            "age": 21.426420260095824,
+            "promoted": true
+          },
+          {
+            "driver_name": "Paul di Resta",
+            "uv": 0.4864524423159055,
+            "tier": "B",
+            "age": 25.207392197125255,
+            "promoted": true
+          },
+          {
+            "driver_name": "Adrian Sutil",
+            "uv": 0.36472876659395315,
+            "tier": "B",
+            "age": 28.468172484599588,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2012,
-        "n_drivers": 18,
-        "base_promotion_rate": 0.7222222222222222,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2013.0,
+          2014.0,
+          2015.0
+        ],
+        "n_drivers": 12,
+        "base_promotion_rate": 0.8333333333333334,
         "precision_at_k": 0.8,
-        "lift": 1.1076923076923078,
-        "auroc": 0.7076923076923076,
+        "lift": 0.96,
+        "auroc": 0.55,
         "topk_drivers": [
           "Daniel Ricciardo",
           "Kamui Kobayashi",
           "Nico H\u00fclkenberg",
           "Kimi R\u00e4ikk\u00f6nen",
           "Jean-\u00c9ric Vergne"
+        ],
+        "topk": [
+          {
+            "driver_name": "Daniel Ricciardo",
+            "uv": 1.0957844700435375,
+            "tier": "B",
+            "age": 23.000684462696782,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kamui Kobayashi",
+            "uv": 0.9709446752406418,
+            "tier": "A",
+            "age": 25.79876796714579,
+            "promoted": false
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.9236812505863621,
+            "tier": "A",
+            "age": 24.867898699520875,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kimi R\u00e4ikk\u00f6nen",
+            "uv": 0.915269917841835,
+            "tier": "A",
+            "age": 32.70636550308008,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jean-\u00c9ric Vergne",
+            "uv": 0.8485647623934687,
+            "tier": "B",
+            "age": 22.184804928131417,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2013,
-        "n_drivers": 18,
-        "base_promotion_rate": 0.5,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2014.0,
+          2015.0,
+          2016.0
+        ],
+        "n_drivers": 12,
+        "base_promotion_rate": 0.6666666666666666,
         "precision_at_k": 0.8,
-        "lift": 1.6,
-        "auroc": 0.7777777777777778,
+        "lift": 1.2000000000000002,
+        "auroc": 0.65625,
         "topk_drivers": [
-          "Lewis Hamilton",
           "Daniel Ricciardo",
           "Nico H\u00fclkenberg",
           "Valtteri Bottas",
-          "Jean-\u00c9ric Vergne"
+          "Jean-\u00c9ric Vergne",
+          "Kimi R\u00e4ikk\u00f6nen"
+        ],
+        "topk": [
+          {
+            "driver_name": "Daniel Ricciardo",
+            "uv": 1.2445344045392472,
+            "tier": "B",
+            "age": 24.0,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.9635794918500276,
+            "tier": "B",
+            "age": 25.867214236824093,
+            "promoted": true
+          },
+          {
+            "driver_name": "Valtteri Bottas",
+            "uv": 0.9081114801645508,
+            "tier": "B",
+            "age": 23.84120465434634,
+            "promoted": true
+          },
+          {
+            "driver_name": "Jean-\u00c9ric Vergne",
+            "uv": 0.9043935787501773,
+            "tier": "B",
+            "age": 23.184120465434635,
+            "promoted": false
+          },
+          {
+            "driver_name": "Kimi R\u00e4ikk\u00f6nen",
+            "uv": 0.7858075073247869,
+            "tier": "A",
+            "age": 33.7056810403833,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2014,
-        "n_drivers": 18,
-        "base_promotion_rate": 0.5555555555555556,
-        "precision_at_k": 1.0,
-        "lift": 1.7999999999999998,
-        "auroc": 0.8500000000000001,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2015.0,
+          2016.0,
+          2017.0
+        ],
+        "n_drivers": 8,
+        "base_promotion_rate": 0.5,
+        "precision_at_k": 0.8,
+        "lift": 1.6,
+        "auroc": 1.0,
         "topk_drivers": [
           "Valtteri Bottas",
           "Nico H\u00fclkenberg",
-          "Felipe Massa",
           "Daniil Kvyat",
-          "Lewis Hamilton"
+          "Marcus Ericsson",
+          "Kevin Magnussen"
+        ],
+        "topk": [
+          {
+            "driver_name": "Valtteri Bottas",
+            "uv": 1.182995120225016,
+            "tier": "A",
+            "age": 24.840520191649556,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.8744932401927336,
+            "tier": "B",
+            "age": 26.86652977412731,
+            "promoted": true
+          },
+          {
+            "driver_name": "Daniil Kvyat",
+            "uv": 0.6381163677399055,
+            "tier": "B",
+            "age": 20.18069815195072,
+            "promoted": true
+          },
+          {
+            "driver_name": "Marcus Ericsson",
+            "uv": -0.05786821122344743,
+            "tier": "B",
+            "age": 23.82751540041068,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kevin Magnussen",
+            "uv": -0.29719054738474415,
+            "tier": "A",
+            "age": 21.73579739904175,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2015,
-        "n_drivers": 17,
-        "base_promotion_rate": 0.5882352941176471,
-        "precision_at_k": 1.0,
-        "lift": 1.7,
-        "auroc": 0.7285714285714284,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2016.0,
+          2017.0,
+          2018.0
+        ],
+        "n_drivers": 7,
+        "base_promotion_rate": 0.5714285714285714,
+        "precision_at_k": 0.8,
+        "lift": 1.4000000000000001,
+        "auroc": 1.0,
         "topk_drivers": [
           "Max Verstappen",
           "Carlos Sainz",
-          "Sebastian Vettel",
           "Valtteri Bottas",
-          "Nico H\u00fclkenberg"
+          "Nico H\u00fclkenberg",
+          "Felipe Nasr"
+        ],
+        "topk": [
+          {
+            "driver_name": "Max Verstappen",
+            "uv": 1.9415709197361455,
+            "tier": "B",
+            "age": 17.749486652977414,
+            "promoted": true
+          },
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 1.1637267456495626,
+            "tier": "B",
+            "age": 20.829568788501028,
+            "promoted": true
+          },
+          {
+            "driver_name": "Valtteri Bottas",
+            "uv": 0.6231114636595583,
+            "tier": "A",
+            "age": 25.83983572895277,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.529200379710324,
+            "tier": "A",
+            "age": 27.865845311430526,
+            "promoted": true
+          },
+          {
+            "driver_name": "Felipe Nasr",
+            "uv": 0.22404616545384703,
+            "tier": "B",
+            "age": 22.858316221765914,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2016,
-        "n_drivers": 19,
-        "base_promotion_rate": 0.7368421052631579,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2017.0,
+          2018.0,
+          2019.0
+        ],
+        "n_drivers": 11,
+        "base_promotion_rate": 0.8181818181818182,
         "precision_at_k": 0.8,
-        "lift": 1.0857142857142859,
-        "auroc": 0.657142857142857,
+        "lift": 0.9777777777777777,
+        "auroc": 0.5,
         "topk_drivers": [
           "Carlos Sainz",
-          "Max Verstappen",
-          "Fernando Alonso",
-          "Sebastian Vettel",
-          "Romain Grosjean"
+          "Romain Grosjean",
+          "Nico H\u00fclkenberg",
+          "Esteban Ocon",
+          "Sergio P\u00e9rez"
+        ],
+        "topk": [
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 1.143273934492336,
+            "tier": "B",
+            "age": 21.831622176591377,
+            "promoted": true
+          },
+          {
+            "driver_name": "Romain Grosjean",
+            "uv": 0.44317037692879646,
+            "tier": "B",
+            "age": 30.206707734428473,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.4183378110774101,
+            "tier": "A",
+            "age": 28.867898699520875,
+            "promoted": false
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.3524737157736028,
+            "tier": "B",
+            "age": 19.786447638603697,
+            "promoted": true
+          },
+          {
+            "driver_name": "Sergio P\u00e9rez",
+            "uv": 0.2510983086883834,
+            "tier": "A",
+            "age": 26.428473648186174,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2017,
-        "n_drivers": 20,
-        "base_promotion_rate": 0.7,
-        "precision_at_k": 1.0,
-        "lift": 1.4285714285714286,
-        "auroc": 0.8571428571428572,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2018.0,
+          2019.0,
+          2020.0
+        ],
+        "n_drivers": 11,
+        "base_promotion_rate": 0.7272727272727273,
+        "precision_at_k": 0.8,
+        "lift": 1.1,
+        "auroc": 0.75,
         "topk_drivers": [
-          "Max Verstappen",
           "Carlos Sainz",
           "Nico H\u00fclkenberg",
           "Fernando Alonso",
-          "Sebastian Vettel"
+          "Kevin Magnussen",
+          "Esteban Ocon"
+        ],
+        "topk": [
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 0.9506301756035946,
+            "tier": "A",
+            "age": 22.830937713894592,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.7632747584013447,
+            "tier": "B",
+            "age": 29.867214236824093,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.5505116870348612,
+            "tier": "B",
+            "age": 35.9233401779603,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kevin Magnussen",
+            "uv": 0.28337638158672657,
+            "tier": "B",
+            "age": 24.736481861738536,
+            "promoted": true
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.24719896329714602,
+            "tier": "A",
+            "age": 20.78576317590691,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2018,
-        "n_drivers": 16,
-        "base_promotion_rate": 0.625,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2019.0,
+          2020.0,
+          2021.0
+        ],
+        "n_drivers": 10,
+        "base_promotion_rate": 0.8,
         "precision_at_k": 1.0,
-        "lift": 1.6,
-        "auroc": 0.8833333333333334,
+        "lift": 1.25,
+        "auroc": 0.6875,
         "topk_drivers": [
           "Carlos Sainz",
           "Charles Leclerc",
           "Fernando Alonso",
-          "Max Verstappen",
-          "Nico H\u00fclkenberg"
+          "Nico H\u00fclkenberg",
+          "Esteban Ocon"
+        ],
+        "topk": [
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 1.078761562173785,
+            "tier": "A",
+            "age": 23.83025325119781,
+            "promoted": true
+          },
+          {
+            "driver_name": "Charles Leclerc",
+            "uv": 0.9570233854303802,
+            "tier": "B",
+            "age": 20.706365503080082,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.7469976239648759,
+            "tier": "B",
+            "age": 36.92265571526352,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.49445629541827396,
+            "tier": "A",
+            "age": 30.86652977412731,
+            "promoted": true
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.4173023600484278,
+            "tier": "A",
+            "age": 21.78507871321013,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2019,
-        "n_drivers": 20,
-        "base_promotion_rate": 0.7,
-        "precision_at_k": 1.0,
-        "lift": 1.4285714285714286,
-        "auroc": 0.75,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2020.0,
+          2021.0,
+          2022.0
+        ],
+        "n_drivers": 12,
+        "base_promotion_rate": 0.75,
+        "precision_at_k": 0.8,
+        "lift": 1.0666666666666667,
+        "auroc": 0.7037037037037037,
         "topk_drivers": [
           "Carlos Sainz",
-          "Max Verstappen",
-          "Kimi R\u00e4ikk\u00f6nen",
           "Lando Norris",
-          "Daniel Ricciardo"
+          "Nico H\u00fclkenberg",
+          "Alexander Albon",
+          "Kevin Magnussen"
+        ],
+        "topk": [
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 0.9634275502838274,
+            "tier": "A",
+            "age": 24.829568788501028,
+            "promoted": true
+          },
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.7181423356515535,
+            "tier": "A",
+            "age": 19.630390143737166,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.4349874523590177,
+            "tier": "A",
+            "age": 31.865845311430526,
+            "promoted": true
+          },
+          {
+            "driver_name": "Alexander Albon",
+            "uv": 0.2199775336551491,
+            "tier": "B",
+            "age": 23.27173169062286,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kevin Magnussen",
+            "uv": 0.086128028122476,
+            "tier": "B",
+            "age": 26.73511293634497,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2020,
-        "n_drivers": 19,
-        "base_promotion_rate": 0.5263157894736842,
-        "precision_at_k": 0.8,
-        "lift": 1.5200000000000002,
-        "auroc": 0.8222222222222223,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2021.0,
+          2022.0,
+          2023.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.7777777777777778,
+        "precision_at_k": 1.0,
+        "lift": 1.2857142857142856,
+        "auroc": 0.7142857142857143,
         "topk_drivers": [
-          "Max Verstappen",
           "Carlos Sainz",
           "Lando Norris",
-          "Daniel Ricciardo",
-          "Kimi R\u00e4ikk\u00f6nen"
+          "Sergio P\u00e9rez",
+          "Esteban Ocon",
+          "George Russell"
+        ],
+        "topk": [
+          {
+            "driver_name": "Carlos Sainz",
+            "uv": 0.9897711124892525,
+            "tier": "A",
+            "age": 25.831622176591377,
+            "promoted": true
+          },
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.979852541541028,
+            "tier": "A",
+            "age": 20.632443531827516,
+            "promoted": true
+          },
+          {
+            "driver_name": "Sergio P\u00e9rez",
+            "uv": 0.4522890223957936,
+            "tier": "A",
+            "age": 30.428473648186174,
+            "promoted": true
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.258459704356853,
+            "tier": "A",
+            "age": 23.786447638603697,
+            "promoted": true
+          },
+          {
+            "driver_name": "George Russell",
+            "uv": -0.022446968152884827,
+            "tier": "B",
+            "age": 22.373716632443532,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2021,
-        "n_drivers": 17,
-        "base_promotion_rate": 0.6470588235294118,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2022.0,
+          2023.0,
+          2024.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.6666666666666666,
         "precision_at_k": 0.8,
-        "lift": 1.2363636363636363,
-        "auroc": 0.6363636363636365,
+        "lift": 1.2000000000000002,
+        "auroc": 0.6111111111111112,
         "topk_drivers": [
-          "Sebastian Vettel",
           "Lando Norris",
-          "Max Verstappen",
           "Fernando Alonso",
-          "Pierre Gasly"
+          "George Russell",
+          "Daniel Ricciardo",
+          "Esteban Ocon"
+        ],
+        "topk": [
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.7789647937139657,
+            "tier": "A",
+            "age": 21.631759069130734,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.5815834789735252,
+            "tier": "A",
+            "age": 39.9233401779603,
+            "promoted": true
+          },
+          {
+            "driver_name": "George Russell",
+            "uv": 0.3223723584930258,
+            "tier": "B",
+            "age": 23.37303216974675,
+            "promoted": true
+          },
+          {
+            "driver_name": "Daniel Ricciardo",
+            "uv": 0.2599230953933409,
+            "tier": "A",
+            "age": 32.0,
+            "promoted": false
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.21662040199851812,
+            "tier": "A",
+            "age": 24.78576317590691,
+            "promoted": true
+          }
         ]
       },
       {
         "season_T": 2022,
-        "n_drivers": 19,
-        "base_promotion_rate": 0.6842105263157895,
-        "precision_at_k": 0.8,
-        "lift": 1.1692307692307693,
-        "auroc": 0.6923076923076924,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2023.0,
+          2024.0,
+          2025.0
+        ],
+        "n_drivers": 9,
+        "base_promotion_rate": 0.6666666666666666,
+        "precision_at_k": 0.6,
+        "lift": 0.9,
+        "auroc": 0.33333333333333337,
         "topk_drivers": [
-          "Valtteri Bottas",
-          "Nyck de Vries",
-          "Charles Leclerc",
-          "Max Verstappen",
-          "Fernando Alonso"
+          "Fernando Alonso",
+          "Lando Norris",
+          "Pierre Gasly",
+          "Kevin Magnussen",
+          "Esteban Ocon"
+        ],
+        "topk": [
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.5562484184568547,
+            "tier": "A",
+            "age": 40.92265571526352,
+            "promoted": false
+          },
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.5076444582138803,
+            "tier": "A",
+            "age": 22.63107460643395,
+            "promoted": true
+          },
+          {
+            "driver_name": "Pierre Gasly",
+            "uv": 0.2866639180309919,
+            "tier": "B",
+            "age": 26.39561943874059,
+            "promoted": true
+          },
+          {
+            "driver_name": "Kevin Magnussen",
+            "uv": 0.20028483234774985,
+            "tier": "B",
+            "age": 29.73579739904175,
+            "promoted": true
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.14842802409217742,
+            "tier": "A",
+            "age": 25.78507871321013,
+            "promoted": false
+          }
         ]
       },
       {
         "season_T": 2023,
-        "n_drivers": 21,
-        "base_promotion_rate": 0.5238095238095238,
+        "horizon_requested": 3,
+        "horizon_effective": 3,
+        "future_years": [
+          2024.0,
+          2025.0,
+          2026.0
+        ],
+        "n_drivers": 14,
+        "base_promotion_rate": 0.6428571428571429,
         "precision_at_k": 0.8,
-        "lift": 1.5272727272727273,
-        "auroc": 0.6545454545454545,
+        "lift": 1.2444444444444445,
+        "auroc": 0.7111111111111111,
         "topk_drivers": [
           "Fernando Alonso",
           "Daniel Ricciardo",
           "Liam Lawson",
           "Lando Norris",
           "Nico H\u00fclkenberg"
+        ],
+        "topk": [
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 1.0316041347535818,
+            "tier": "A",
+            "age": 41.921971252566735,
+            "promoted": true
+          },
+          {
+            "driver_name": "Daniel Ricciardo",
+            "uv": 0.8242408299261927,
+            "tier": "B",
+            "age": 33.998631074606436,
+            "promoted": false
+          },
+          {
+            "driver_name": "Liam Lawson",
+            "uv": 0.6763519742166579,
+            "tier": "B",
+            "age": 21.38261464750171,
+            "promoted": true
+          },
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.6408055994499054,
+            "tier": "A",
+            "age": 23.630390143737166,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.6340679422010096,
+            "tier": "B",
+            "age": 35.865845311430526,
+            "promoted": true
+          }
+        ]
+      },
+      {
+        "season_T": 2024,
+        "horizon_requested": 3,
+        "horizon_effective": 2,
+        "future_years": [
+          2025.0,
+          2026.0
+        ],
+        "n_drivers": 12,
+        "base_promotion_rate": 0.6666666666666666,
+        "precision_at_k": 0.8,
+        "lift": 1.2000000000000002,
+        "auroc": 0.625,
+        "topk_drivers": [
+          "Liam Lawson",
+          "Oscar Piastri",
+          "Fernando Alonso",
+          "Nico H\u00fclkenberg",
+          "Lando Norris"
+        ],
+        "topk": [
+          {
+            "driver_name": "Liam Lawson",
+            "uv": 1.216231801904947,
+            "tier": "B",
+            "age": 22.38466803559206,
+            "promoted": true
+          },
+          {
+            "driver_name": "Oscar Piastri",
+            "uv": 0.7722786266083008,
+            "tier": "A",
+            "age": 23.236139630390145,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.7257386346397721,
+            "tier": "A",
+            "age": 42.92402464065709,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.6976028279499312,
+            "tier": "B",
+            "age": 36.86789869952088,
+            "promoted": false
+          },
+          {
+            "driver_name": "Lando Norris",
+            "uv": 0.6734233358088564,
+            "tier": "A",
+            "age": 24.632443531827516,
+            "promoted": true
+          }
+        ]
+      },
+      {
+        "season_T": 2025,
+        "horizon_requested": 3,
+        "horizon_effective": 1,
+        "future_years": [
+          2026.0
+        ],
+        "n_drivers": 12,
+        "base_promotion_rate": 0.5833333333333334,
+        "precision_at_k": 0.8,
+        "lift": 1.3714285714285714,
+        "auroc": 0.6285714285714286,
+        "topk_drivers": [
+          "Liam Lawson",
+          "Nico H\u00fclkenberg",
+          "Oliver Bearman",
+          "Esteban Ocon",
+          "Fernando Alonso"
+        ],
+        "topk": [
+          {
+            "driver_name": "Liam Lawson",
+            "uv": 1.2424506553583061,
+            "tier": "B",
+            "age": 23.38398357289528,
+            "promoted": true
+          },
+          {
+            "driver_name": "Nico H\u00fclkenberg",
+            "uv": 0.6949810415284019,
+            "tier": "B",
+            "age": 37.86721423682409,
+            "promoted": true
+          },
+          {
+            "driver_name": "Oliver Bearman",
+            "uv": 0.5944366804066451,
+            "tier": "B",
+            "age": 20.147843942505133,
+            "promoted": true
+          },
+          {
+            "driver_name": "Esteban Ocon",
+            "uv": 0.46624139761874916,
+            "tier": "B",
+            "age": 28.78576317590691,
+            "promoted": true
+          },
+          {
+            "driver_name": "Fernando Alonso",
+            "uv": 0.4570793217367447,
+            "tier": "A",
+            "age": 43.9233401779603,
+            "promoted": false
+          }
         ]
       }
     ]
   },
-  "watchlist": {
-    "as_of_season": 2026,
-    "requested_max_year": 2026,
-    "note": "prospective forecast; not a confirmed outcome",
-    "watchlist": [
-      {
-        "driver_name": "Arvid Lindblad",
-        "driverRef": "arvid_lindblad",
-        "constructorId": 211,
-        "tier": "A",
-        "skill_score": 0.3944758176803589,
-        "car_strength": 0.03491262100862811,
-        "uv": 1.352990805322717
+  "watchlists": {
+    "eligibility": {
+      "tier_below_s": true,
+      "min_races": 5,
+      "min_career_seasons": 0,
+      "exclude_s_tier_within": 2,
+      "max_age": 25.0
+    },
+    "forecast": {
+      "as_of_season": 2026,
+      "note": "prospective forecast from frozen model; outcomes not yet observed",
+      "n_eligible": 6,
+      "watchlist": [
+        {
+          "driver_name": "Arvid Lindblad",
+          "driverRef": "arvid_lindblad",
+          "constructorId": 211,
+          "tier": "A",
+          "skill_score": 0.3944758176803589,
+          "car_strength": 0.03491262100862811,
+          "n_races": 10,
+          "uv": 1.352990805322717,
+          "age": 18.89664613278576
+        },
+        {
+          "driver_name": "Liam Lawson",
+          "driverRef": "lawson",
+          "constructorId": 211,
+          "tier": "A",
+          "skill_score": 0.2271386682987213,
+          "car_strength": 0.03491262100862811,
+          "n_races": 10,
+          "uv": 1.0678323294439855,
+          "age": 24.383299110198493
+        },
+        {
+          "driver_name": "Oliver Bearman",
+          "driverRef": "bearman",
+          "constructorId": 207,
+          "tier": "B",
+          "skill_score": -0.36373087763786316,
+          "car_strength": 0.022823340566339986,
+          "n_races": 9,
+          "uv": 0.1885001672739789,
+          "age": 21.14715947980835
+        },
+        {
+          "driver_name": "Franco Colapinto",
+          "driverRef": "colapinto",
+          "constructorId": 210,
+          "tier": "A",
+          "skill_score": -0.3470157980918884,
+          "car_strength": 0.0271280637343651,
+          "n_races": 11,
+          "uv": 0.1715608697434854,
+          "age": 23.096509240246405
+        },
+        {
+          "driver_name": "Gabriel Bortoleto",
+          "driverRef": "bortoleto",
+          "constructorId": 212,
+          "tier": "B",
+          "skill_score": -0.9341716766357422,
+          "car_strength": 0.012527076479128369,
+          "n_races": 10,
+          "uv": -0.6749393477198855,
+          "age": 21.711156741957563
+        }
+      ]
+    },
+    "retrospective": {
+      "2024": {
+        "as_of_season": 2024,
+        "note": "retrospective eligible watchlist; outcomes known after season",
+        "n_eligible": 6,
+        "watchlist": [
+          {
+            "driver_name": "Liam Lawson",
+            "driverRef": "lawson",
+            "constructorId": 211,
+            "tier": "B",
+            "skill_score": 0.18235959112644196,
+            "car_strength": 0.014121408130312915,
+            "n_races": 6,
+            "uv": 1.216231801904947,
+            "age": 22.38466803559206
+          },
+          {
+            "driver_name": "Oscar Piastri",
+            "driverRef": "piastri",
+            "constructorId": 0,
+            "tier": "A",
+            "skill_score": 0.8022324442863464,
+            "car_strength": 0.14699793105948258,
+            "n_races": 24,
+            "uv": 0.7722786266083008,
+            "age": 23.236139630390145
+          },
+          {
+            "driver_name": "Lando Norris",
+            "driverRef": "norris",
+            "constructorId": 0,
+            "tier": "A",
+            "skill_score": 0.7377046942710876,
+            "car_strength": 0.14699793105948258,
+            "n_races": 24,
+            "uv": 0.6734233358088564,
+            "age": 24.632443531827516
+          },
+          {
+            "driver_name": "Franco Colapinto",
+            "driverRef": "colapinto",
+            "constructorId": 2,
+            "tier": "B",
+            "skill_score": -0.3954838812351227,
+            "car_strength": 0.007063003797049057,
+            "n_races": 6,
+            "uv": 0.40501390584070013,
+            "age": 21.097878165639973
+          },
+          {
+            "driver_name": "Yuki Tsunoda",
+            "driverRef": "tsunoda",
+            "constructorId": 211,
+            "tier": "B",
+            "skill_score": -0.6565220355987549,
+            "car_strength": 0.014121408130312915,
+            "n_races": 20,
+            "uv": -0.06891896093151284,
+            "age": 24.139630390143736
+          }
+        ]
       },
-      {
-        "driver_name": "Max Verstappen",
-        "driverRef": "max_verstappen",
-        "constructorId": 8,
-        "tier": "A",
-        "skill_score": 1.1606186628341675,
-        "car_strength": 0.1777936788219651,
-        "uv": 1.150892091815611
-      },
-      {
-        "driver_name": "Liam Lawson",
-        "driverRef": "lawson",
-        "constructorId": 211,
-        "tier": "A",
-        "skill_score": 0.2271386682987213,
-        "car_strength": 0.03491262100862811,
-        "uv": 1.0678323294439855
-      },
-      {
-        "driver_name": "Carlos Sainz",
-        "driverRef": "sainz",
-        "constructorId": 2,
-        "tier": "B",
-        "skill_score": 0.01613624021410942,
-        "car_strength": 0.022350753534424252,
-        "uv": 0.8408167295291447
-      },
-      {
-        "driver_name": "Nico H\u00fclkenberg",
-        "driverRef": "hulkenberg",
-        "constructorId": 212,
-        "tier": "B",
-        "skill_score": -0.13217756152153015,
-        "car_strength": 0.012527076479128369,
-        "uv": 0.691735179572953
+      "2025": {
+        "as_of_season": 2025,
+        "note": "retrospective eligible watchlist; outcomes known after season",
+        "n_eligible": 6,
+        "watchlist": [
+          {
+            "driver_name": "Liam Lawson",
+            "driverRef": "lawson",
+            "constructorId": 211,
+            "tier": "B",
+            "skill_score": 0.21091079711914062,
+            "car_strength": 0.020773030739382334,
+            "n_races": 19,
+            "uv": 1.2424506553583061,
+            "age": 23.38398357289528
+          },
+          {
+            "driver_name": "Oliver Bearman",
+            "driverRef": "bearman",
+            "constructorId": 207,
+            "tier": "B",
+            "skill_score": -0.21689097583293915,
+            "car_strength": 0.0188729906235562,
+            "n_races": 21,
+            "uv": 0.5944366804066451,
+            "age": 20.147843942505133
+          },
+          {
+            "driver_name": "Franco Colapinto",
+            "driverRef": "colapinto",
+            "constructorId": 210,
+            "tier": "A",
+            "skill_score": -0.5138087272644043,
+            "car_strength": 0.027199597507058432,
+            "n_races": 17,
+            "uv": 0.03896989161328013,
+            "age": 22.09719370294319
+          },
+          {
+            "driver_name": "Isack Hadjar",
+            "driverRef": "hadjar",
+            "constructorId": 211,
+            "tier": "B",
+            "skill_score": -0.8282116055488586,
+            "car_strength": 0.020773030739382334,
+            "n_races": 22,
+            "uv": -0.3821436800133866,
+            "age": 20.75564681724846
+          },
+          {
+            "driver_name": "Gabriel Bortoleto",
+            "driverRef": "bortoleto",
+            "constructorId": 14,
+            "tier": "B",
+            "skill_score": -0.9532147645950317,
+            "car_strength": 0.011509611216771234,
+            "n_races": 19,
+            "uv": -0.4760532131494588,
+            "age": 20.711841204654345
+          }
+        ]
       }
-    ]
-  }
+    }
+  },
+  "seasonal_screens": [
+    {
+      "season": 2014,
+      "n_eligible": 8,
+      "lead": {
+        "driver_name": "Valtteri Bottas",
+        "uv": 1.182995120225016,
+        "tier": "A",
+        "age": 24.840520191649556
+      },
+      "topk": [
+        {
+          "driver_name": "Valtteri Bottas",
+          "uv": 1.182995120225016,
+          "tier": "A",
+          "age": 24.840520191649556,
+          "skill_score": 0.5133090019226074,
+          "car_strength": 0.06621504255688725
+        },
+        {
+          "driver_name": "Jean-\u00c9ric Vergne",
+          "uv": 1.170896157213997,
+          "tier": "B",
+          "age": 24.18343600273785,
+          "skill_score": 0.06334676593542099,
+          "car_strength": 0.014973076254993918
+        },
+        {
+          "driver_name": "Daniil Kvyat",
+          "uv": 0.6381163677399055,
+          "tier": "B",
+          "age": 20.18069815195072,
+          "skill_score": -0.30481547117233276,
+          "car_strength": 0.014973076254993918
+        },
+        {
+          "driver_name": "Marcus Ericsson",
+          "uv": -0.05786821122344743,
+          "tier": "B",
+          "age": 23.82751540041068,
+          "skill_score": -0.9147931933403015,
+          "car_strength": 0.0
+        },
+        {
+          "driver_name": "Jules Bianchi",
+          "uv": -0.06769723775662984,
+          "tier": "B",
+          "age": 24.908966461327857,
+          "skill_score": -0.9187410473823547,
+          "car_strength": 0.00033003300330033004
+        }
+      ]
+    },
+    {
+      "season": 2015,
+      "n_eligible": 7,
+      "lead": {
+        "driver_name": "Max Verstappen",
+        "uv": 1.9415709197361455,
+        "tier": "B",
+        "age": 17.749486652977414
+      },
+      "topk": [
+        {
+          "driver_name": "Max Verstappen",
+          "uv": 1.9415709197361455,
+          "tier": "B",
+          "age": 17.749486652977414,
+          "skill_score": 0.7165020704269409,
+          "car_strength": 0.022320653117943373
+        },
+        {
+          "driver_name": "Carlos Sainz",
+          "uv": 1.1637267456495626,
+          "tier": "B",
+          "age": 20.829568788501028,
+          "skill_score": 0.16872747242450714,
+          "car_strength": 0.022320653117943373
+        },
+        {
+          "driver_name": "Felipe Nasr",
+          "uv": 0.22404616545384703,
+          "tier": "B",
+          "age": 22.858316221765914,
+          "skill_score": -0.5405018329620361,
+          "car_strength": 0.01615424700364773
+        },
+        {
+          "driver_name": "Marcus Ericsson",
+          "uv": 0.12744371575397462,
+          "tier": "B",
+          "age": 24.826830937713893,
+          "skill_score": -0.6085313558578491,
+          "car_strength": 0.01615424700364773
+        },
+        {
+          "driver_name": "Alexander Rossi",
+          "uv": -0.7164433525325711,
+          "tier": "B",
+          "age": 23.76454483230664,
+          "skill_score": -1.3246732950210571,
+          "car_strength": 0.00033003300330033004
+        }
+      ]
+    },
+    {
+      "season": 2016,
+      "n_eligible": 7,
+      "lead": {
+        "driver_name": "Carlos Sainz",
+        "uv": 1.143273934492336,
+        "tier": "B",
+        "age": 21.831622176591377
+      },
+      "topk": [
+        {
+          "driver_name": "Carlos Sainz",
+          "uv": 1.143273934492336,
+          "tier": "B",
+          "age": 21.831622176591377,
+          "skill_score": 0.3088541030883789,
+          "car_strength": 0.026489491054368597
+        },
+        {
+          "driver_name": "Esteban Ocon",
+          "uv": 0.3524737157736028,
+          "tier": "B",
+          "age": 19.786447638603697,
+          "skill_score": -0.49596208333969116,
+          "car_strength": 0.0004871915763004872
+        },
+        {
+          "driver_name": "Kevin Magnussen",
+          "uv": 0.1690205713898305,
+          "tier": "B",
+          "age": 23.737166324435318,
+          "skill_score": -0.5159499049186707,
+          "car_strength": 0.016456156893884858
+        },
+        {
+          "driver_name": "Felipe Nasr",
+          "uv": 0.1586314436888503,
+          "tier": "B",
+          "age": 23.860369609856264,
+          "skill_score": -0.5988669395446777,
+          "car_strength": 0.006567574050638146
+        },
+        {
+          "driver_name": "Esteban Guti\u00e9rrez",
+          "uv": -0.18811005259743885,
+          "tier": "B",
+          "age": 24.906228610540726,
+          "skill_score": -0.8115185499191284,
+          "car_strength": 0.013672795851013672
+        }
+      ]
+    },
+    {
+      "season": 2017,
+      "n_eligible": 6,
+      "lead": {
+        "driver_name": "Carlos Sainz",
+        "uv": 0.9506301756035946,
+        "tier": "A",
+        "age": 22.830937713894592
+      },
+      "topk": [
+        {
+          "driver_name": "Carlos Sainz",
+          "uv": 0.9506301756035946,
+          "tier": "A",
+          "age": 22.830937713894592,
+          "skill_score": 0.1130155399441719,
+          "car_strength": 0.03028487059232239
+        },
+        {
+          "driver_name": "Kevin Magnussen",
+          "uv": 0.28337638158672657,
+          "tier": "B",
+          "age": 24.736481861738536,
+          "skill_score": -0.4056757688522339,
+          "car_strength": 0.01847006129184347
+        },
+        {
+          "driver_name": "Esteban Ocon",
+          "uv": 0.24719896329714602,
+          "tier": "A",
+          "age": 20.78576317590691,
+          "skill_score": -0.025773674249649048,
+          "car_strength": 0.0816699339106843
+        },
+        {
+          "driver_name": "Pierre Gasly",
+          "uv": 0.2213847066902846,
+          "tier": "A",
+          "age": 21.39630390143737,
+          "skill_score": -0.3713374137878418,
+          "car_strength": 0.03028487059232239
+        },
+        {
+          "driver_name": "Pascal Wehrlein",
+          "uv": -0.5084481367137846,
+          "tier": "B",
+          "age": 22.702258726899384,
+          "skill_score": -1.0023919343948364,
+          "car_strength": 0.007392656558888972
+        }
+      ]
+    },
+    {
+      "season": 2018,
+      "n_eligible": 6,
+      "lead": {
+        "driver_name": "Carlos Sainz",
+        "uv": 1.078761562173785,
+        "tier": "A",
+        "age": 23.83025325119781
+      },
+      "topk": [
+        {
+          "driver_name": "Carlos Sainz",
+          "uv": 1.078761562173785,
+          "tier": "A",
+          "age": 23.83025325119781,
+          "skill_score": 0.3118530213832855,
+          "car_strength": 0.030385161974698215
+        },
+        {
+          "driver_name": "Charles Leclerc",
+          "uv": 0.9570233854303802,
+          "tier": "B",
+          "age": 20.706365503080082,
+          "skill_score": 0.07995996624231339,
+          "car_strength": 0.008898856492272478
+        },
+        {
+          "driver_name": "Esteban Ocon",
+          "uv": 0.4173023600484278,
+          "tier": "A",
+          "age": 21.78507871321013,
+          "skill_score": 0.06814345717430115,
+          "car_strength": 0.06645259717879784
+        },
+        {
+          "driver_name": "Pierre Gasly",
+          "uv": 0.36086726256184665,
+          "tier": "B",
+          "age": 22.39561943874059,
+          "skill_score": -0.2555667757987976,
+          "car_strength": 0.023981491262608318
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.24498027181619753,
+          "tier": "A",
+          "age": 19.67145790554415,
+          "skill_score": -0.6151258945465088,
+          "car_strength": 0.036515840166530145
+        }
+      ]
+    },
+    {
+      "season": 2019,
+      "n_eligible": 5,
+      "lead": {
+        "driver_name": "Carlos Sainz",
+        "uv": 0.9634275502838274,
+        "tier": "A",
+        "age": 24.829568788501028
+      },
+      "topk": [
+        {
+          "driver_name": "Carlos Sainz",
+          "uv": 0.9634275502838274,
+          "tier": "A",
+          "age": 24.829568788501028,
+          "skill_score": 0.2395920753479004,
+          "car_strength": 0.03755879658054729
+        },
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.7181423356515535,
+          "tier": "A",
+          "age": 19.630390143737166,
+          "skill_score": 0.08607224375009537,
+          "car_strength": 0.03755879658054729
+        },
+        {
+          "driver_name": "Alexander Albon",
+          "uv": 0.2199775336551491,
+          "tier": "B",
+          "age": 23.27173169062286,
+          "skill_score": -0.283974826335907,
+          "car_strength": 0.027320376553006512
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.5382449904553154,
+          "tier": "A",
+          "age": 20.670773442847366,
+          "skill_score": -0.6258792877197266,
+          "car_strength": 0.05063488056067408
+        },
+        {
+          "driver_name": "George Russell",
+          "uv": -0.6661159942474286,
+          "tier": "B",
+          "age": 21.371663244353183,
+          "skill_score": -0.9087583422660828,
+          "car_strength": 0.014983720332383847
+        }
+      ]
+    },
+    {
+      "season": 2020,
+      "n_eligible": 4,
+      "lead": {
+        "driver_name": "Lando Norris",
+        "uv": 0.979852541541028,
+        "tier": "A",
+        "age": 20.632443531827516
+      },
+      "topk": [
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.979852541541028,
+          "tier": "A",
+          "age": 20.632443531827516,
+          "skill_score": 0.4013921618461609,
+          "car_strength": 0.07177836164351083
+        },
+        {
+          "driver_name": "Esteban Ocon",
+          "uv": 0.258459704356853,
+          "tier": "A",
+          "age": 23.786447638603697,
+          "skill_score": -0.0784616470336914,
+          "car_strength": 0.06899433277557916
+        },
+        {
+          "driver_name": "George Russell",
+          "uv": -0.022446968152884827,
+          "tier": "B",
+          "age": 22.373716632443532,
+          "skill_score": -0.7011243104934692,
+          "car_strength": 0.0012873506954201495
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.23019960170154208,
+          "tier": "A",
+          "age": 21.672826830937716,
+          "skill_score": -0.4657745361328125,
+          "car_strength": 0.0575894765438326
+        }
+      ]
+    },
+    {
+      "season": 2021,
+      "n_eligible": 7,
+      "lead": {
+        "driver_name": "Lando Norris",
+        "uv": 0.7789647937139657,
+        "tier": "A",
+        "age": 21.631759069130734
+      },
+      "topk": [
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.7789647937139657,
+          "tier": "A",
+          "age": 21.631759069130734,
+          "skill_score": 0.5650346875190735,
+          "car_strength": 0.10328083370715946
+        },
+        {
+          "driver_name": "George Russell",
+          "uv": 0.3223723584930258,
+          "tier": "B",
+          "age": 23.37303216974675,
+          "skill_score": -0.5468158721923828,
+          "car_strength": 0.003628771922397077
+        },
+        {
+          "driver_name": "Esteban Ocon",
+          "uv": 0.21662040199851812,
+          "tier": "A",
+          "age": 24.78576317590691,
+          "skill_score": -0.09169244766235352,
+          "car_strength": 0.07267743849158788
+        },
+        {
+          "driver_name": "Yuki Tsunoda",
+          "uv": -0.2083845547703082,
+          "tier": "B",
+          "age": 21.138945927446954,
+          "skill_score": -0.5425290465354919,
+          "car_strength": 0.055430426182829874
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.2361810399131895,
+          "tier": "A",
+          "age": 22.67214236824093,
+          "skill_score": -0.5216740965843201,
+          "car_strength": 0.06081042737021549
+        }
+      ]
+    },
+    {
+      "season": 2022,
+      "n_eligible": 5,
+      "lead": {
+        "driver_name": "Lando Norris",
+        "uv": 0.5076444582138803,
+        "tier": "A",
+        "age": 22.63107460643395
+      },
+      "topk": [
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.5076444582138803,
+          "tier": "A",
+          "age": 22.63107460643395,
+          "skill_score": 0.3422299027442932,
+          "car_strength": 0.10324835541458971
+        },
+        {
+          "driver_name": "Yuki Tsunoda",
+          "uv": -0.3066884043262832,
+          "tier": "B",
+          "age": 22.138261464750173,
+          "skill_score": -0.5304174423217773,
+          "car_strength": 0.04715508980051398
+        },
+        {
+          "driver_name": "Mick Schumacher",
+          "uv": -0.35888642010835947,
+          "tier": "B",
+          "age": 23.277207392197127,
+          "skill_score": -0.8363882303237915,
+          "car_strength": 0.00582996051638137
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.428220625607912,
+          "tier": "A",
+          "age": 23.67145790554415,
+          "skill_score": -0.5383344888687134,
+          "car_strength": 0.05724112929902838
+        },
+        {
+          "driver_name": "Guanyu Zhou",
+          "uv": -0.48440828473478115,
+          "tier": "B",
+          "age": 23.08829568788501,
+          "skill_score": -0.8772456049919128,
+          "car_strength": 0.011315712856633275
+        }
+      ]
+    },
+    {
+      "season": 2023,
+      "n_eligible": 7,
+      "lead": {
+        "driver_name": "Liam Lawson",
+        "uv": 0.6763519742166579,
+        "tier": "B",
+        "age": 21.38261464750171
+      },
+      "topk": [
+        {
+          "driver_name": "Liam Lawson",
+          "uv": 0.6763519742166579,
+          "tier": "B",
+          "age": 21.38261464750171,
+          "skill_score": -0.009289431385695934,
+          "car_strength": 0.02979688282106809
+        },
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.6408055994499054,
+          "tier": "A",
+          "age": 23.630390143737166,
+          "skill_score": 0.4290173053741455,
+          "car_strength": 0.10503300102493111
+        },
+        {
+          "driver_name": "Oscar Piastri",
+          "uv": 0.35035571693577344,
+          "tier": "A",
+          "age": 22.234086242299796,
+          "skill_score": 0.2565055787563324,
+          "car_strength": 0.10503300102493111
+        },
+        {
+          "driver_name": "Yuki Tsunoda",
+          "uv": -0.3591290658636377,
+          "tier": "B",
+          "age": 23.137577002053387,
+          "skill_score": -0.6243098974227905,
+          "car_strength": 0.02979688282106809
+        },
+        {
+          "driver_name": "Lance Stroll",
+          "uv": -0.46184120789853733,
+          "tier": "A",
+          "age": 24.670773442847366,
+          "skill_score": -0.5167624950408936,
+          "car_strength": 0.05739969784631801
+        }
+      ]
+    },
+    {
+      "season": 2024,
+      "n_eligible": 6,
+      "lead": {
+        "driver_name": "Liam Lawson",
+        "uv": 1.216231801904947,
+        "tier": "B",
+        "age": 22.38466803559206
+      },
+      "topk": [
+        {
+          "driver_name": "Liam Lawson",
+          "uv": 1.216231801904947,
+          "tier": "B",
+          "age": 22.38466803559206,
+          "skill_score": 0.18235959112644196,
+          "car_strength": 0.014121408130312915
+        },
+        {
+          "driver_name": "Oscar Piastri",
+          "uv": 0.7722786266083008,
+          "tier": "A",
+          "age": 23.236139630390145,
+          "skill_score": 0.8022324442863464,
+          "car_strength": 0.14699793105948258
+        },
+        {
+          "driver_name": "Lando Norris",
+          "uv": 0.6734233358088564,
+          "tier": "A",
+          "age": 24.632443531827516,
+          "skill_score": 0.7377046942710876,
+          "car_strength": 0.14699793105948258
+        },
+        {
+          "driver_name": "Franco Colapinto",
+          "uv": 0.40501390584070013,
+          "tier": "B",
+          "age": 21.097878165639973,
+          "skill_score": -0.3954838812351227,
+          "car_strength": 0.007063003797049057
+        },
+        {
+          "driver_name": "Yuki Tsunoda",
+          "uv": -0.06891896093151284,
+          "tier": "B",
+          "age": 24.139630390143736,
+          "skill_score": -0.6565220355987549,
+          "car_strength": 0.014121408130312915
+        }
+      ]
+    },
+    {
+      "season": 2025,
+      "n_eligible": 6,
+      "lead": {
+        "driver_name": "Liam Lawson",
+        "uv": 1.2424506553583061,
+        "tier": "B",
+        "age": 23.38398357289528
+      },
+      "topk": [
+        {
+          "driver_name": "Liam Lawson",
+          "uv": 1.2424506553583061,
+          "tier": "B",
+          "age": 23.38398357289528,
+          "skill_score": 0.21091079711914062,
+          "car_strength": 0.020773030739382334
+        },
+        {
+          "driver_name": "Oliver Bearman",
+          "uv": 0.5944366804066451,
+          "tier": "B",
+          "age": 20.147843942505133,
+          "skill_score": -0.21689097583293915,
+          "car_strength": 0.0188729906235562
+        },
+        {
+          "driver_name": "Franco Colapinto",
+          "uv": 0.03896989161328013,
+          "tier": "A",
+          "age": 22.09719370294319,
+          "skill_score": -0.5138087272644043,
+          "car_strength": 0.027199597507058432
+        },
+        {
+          "driver_name": "Isack Hadjar",
+          "uv": -0.3821436800133866,
+          "tier": "B",
+          "age": 20.75564681724846,
+          "skill_score": -0.8282116055488586,
+          "car_strength": 0.020773030739382334
+        },
+        {
+          "driver_name": "Gabriel Bortoleto",
+          "uv": -0.4760532131494588,
+          "tier": "B",
+          "age": 20.711841204654345,
+          "skill_score": -0.9532147645950317,
+          "car_strength": 0.011509611216771234
+        }
+      ]
+    },
+    {
+      "season": 2026,
+      "n_eligible": 6,
+      "lead": {
+        "driver_name": "Arvid Lindblad",
+        "uv": 1.352990805322717,
+        "tier": "A",
+        "age": 18.89664613278576
+      },
+      "topk": [
+        {
+          "driver_name": "Arvid Lindblad",
+          "uv": 1.352990805322717,
+          "tier": "A",
+          "age": 18.89664613278576,
+          "skill_score": 0.3944758176803589,
+          "car_strength": 0.03491262100862811
+        },
+        {
+          "driver_name": "Liam Lawson",
+          "uv": 1.0678323294439855,
+          "tier": "A",
+          "age": 24.383299110198493,
+          "skill_score": 0.2271386682987213,
+          "car_strength": 0.03491262100862811
+        },
+        {
+          "driver_name": "Oliver Bearman",
+          "uv": 0.1885001672739789,
+          "tier": "B",
+          "age": 21.14715947980835,
+          "skill_score": -0.36373087763786316,
+          "car_strength": 0.022823340566339986
+        },
+        {
+          "driver_name": "Franco Colapinto",
+          "uv": 0.1715608697434854,
+          "tier": "A",
+          "age": 23.096509240246405,
+          "skill_score": -0.3470157980918884,
+          "car_strength": 0.0271280637343651
+        },
+        {
+          "driver_name": "Gabriel Bortoleto",
+          "uv": -0.6749393477198855,
+          "tier": "B",
+          "age": 21.711156741957563,
+          "skill_score": -0.9341716766357422,
+          "car_strength": 0.012527076479128369
+        }
+      ]
+    }
+  ]
 }

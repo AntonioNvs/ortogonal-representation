@@ -2,6 +2,9 @@
 
 Research project on **car-adjusted driver performance** in Formula 1 using a GNN-first architecture with model-agnostic validation benchmarks.
 
+**Repository:** https://github.com/AntonioNvs/ortogonal-representation  
+**Data:** enriched RelBench F1 relational DB (`python -m src.data.pipeline build` → `data/enriched/rel-f1/db`). Shared per SSAC open-source requirements.
+
 ## Validation-first workflow
 
 Define and run benchmarks **before** promoting any new model:

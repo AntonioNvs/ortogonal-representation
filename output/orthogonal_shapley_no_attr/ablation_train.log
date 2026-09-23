@@ -1,0 +1,72 @@
+Running: /data/antonioneves/ortogonal-representation/venv/bin/python src/experiments/train_orthogonal_shapley_gnn.py --epochs 100 --patience 10 --seed 42 --gpu-id 0 --output-dir output/orthogonal_shapley_no_attr --hidden-dim 128 --num-layers 4 --mlp-hidden 128 --lambda-orth 2.0 --aux-driver-weight 0.5 --aux-constructor-weight 0.75 --lambda-ctx-aux 0.25 --lambda-pair 0.25 --lambda-attr 0.0 --target-driver-share 0.38 --target-constructor-share 0.3 --lambda-rw 0.5 --lambda-shrink 0.05 --lambda-quali 0.0 --orth-warmup-epochs 10 --max-grad-norm 1.0 --use-additive-readout
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'circuit', 'results', 'constructor_results'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+-> Using GPU 0: NVIDIA A100-SXM4-80GB
+-> Loading database rel-f1-enriched ...
+-> Building causal round-state graph ...
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+-> PL = Plackett-Luce NLL (lower is better): race ranking loss over finish order.
+epoch   1 | train PL 4.8181 | orth 0.0295 (λ=0.20) | attr 0.0000 | rw 0.3647 | shrink 0.2670 | quali 0.0000 | off_frac 0.34 | val PL 5.1919 | val pairwise 0.6298 | val score 5.3771 | shares D/C/X 0.47/0.49/0.04 | top3 AUROC 0.7935 (diag)
+epoch   2 | train PL 4.4792 | orth 0.0311 (λ=0.40) | attr 0.0000 | rw 0.1039 | shrink 0.1969 | quali 0.0000 | off_frac 0.33 | val PL 5.0402 | val pairwise 0.6337 | val score 5.2234 | shares D/C/X 0.48/0.46/0.06 | top3 AUROC 0.7902 (diag)
+epoch   3 | train PL 4.3769 | orth 0.1716 (λ=0.60) | attr 0.0000 | rw 0.0493 | shrink 0.0741 | quali 0.0000 | off_frac 0.44 | val PL 4.8315 | val pairwise 0.7086 | val score 4.9772 | shares D/C/X 0.42/0.53/0.05 | top3 AUROC 0.8537 (diag)
+epoch   4 | train PL 4.2212 | orth 0.0082 (λ=0.80) | attr 0.0000 | rw 0.0416 | shrink 0.1607 | quali 0.0000 | off_frac 0.54 | val PL 4.7763 | val pairwise 0.7343 | val score 4.9092 | shares D/C/X 0.45/0.50/0.06 | top3 AUROC 0.8741 (diag)
+epoch   5 | train PL 4.1586 | orth 0.0451 (λ=1.00) | attr 0.0000 | rw 0.0602 | shrink 0.3142 | quali 0.0000 | off_frac 0.60 | val PL 4.7393 | val pairwise 0.7476 | val score 4.8655 | shares D/C/X 0.49/0.45/0.06 | top3 AUROC 0.8892 (diag)
+epoch   6 | train PL 4.0951 | orth 0.0049 (λ=1.20) | attr 0.0000 | rw 0.0661 | shrink 0.4646 | quali 0.0000 | off_frac 0.60 | val PL 4.6885 | val pairwise 0.7525 | val score 4.8122 | shares D/C/X 0.51/0.44/0.05 | top3 AUROC 0.8939 (diag)
+epoch   7 | train PL 4.0647 | orth 0.0164 (λ=1.40) | attr 0.0000 | rw 0.0533 | shrink 0.4731 | quali 0.0000 | off_frac 0.58 | val PL 4.6499 | val pairwise 0.7597 | val score 4.7700 | shares D/C/X 0.49/0.46/0.05 | top3 AUROC 0.8955 (diag)
+epoch   8 | train PL 4.0387 | orth 0.0102 (λ=1.60) | attr 0.0000 | rw 0.0397 | shrink 0.4307 | quali 0.0000 | off_frac 0.58 | val PL 4.6436 | val pairwise 0.7621 | val score 4.7625 | shares D/C/X 0.46/0.49/0.05 | top3 AUROC 0.8971 (diag)
+epoch   9 | train PL 4.0205 | orth 0.0021 (λ=1.80) | attr 0.0000 | rw 0.0347 | shrink 0.4569 | quali 0.0000 | off_frac 0.59 | val PL 4.6640 | val pairwise 0.7644 | val score 4.7818 | shares D/C/X 0.44/0.51/0.05 | top3 AUROC 0.9001 (diag)
+epoch  10 | train PL 3.9947 | orth 0.0080 (λ=2.00) | attr 0.0000 | rw 0.0319 | shrink 0.4496 | quali 0.0000 | off_frac 0.60 | val PL 4.6753 | val pairwise 0.7705 | val score 4.7900 | shares D/C/X 0.43/0.52/0.05 | top3 AUROC 0.9031 (diag)
+epoch  11 | train PL 3.9742 | orth 0.0042 (λ=2.00) | attr 0.0000 | rw 0.0291 | shrink 0.4469 | quali 0.0000 | off_frac 0.59 | val PL 4.6609 | val pairwise 0.7763 | val score 4.7728 | shares D/C/X 0.42/0.53/0.05 | top3 AUROC 0.9049 (diag)
+epoch  12 | train PL 3.9668 | orth 0.0011 (λ=2.00) | attr 0.0000 | rw 0.0260 | shrink 0.4457 | quali 0.0000 | off_frac 0.59 | val PL 4.6339 | val pairwise 0.7774 | val score 4.7452 | shares D/C/X 0.42/0.52/0.05 | top3 AUROC 0.9045 (diag)
+epoch  13 | train PL 3.9567 | orth 0.0038 (λ=2.00) | attr 0.0000 | rw 0.0224 | shrink 0.3987 | quali 0.0000 | off_frac 0.58 | val PL 4.6177 | val pairwise 0.7789 | val score 4.7283 | shares D/C/X 0.40/0.54/0.06 | top3 AUROC 0.9032 (diag)
+epoch  14 | train PL 3.9439 | orth 0.0030 (λ=2.00) | attr 0.0000 | rw 0.0200 | shrink 0.3772 | quali 0.0000 | off_frac 0.59 | val PL 4.6073 | val pairwise 0.7784 | val score 4.7181 | shares D/C/X 0.39/0.55/0.06 | top3 AUROC 0.9008 (diag)
+epoch  15 | train PL 3.9371 | orth 0.0007 (λ=2.00) | attr 0.0000 | rw 0.0192 | shrink 0.3953 | quali 0.0000 | off_frac 0.60 | val PL 4.5886 | val pairwise 0.7774 | val score 4.6999 | shares D/C/X 0.40/0.54/0.06 | top3 AUROC 0.8999 (diag)
+epoch  16 | train PL 3.9280 | orth 0.0016 (λ=2.00) | attr 0.0000 | rw 0.0191 | shrink 0.4242 | quali 0.0000 | off_frac 0.61 | val PL 4.5742 | val pairwise 0.7784 | val score 4.6850 | shares D/C/X 0.41/0.52/0.07 | top3 AUROC 0.9015 (diag)
+epoch  17 | train PL 3.9168 | orth 0.0026 (λ=2.00) | attr 0.0000 | rw 0.0193 | shrink 0.4372 | quali 0.0000 | off_frac 0.61 | val PL 4.5683 | val pairwise 0.7795 | val score 4.6785 | shares D/C/X 0.41/0.52/0.07 | top3 AUROC 0.9034 (diag)
+epoch  18 | train PL 3.9051 | orth 0.0013 (λ=2.00) | attr 0.0000 | rw 0.0188 | shrink 0.4370 | quali 0.0000 | off_frac 0.61 | val PL 4.5720 | val pairwise 0.7811 | val score 4.6815 | shares D/C/X 0.41/0.52/0.07 | top3 AUROC 0.9046 (diag)
+epoch  19 | train PL 3.8994 | orth 0.0005 (λ=2.00) | attr 0.0000 | rw 0.0183 | shrink 0.4315 | quali 0.0000 | off_frac 0.61 | val PL 4.5855 | val pairwise 0.7811 | val score 4.6949 | shares D/C/X 0.39/0.54/0.07 | top3 AUROC 0.9049 (diag)
+epoch  20 | train PL 3.8989 | orth 0.0015 (λ=2.00) | attr 0.0000 | rw 0.0180 | shrink 0.4188 | quali 0.0000 | off_frac 0.61 | val PL 4.5962 | val pairwise 0.7828 | val score 4.7048 | shares D/C/X 0.38/0.54/0.07 | top3 AUROC 0.9056 (diag)
+epoch  21 | train PL 3.8942 | orth 0.0016 (λ=2.00) | attr 0.0000 | rw 0.0180 | shrink 0.4143 | quali 0.0000 | off_frac 0.61 | val PL 4.5948 | val pairwise 0.7839 | val score 4.7028 | shares D/C/X 0.39/0.54/0.08 | top3 AUROC 0.9061 (diag)
+epoch  22 | train PL 3.8869 | orth 0.0007 (λ=2.00) | attr 0.0000 | rw 0.0173 | shrink 0.4107 | quali 0.0000 | off_frac 0.61 | val PL 4.5877 | val pairwise 0.7860 | val score 4.6947 | shares D/C/X 0.39/0.53/0.08 | top3 AUROC 0.9067 (diag)
+epoch  23 | train PL 3.8820 | orth 0.0005 (λ=2.00) | attr 0.0000 | rw 0.0167 | shrink 0.4117 | quali 0.0000 | off_frac 0.62 | val PL 4.5844 | val pairwise 0.7868 | val score 4.6910 | shares D/C/X 0.40/0.52/0.08 | top3 AUROC 0.9069 (diag)
+epoch  24 | train PL 3.8780 | orth 0.0012 (λ=2.00) | attr 0.0000 | rw 0.0173 | shrink 0.4230 | quali 0.0000 | off_frac 0.62 | val PL 4.5830 | val pairwise 0.7884 | val score 4.6888 | shares D/C/X 0.40/0.51/0.08 | top3 AUROC 0.9069 (diag)
+epoch  25 | train PL 3.8757 | orth 0.0011 (λ=2.00) | attr 0.0000 | rw 0.0170 | shrink 0.4296 | quali 0.0000 | off_frac 0.62 | val PL 4.5802 | val pairwise 0.7885 | val score 4.6860 | shares D/C/X 0.40/0.51/0.09 | top3 AUROC 0.9070 (diag)
+epoch  26 | train PL 3.8699 | orth 0.0007 (λ=2.00) | attr 0.0000 | rw 0.0163 | shrink 0.4268 | quali 0.0000 | off_frac 0.62 | val PL 4.5784 | val pairwise 0.7878 | val score 4.6845 | shares D/C/X 0.40/0.52/0.09 | top3 AUROC 0.9065 (diag)
+epoch  27 | train PL 3.8710 | orth 0.0003 (λ=2.00) | attr 0.0000 | rw 0.0161 | shrink 0.4194 | quali 0.0000 | off_frac 0.61 | val PL 4.5772 | val pairwise 0.7884 | val score 4.6830 | shares D/C/X 0.39/0.52/0.09 | top3 AUROC 0.9065 (diag)
+early stop at epoch 27 (best val score 4.6785)
+
+OrthogonalShapleyGNN test PL NLL 4.6095 | pairwise acc 0.7560 | top3 AUROC 0.8855 (diagnostic) | shares D/C/X 0.40/0.52/0.08
+wrote output/orthogonal_shapley_no_attr/orthogonal_shapley.pth, output/orthogonal_shapley_no_attr/orthogonal_shapley_encoder.pt, output/orthogonal_shapley_no_attr/orthogonal_shapley_meta.json, output/orthogonal_shapley_no_attr/coalition_baselines.json
+Traceback (most recent call last):
+  File "/data/antonioneves/ortogonal-representation/src/experiments/run_attr_ablation.py", line 316, in <module>
+    main()
+  File "/data/antonioneves/ortogonal-representation/src/experiments/run_attr_ablation.py", line 304, in main
+    _export(args)
+  File "/data/antonioneves/ortogonal-representation/src/experiments/run_attr_ablation.py", line 120, in _export
+    export = load_skill_export(
+             ^^^^^^^^^^^^^^^^^^
+  File "/data/antonioneves/ortogonal-representation/src/baselines/skill_loader.py", line 107, in load_skill_export
+    export = export_orthogonal_shapley(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/antonioneves/ortogonal-representation/src/baselines/orthogonal_shapley_skill.py", line 210, in export_orthogonal_shapley
+    load_orthogonal_shapley_model_and_graph(
+  File "/data/antonioneves/ortogonal-representation/src/baselines/orthogonal_shapley_skill.py", line 68, in load_orthogonal_shapley_model_and_graph
+    device = get_device(gpu_id)
+             ^^^^^^^^^^^^^^^^^^
+  File "/data/antonioneves/ortogonal-representation/src/utils/device.py", line 35, in get_device
+    raise RuntimeError(
+RuntimeError: Requested GPU 7 is unavailable. Visible devices: 1
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'results', 'constructor_results', 'circuit'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+exported 16223 race rows to output/skill_exports/orthogonal_shapley_no_attr
+Running: /data/antonioneves/ortogonal-representation/venv/bin/python src/experiments/run_validation_benchmark.py --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley --output-dir output/validation_benchmark/orthogonal_shapley_no_attr --max-year 2025 --horizon inf --min-year 2014 --fixed-cohort --era-windows --checkpoint output/orthogonal_shapley_no_attr/orthogonal_shapley.pth --meta output/orthogonal_shapley_no_attr/orthogonal_shapley_meta.json --baselines output/orthogonal_shapley_no_attr/coalition_baselines.json --orthogonal-export-dir output/skill_exports/orthogonal_shapley_no_attr --xai-seed 42 --gpu-id 7
+/data/antonioneves/ortogonal-representation/src/models/orthogonal_shapley_gnn.py:72: UserWarning: There exist node types ({'results', 'constructor_results', 'circuit'}) whose representations do not get updated during message passing as they do not occur as destination type in any edge type. This may lead to unexpected behavior.
+  HeteroConv(
+-> Using GPU 7: NVIDIA A100-SXM4-80GB
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+[temporal_graph] deduplicated 176 results rows across 85 (driverId, raceId) pairs (1950s shared-drive); kept best position.
+exported 16223 race rows to output/skill_exports/orthogonal_shapley_no_attr
+Running: /data/antonioneves/ortogonal-representation/venv/bin/python src/experiments/run_validation_benchmark.py --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley --output-dir output/validation_benchmark/orthogonal_shapley_no_attr --max-year 2025 --horizon inf --min-year 2014 --fixed-cohort --era-windows --checkpoint output/orthogonal_shapley_no_attr/orthogonal_shapley.pth --meta output/orthogonal_shapley_no_attr/orthogonal_shapley_meta.json --baselines output/orthogonal_shapley_no_attr/coalition_baselines.json --orthogonal-export-dir output/skill_exports/orthogonal_shapley_no_attr --xai-seed 42 --gpu-id 7

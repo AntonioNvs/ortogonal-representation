@@ -39,6 +39,12 @@ def main() -> None:
         default=None,
         help="coalition baselines JSON for orthogonal_shapley (default: from meta)",
     )
+    parser.add_argument(
+        "--orthogonal-export-dir",
+        type=str,
+        default=None,
+        help="isolated SkillExport cache for orthogonal_shapley (avoids clobbering Model A)",
+    )
     parser.add_argument("--xai-seed", type=int, default=42)
     parser.add_argument(
         "--horizon",
@@ -56,6 +62,12 @@ def main() -> None:
         "--era-windows",
         action="store_true",
         help="Also emit era_windows: modern (>=2010), hybrid (>=1990), common (>=2014), full",
+    )
+    parser.add_argument(
+        "--gpu-id",
+        type=int,
+        default=None,
+        help="CUDA device for GNN skill export / XAI probes (default: config.DEFAULT_GPU_ID)",
     )
     args = parser.parse_args()
     horizon = parse_horizon_arg(args.horizon)
@@ -86,15 +98,25 @@ def main() -> None:
     joined_by_source = {}
     for source in args.sources:
         print(f"benchmarking {source}...")
+        orth_export_dir = (
+            args.orthogonal_export_dir if source == "orthogonal_shapley" else None
+        )
+        # Only force-recompute the orthogonal source when an isolated export dir
+        # is set; baselines keep their cached exports unless --force-recompute.
+        force = args.force_recompute or (
+            source == "orthogonal_shapley" and orth_export_dir is not None
+        )
         export = load_skill_export(
             source,
             db,
             max_year=args.max_year,
             inference_mode=InferenceMode.FILTERED,
-            force_recompute=args.force_recompute,
+            force_recompute=force,
+            output_dir=orth_export_dir,
             checkpoint_path=args.checkpoint,
             meta_path=args.meta,
             baselines_path=args.baselines if source == "orthogonal_shapley" else None,
+            gpu_id=args.gpu_id if source in ("skill_gnn", "orthogonal_shapley") else None,
         )
         reports[source] = benchmark_source(
             export,
