@@ -1,6 +1,6 @@
-# Model contract — validation-first driver skill (2026-08-31)
+# Model contract — validation-first driver skill
 
-Single source of truth for **what every skill model must export**, **how we validate before promotion**, and **how we evaluate**.
+Single source of truth for **what every skill model must export**, **how we validate before promotion**, and **how we evaluate**. Headline model: **OrthogonalShapleyGNN**.
 
 ---
 
@@ -31,18 +31,21 @@ skill_0_10        = 10 * sigmoid(alpha * (f - mu_train) / sigma_train)
 2. **Temporal evolution** — race-level `f(D,T,R)` and cumulative as-of-round summaries.
 3. **Entity decomposition** — normalized **Shapley variance shares** for driver / constructor / context (sum to 100%); residual reported separately.
 
-## Architecture (non-negotiable for primary GNN)
+## Architecture
 
 | Role | Model | File |
 |------|-------|------|
 | Graph substrate | Causal round-state `HeteroData` | `src/data/temporal_graph.py` |
-| **Primary skill GNN** | SkillGNN — PL ranking on race results | `src/models/skill_gnn.py` |
+| **Primary skill GNN** | OrthogonalShapleyGNN — SAGE+MLP fusion + coalition Shapley | `src/models/orthogonal_shapley_gnn.py` |
+| **GNN ablation** | SkillGNN — PL ranking on race results | `src/models/skill_gnn.py` |
 | **GNN baseline (predictive)** | SAGE qualifying regressor (4/128) | `src/models/sage_regressor.py` |
 | **Benchmark BT** | Walk-forward race-level Bradley–Terry | `src/baselines/bradley_terry_skill.py` |
 | **Benchmark PL** | Walk-forward race-level Plackett–Luce | `src/baselines/plackett_luce_skill.py` |
 | **Benchmark Bayesian** | Lindner et al. state-space (Stan/NUTS) | `src/baselines/bayesian_ssm.py` |
 | Simple baseline | Teammate-residual | `src/baselines/teammate_residual.py` |
-| **Candidate (2026-09-01)** | OrthogonalShapleyGNN — SAGE+MLP fusion + coalition Shapley | `src/models/orthogonal_shapley_gnn.py` |
+
+Frozen abstract checkpoint: `output/orthogonal_shapley_model/` (Model A, arch v3, 4×128, seed 42).
+See [`docs/reproducibility.md`](reproducibility.md) and [`docs/orthogonal-shapley-approach.md`](orthogonal-shapley-approach.md).
 
 ## Common export contract
 
@@ -137,37 +140,37 @@ All plots: seaborn styling, English labels, DB-backed proper names, PNG+SVG+PDF,
 
 ## Canonical commands
 
+Full seed / split detail: [`docs/reproducibility.md`](reproducibility.md).
+
 ```bash
-# Build enriched DB (if missing)
+# Build enriched DB (if missing — ships in-repo under data/enriched/rel-f1/)
 python -m src.data.pipeline build
 
-# Benchmark baselines (validation-first)
-python src/experiments/run_bradley_terry.py --max-year 2025 --output-dir output/skill_exports/bradley_terry
-python src/experiments/run_plackett_luce.py --max-year 2025 --output-dir output/skill_exports/plackett_luce
-python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025 --output-dir output/skill_exports/bayesian_ssm
+# Walk-forward Bradley–Terry baseline
+python src/experiments/run_bradley_terry.py --max-year 2025
 
-# Canonical validation benchmark — 4 models, fixed ≥2014 protocol, fixed cohort.
-# Regenerates benchmark.json (career + survival + partial_rho_continuous + era_windows)
-# AND the 4 skill-export caches (incl. the orthogonal_shapley race parquet the Shapley plot needs).
-python src/experiments/run_validation_benchmark.py \
-  --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley \
-  --horizon inf --min-year 2014 --fixed-cohort --era-windows
+# Bayesian state-space (optional; needs CmdStan)
+python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025
 
-# Multi-source career comparison (rest-of-career horizon)
-python src/experiments/run_career_comparison.py --sources bradley_terry plackett_luce bayesian_ssm orthogonal_shapley
-
-# Primary GNN (when ready)
-python src/experiments/train_skill_gnn.py --seed 42
-python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry bayesian_ssm
-
-# OrthogonalShapleyGNN candidate (SAGE+MLP + coalition Shapley)
+# Primary model — OrthogonalShapleyGNN (SAGE+MLP + coalition Shapley)
 python src/experiments/train_orthogonal_shapley_gnn.py --seed 42
 python src/experiments/run_orthogonal_shapley_pipeline.py --stages all
-python src/experiments/run_validation_benchmark.py --sources orthogonal_shapley bradley_terry
+
+# Unified validation benchmark (career + locked 2024–2025 PL + Shapley)
+python src/experiments/run_validation_benchmark.py \
+  --sources orthogonal_shapley bradley_terry bayesian_ssm \
+  --horizon inf --min-year 2014 --fixed-cohort --era-windows
+
+# SkillGNN ablation (optional)
+python src/experiments/train_skill_gnn.py --seed 42
+python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry
 
 # Plots
+python src/experiments/plots/plot_validation_figures.py \
+  --benchmark-json output/validation_benchmark/benchmark.json
 python src/experiments/plots/plot_team_tier_heatmap.py --start-year 2014 --end-year 2025
-python src/experiments/plots/plot_driver_season_skill.py --source bradley_terry --season 2024 --driver verstappen
-python src/experiments/plots/plot_driver_rank_evolution.py --source bradley_terry --driver verstappen --driver hamilton --driver leclerc --driver norris --start-year 2018 --end-year 2024
-python src/experiments/plots/plot_entity_attribution.py --source bradley_terry --season 2024
+python src/experiments/plots/plot_driver_season_skill.py --source orthogonal_shapley --season 2024 --driver verstappen
+python src/experiments/plots/plot_driver_rank_evolution.py --source orthogonal_shapley --driver verstappen --driver hamilton --driver leclerc --driver norris --start-year 2018 --end-year 2024
+python src/experiments/plots/plot_entity_attribution.py --source orthogonal_shapley --season 2024
+python src/experiments/plots/plot_ssac27_abstract_figure.py
 ```

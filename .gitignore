@@ -1,4 +1,4 @@
-# Generated outputs — do not commit artifacts
+# Generated outputs — do not commit regenerable artifacts
 output/skill_exports/
 output/plots/
 output/skill_model/*.pth
@@ -12,6 +12,7 @@ output/runs/
 output/shap_encoder*
 output/impact_analysis*
 output/skill_rankings/
+output/sensitivity_grid/
 notebooks/output/
 
 # Keep directory structure
@@ -19,25 +20,33 @@ notebooks/output/
 !output/plots/.gitkeep
 !output/skill_exports/.gitkeep
 
+# Python / env
 /venv
 /cache
 **/__pycache__/
 *.pyc
 *.pyo
 .env
-.claude
-*.parquet
 *.out
 train.txt
-.cursor/
+.pytest_cache/
+*.ipynb_checkpoints/
 
-# Project context (local-only, never committed)
-CLAUDE.md
+# Parquet by default; ship the enriched RelBench DB explicitly
+*.parquet
+!data/enriched/rel-f1/db/*.parquet
+!data/enriched/rel-f1/*.parquet
 
-
+# Raw snapshots (rebuild via pipeline)
 data/raw/f1db/*
 data/raw/jolpica/*
-
-# Mantém o arquivo marcador .gitkeep para preservar as pastas
 !data/raw/f1db/.gitkeep
 !data/raw/jolpica/.gitkeep
+
+# AI / agent tooling (local-only, never commit)
+.cursor/
+.claude/
+CLAUDE.md
+AGENTS.md
+.aider*
+.aider/

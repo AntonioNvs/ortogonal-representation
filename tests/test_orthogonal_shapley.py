@@ -62,6 +62,8 @@ def test_exact_shapley_efficiency():
 
   class _Wrapper:
     utility_from_fused = tiny.utility_from_fused
+    driver_career = None
+    use_additive_readout = False
 
   wrapper = _Wrapper()
 

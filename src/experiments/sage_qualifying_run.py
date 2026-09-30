@@ -313,7 +313,7 @@ def main() -> None:
     _rank_table("face-validity: SAGE mean pred (test)", test_preds)
     _rank_table("face-validity: per-driver trailing-mean baseline", per_driver_pred)
 
-    # --- machine-readable result line (parsed by sage_sweep.py) ---------------
+    # --- machine-readable result line ----------------------------------------
     result = {
         "config": {
             "num_layers": args.num_layers,
