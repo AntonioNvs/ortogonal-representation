@@ -118,13 +118,3 @@ tests/                  # Unit / smoke tests
 
 MIT — see [`LICENSE`](LICENSE). Upstream RelBench / Ergast / Jolpica retain their
 own licenses; cite them when redistributing derived data.
-
-## Citation
-
-If you use this repository, please cite the SSAC27 submission and this repo:
-
-```text
-Neves, A. Car-adjusted F1 driver performance on a causal temporal graph.
-MIT Sloan Sports Analytics Conference Research Paper Competition, 2027.
-https://github.com/AntonioNvs/ortogonal-representation
-```
