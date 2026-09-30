@@ -1,0 +1,38 @@
+{
+  "arch_version": "v3",
+  "config": {
+    "hidden_dim": 128,
+    "num_layers": 4,
+    "mlp_hidden": 128,
+    "lambda_orth": 2.0,
+    "aux_driver_weight": 0.5,
+    "aux_constructor_weight": 0.75,
+    "lambda_ctx_aux": 0.25,
+    "lambda_pair": 0.25,
+    "lambda_attr": 0.1,
+    "target_driver_share": 0.38,
+    "target_constructor_share": 0.3,
+    "use_additive_readout": true,
+    "orth_warmup_epochs": 10,
+    "max_grad_norm": 1.0,
+    "lambda_rw": 0.5,
+    "lambda_shrink": 0.05,
+    "lambda_quali": 0.3,
+    "seed": 42
+  },
+  "metrics": {
+    "best_val_score": 4.640176860209044,
+    "best_val_pl": 4.537860870361328,
+    "test_pl": 4.5371198654174805,
+    "test_pairwise_acc": 0.7836349331235248,
+    "test_top3_auroc": 0.9015085328207817,
+    "test_orth_loss": 0.00016576482448726892,
+    "test_attr_loss": 0.0,
+    "test_driver_share": 0.37416833942219363,
+    "test_constructor_share": 0.4524845657712322,
+    "test_context_share": 0.1733471210730278,
+    "offset_frac_train": 0.6162799596786499,
+    "quali_val_mse": 0.06244570016860962
+  },
+  "coalition_baselines_path": "output/orthogonal_shapley_model_B/coalition_baselines.json"
+}

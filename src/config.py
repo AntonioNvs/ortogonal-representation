@@ -58,7 +58,7 @@ ENRICHED_DB_DIR = "data/enriched/rel-f1"
 # Temporal windows
 # ---------------------------------------------------------------------------
 
-MIN_YEAR = 2000
+MIN_YEAR = 1950
 MAX_YEAR = 2026
 
 # Official rel-f1 benchmark timestamps (relbench.datasets.f1.F1Dataset).
@@ -108,3 +108,13 @@ TEMPORAL_CURVE_MODEL = "high"  # lambda_orthogonal = 1.0
 
 # Default GPU for all training and experiment scripts.
 DEFAULT_GPU_ID = 7
+
+# Bradley-Terry walk-forward defaults
+BT_LR = 0.1
+BT_EPOCHS_PER_STEP = 30
+
+# Plackett-Luce walk-forward defaults
+PL_LR = 0.05
+PL_EPOCHS_PER_STEP = 50
+PL_WEIGHT_DECAY = 1e-4
+CAREER_VALIDATION_MIN_YEAR = 2000

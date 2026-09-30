@@ -1,0 +1,212 @@
+"""Exact 3-player coalition Shapley for the fused MLP utility."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, Tuple
+
+import torch
+
+from models.orthogonal_shapley_gnn import OrthogonalShapleyGNN
+
+# Coalition bitmasks: driver=1, constructor=2, context=4
+PLAYER_DRIVER = 1
+PLAYER_CONSTRUCTOR = 2
+PLAYER_CONTEXT = 4
+ALL_PLAYERS = PLAYER_DRIVER | PLAYER_CONSTRUCTOR | PLAYER_CONTEXT
+
+# Exact Shapley weights for n=3 (all subsets S not containing player i)
+_SHAPLEY_WEIGHTS: Dict[int, Dict[int, float]] = {
+  PLAYER_DRIVER: {
+    0: 1 / 3,
+    PLAYER_CONSTRUCTOR: 1 / 6,
+    PLAYER_CONTEXT: 1 / 6,
+    PLAYER_CONSTRUCTOR | PLAYER_CONTEXT: 1 / 3,
+  },
+  PLAYER_CONSTRUCTOR: {
+    0: 1 / 3,
+    PLAYER_DRIVER: 1 / 6,
+    PLAYER_CONTEXT: 1 / 6,
+    PLAYER_DRIVER | PLAYER_CONTEXT: 1 / 3,
+  },
+  PLAYER_CONTEXT: {
+    0: 1 / 3,
+    PLAYER_DRIVER: 1 / 6,
+    PLAYER_CONSTRUCTOR: 1 / 6,
+    PLAYER_DRIVER | PLAYER_CONSTRUCTOR: 1 / 3,
+  },
+}
+
+
+@dataclass
+class CoalitionBaselines:
+  """Train-only reference embeddings and context for absent players."""
+
+  driver_emb: torch.Tensor  # (hidden_dim,) season-state baseline
+  constructor_emb: torch.Tensor  # (hidden_dim,)
+  context: torch.Tensor  # (context_dim,)
+  driver_career_emb: torch.Tensor | None = None  # (hidden_dim,) career baseline
+
+  def to_dict(self) -> dict:
+    d = {
+      "driver_emb": self.driver_emb.cpu().tolist(),
+      "constructor_emb": self.constructor_emb.cpu().tolist(),
+      "context": self.context.cpu().tolist(),
+    }
+    if self.driver_career_emb is not None:
+      d["driver_career_emb"] = self.driver_career_emb.cpu().tolist()
+    return d
+
+  @classmethod
+  def from_dict(cls, d: dict, device: torch.device) -> "CoalitionBaselines":
+    career = d.get("driver_career_emb")
+    return cls(
+      driver_emb=torch.tensor(d["driver_emb"], device=device),
+      constructor_emb=torch.tensor(d["constructor_emb"], device=device),
+      context=torch.tensor(d["context"], device=device),
+      driver_career_emb=(
+        torch.tensor(career, device=device) if career is not None else None
+      ),
+    )
+
+
+def compute_train_baselines(
+  model: OrthogonalShapleyGNN,
+  x_dict: Dict[str, torch.Tensor],
+  train_mask: torch.Tensor,
+  driver_state_idx: torch.Tensor,
+  constructor_state_idx: torch.Tensor,
+  race_idx: torch.Tensor,
+  grid: torch.Tensor,
+  round_num: torch.Tensor,
+  driver_career_idx: torch.Tensor | None = None,
+) -> CoalitionBaselines:
+  """Mean embeddings and projected context from training-year result rows only."""
+  idx = train_mask.nonzero(as_tuple=True)[0]
+  d_idx = driver_state_idx[idx]
+  c_idx = constructor_state_idx[idx]
+  d_emb = x_dict["driver_state"][d_idx].mean(dim=0)
+  c_emb = x_dict["constructor_state"][c_idx].mean(dim=0)
+  ctx = model.context_vector(
+    x_dict, race_idx[idx], grid[idx], round_num[idx]
+  ).mean(dim=0)
+  career_emb = None
+  if driver_career_idx is not None and model.driver_career is not None:
+    career_emb = model.driver_career(driver_career_idx[idx]).mean(dim=0)
+  return CoalitionBaselines(
+    driver_emb=d_emb, constructor_emb=c_emb, context=ctx,
+    driver_career_emb=career_emb,
+  )
+
+
+def _coalition_value(
+  model: OrthogonalShapleyGNN,
+  coalition_mask: int,
+  d_emb: torch.Tensor,
+  c_emb: torch.Tensor,
+  ctx: torch.Tensor,
+  baselines: CoalitionBaselines,
+  career_emb: torch.Tensor | None = None,
+) -> torch.Tensor:
+  """Scalar utility for one coalition (batch of rows)."""
+  batch = d_emb.shape[0] if d_emb.dim() > 1 else 1
+  d = d_emb if coalition_mask & PLAYER_DRIVER else baselines.driver_emb
+  c = c_emb if coalition_mask & PLAYER_CONSTRUCTOR else baselines.constructor_emb
+  x = ctx if coalition_mask & PLAYER_CONTEXT else baselines.context
+  if d.dim() == 1:
+    d = d.unsqueeze(0).expand(batch, -1)
+  if c.dim() == 1:
+    c = c.unsqueeze(0).expand(batch, -1)
+  if x.dim() == 1:
+    x = x.unsqueeze(0).expand(batch, -1)
+
+  career = None
+  if model.driver_career is not None:
+    if coalition_mask & PLAYER_DRIVER:
+      career = career_emb
+    elif baselines.driver_career_emb is not None:
+      career = baselines.driver_career_emb
+      if career.dim() == 1:
+        career = career.unsqueeze(0).expand(batch, -1)
+    if career is not None and career.dim() == 1:
+      career = career.unsqueeze(0).expand(batch, -1)
+
+  if model.use_additive_readout:
+    return model.utility_additive(d, c, x, career)
+  return model.utility_from_fused(torch.cat([d, c, x], dim=-1))
+
+
+def exact_shapley_utilities(
+  model: OrthogonalShapleyGNN,
+  d_emb: torch.Tensor,
+  c_emb: torch.Tensor,
+  ctx: torch.Tensor,
+  baselines: CoalitionBaselines,
+  career_emb: torch.Tensor | None = None,
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+  """Exact 3-player Shapley values centered at v(empty coalition).
+
+  Returns (phi_driver, phi_constructor, phi_context, efficiency_residual).
+  """
+  v_cache: Dict[int, torch.Tensor] = {}
+  for mask in range(8):
+    v_cache[mask] = _coalition_value(
+      model, mask, d_emb, c_emb, ctx, baselines, career_emb
+    )
+
+  phi_d = torch.zeros_like(v_cache[0])
+  phi_c = torch.zeros_like(v_cache[0])
+  phi_x = torch.zeros_like(v_cache[0])
+
+  for player, weights in _SHAPLEY_WEIGHTS.items():
+    contrib = torch.zeros_like(v_cache[0])
+    for coalition, w in weights.items():
+      with_player = coalition | player
+      contrib = contrib + w * (v_cache[with_player] - v_cache[coalition])
+    if player == PLAYER_DRIVER:
+      phi_d = contrib
+    elif player == PLAYER_CONSTRUCTOR:
+      phi_c = contrib
+    else:
+      phi_x = contrib
+
+  v_full = v_cache[ALL_PLAYERS]
+  v_empty = v_cache[0]
+  total_phi = phi_d + phi_c + phi_x
+  residual = (v_full - v_empty) - total_phi
+  return phi_d, phi_c, phi_x, residual
+
+
+def attribution_balance_loss(
+  phi_d: torch.Tensor,
+  phi_c: torch.Tensor,
+  phi_x: torch.Tensor,
+  *,
+  target_driver_share: float = 0.38,
+  target_constructor_share: float = 0.30,
+) -> torch.Tensor:
+  """Two-sided balance: cap driver *and* constructor Shapley shares.
+
+  ``share_i = |phi_i| / (|phi_d| + |phi_c| + |phi_x|)``.  Each head's share is
+  penalized above its target, so neither the driver nor the constructor channel
+  can monopolize the utility (the context channel absorbs the freed share).
+  """
+  total = phi_d.abs() + phi_c.abs() + phi_x.abs() + 1e-9
+  share_d = phi_d.abs() / total
+  share_c = phi_c.abs() / total
+  driver_pen = torch.relu(share_d - target_driver_share) ** 2
+  cons_pen = torch.relu(share_c - target_constructor_share) ** 2
+  return torch.mean(driver_pen + cons_pen)
+
+
+def shapley_efficiency_error(
+  phi_d: torch.Tensor,
+  phi_c: torch.Tensor,
+  phi_x: torch.Tensor,
+  v_full: torch.Tensor,
+  v_empty: torch.Tensor,
+) -> float:
+  """Mean absolute efficiency violation."""
+  total = phi_d + phi_c + phi_x
+  target = v_full - v_empty
+  return float(torch.mean(torch.abs(total - target)).item())

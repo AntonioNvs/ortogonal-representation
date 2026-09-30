@@ -1,0 +1,264 @@
+{
+  "config": {
+    "checkpoint": "output/orthogonal_shapley_model/orthogonal_shapley.pth",
+    "meta": "output/orthogonal_shapley_model/orthogonal_shapley_meta.json",
+    "baselines": "output/orthogonal_shapley_model/coalition_baselines.json",
+    "max_year": 2025,
+    "min_champ_year": 1980,
+    "n_races": 24,
+    "n_sim": 4000,
+    "seed": 42,
+    "dnf_rate": 0.05,
+    "peak_rule": "best_wdc_skill",
+    "output_dir": "output/applications/goat_equal_car"
+  },
+  "provenance": {
+    "run_utc": "2026-09-17T22:31:57.051479+00:00",
+    "db_max_year": 2026,
+    "max_champ_year": 2025,
+    "claim_level": "car_adjusted_performance",
+    "repository": "https://github.com/AntonioNvs/ortogonal-representation"
+  },
+  "peak_rule": "best_wdc_skill",
+  "calibrated_beta": 0.16254070401191711,
+  "n_champions": 19,
+  "excluded_champions": [],
+  "ranking": [
+    {
+      "driver_name": "Michael Schumacher",
+      "peak_season": 1994,
+      "peak_share": 0.22115384615384615,
+      "skill": 1.5093644857406616,
+      "p_title": 0.6385,
+      "expected_wins": 7.0465,
+      "expected_points": 403.2855
+    },
+    {
+      "driver_name": "Max Verstappen",
+      "peak_season": 2023,
+      "peak_share": 0.2339300244100895,
+      "skill": 1.4748470783233643,
+      "p_title": 0.28125,
+      "expected_wins": 5.698,
+      "expected_points": 378.56125
+    },
+    {
+      "driver_name": "Sebastian Vettel",
+      "peak_season": 2011,
+      "peak_share": 0.20427305888483585,
+      "skill": 1.4323002099990845,
+      "p_title": 0.08,
+      "expected_wins": 4.41175,
+      "expected_points": 347.42975
+    },
+    {
+      "driver_name": "Lewis Hamilton",
+      "peak_season": 2018,
+      "peak_share": 0.19236209335219237,
+      "skill": 1.2510162591934204,
+      "p_title": 0.00025,
+      "expected_wins": 1.45025,
+      "expected_points": 219.33725
+    },
+    {
+      "driver_name": "Ayrton Senna",
+      "peak_season": 1988,
+      "peak_share": 0.23809523809523808,
+      "skill": 1.2128273248672485,
+      "p_title": 0.0,
+      "expected_wins": 1.13875,
+      "expected_points": 192.9985
+    },
+    {
+      "driver_name": "Alain Prost",
+      "peak_season": 1989,
+      "peak_share": 0.19240506329113924,
+      "skill": 1.1741148233413696,
+      "p_title": 0.0,
+      "expected_wins": 0.93525,
+      "expected_points": 168.1665
+    },
+    {
+      "driver_name": "Niki Lauda",
+      "peak_season": 1984,
+      "peak_share": 0.1877444589308996,
+      "skill": 1.1658235788345337,
+      "p_title": 0.0,
+      "expected_wins": 0.88575,
+      "expected_points": 163.76
+    },
+    {
+      "driver_name": "Nigel Mansell",
+      "peak_season": 1992,
+      "peak_share": 0.25961538461538464,
+      "skill": 1.1101933717727661,
+      "p_title": 0.0,
+      "expected_wins": 0.6355,
+      "expected_points": 130.1985
+    },
+    {
+      "driver_name": "Nelson Piquet",
+      "peak_season": 1987,
+      "peak_share": 0.1848101265822785,
+      "skill": 1.108478307723999,
+      "p_title": 0.0,
+      "expected_wins": 0.60425,
+      "expected_points": 128.14425
+    },
+    {
+      "driver_name": "Fernando Alonso",
+      "peak_season": 2006,
+      "peak_share": 0.1908831908831909,
+      "skill": 1.0867605209350586,
+      "p_title": 0.0,
+      "expected_wins": 0.5225,
+      "expected_points": 115.958
+    },
+    {
+      "driver_name": "Kimi R\u00e4ikk\u00f6nen",
+      "peak_season": 2007,
+      "peak_share": 0.16591251885369532,
+      "skill": 0.91799396276474,
+      "p_title": 0.0,
+      "expected_wins": 0.19875,
+      "expected_points": 49.16825
+    },
+    {
+      "driver_name": "Mika H\u00e4kkinen",
+      "peak_season": 1999,
+      "peak_share": 0.18269230769230768,
+      "skill": 0.8627849221229553,
+      "p_title": 0.0,
+      "expected_wins": 0.14225,
+      "expected_points": 36.43925
+    },
+    {
+      "driver_name": "Lando Norris",
+      "peak_season": 2025,
+      "peak_share": 0.16022727272727272,
+      "skill": 0.844699501991272,
+      "p_title": 0.0,
+      "expected_wins": 0.12375,
+      "expected_points": 32.01025
+    },
+    {
+      "driver_name": "Damon Hill",
+      "peak_season": 1996,
+      "peak_share": 0.23317307692307693,
+      "skill": 0.8280988335609436,
+      "p_title": 0.0,
+      "expected_wins": 0.109,
+      "expected_points": 28.9615
+    },
+    {
+      "driver_name": "Keke Rosberg",
+      "peak_season": 1982,
+      "peak_share": 0.11027568922305764,
+      "skill": 0.6344586610794067,
+      "p_title": 0.0,
+      "expected_wins": 0.033,
+      "expected_points": 9.0705
+    },
+    {
+      "driver_name": "Nico Rosberg",
+      "peak_season": 2016,
+      "peak_share": 0.18151815181518152,
+      "skill": 0.6255557537078857,
+      "p_title": 0.0,
+      "expected_wins": 0.02675,
+      "expected_points": 8.52725
+    },
+    {
+      "driver_name": "Alan Jones",
+      "peak_season": 1980,
+      "peak_share": 0.1976401179941003,
+      "skill": 0.6166142821311951,
+      "p_title": 0.0,
+      "expected_wins": 0.02625,
+      "expected_points": 8.168
+    },
+    {
+      "driver_name": "Jenson Button",
+      "peak_season": 2009,
+      "peak_share": 0.14763014763014762,
+      "skill": 0.4113980829715729,
+      "p_title": 0.0,
+      "expected_wins": 0.00925,
+      "expected_points": 2.485
+    },
+    {
+      "driver_name": "Jacques Villeneuve",
+      "peak_season": 1997,
+      "peak_share": 0.1832579185520362,
+      "skill": 0.3216882050037384,
+      "p_title": 0.0,
+      "expected_wins": 0.0025,
+      "expected_points": 1.3305
+    }
+  ],
+  "negative_controls": {
+    "shift_invariance": {
+      "max_abs_delta_p_title": 0.0,
+      "pass": true
+    },
+    "symmetry": {
+      "p_title_pair": [
+        0.5105,
+        0.4895
+      ],
+      "max_abs_delta": 0.020999999999999963,
+      "pass": true
+    }
+  },
+  "sensitivity": {
+    "base_beta": 0.16254070401191711,
+    "base_dnf": 0.05,
+    "grid": [
+      {
+        "beta": 0.08127035200595856,
+        "dnf_rate": 0.0,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.08127035200595856,
+        "dnf_rate": 0.05,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.08127035200595856,
+        "dnf_rate": 0.1,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.16254070401191711,
+        "dnf_rate": 0.0,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.16254070401191711,
+        "dnf_rate": 0.05,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.16254070401191711,
+        "dnf_rate": 0.1,
+        "top5_kendall_vs_base": 1.0
+      },
+      {
+        "beta": 0.32508140802383423,
+        "dnf_rate": 0.0,
+        "top5_kendall_vs_base": 0.6
+      },
+      {
+        "beta": 0.32508140802383423,
+        "dnf_rate": 0.05,
+        "top5_kendall_vs_base": 0.6
+      },
+      {
+        "beta": 0.32508140802383423,
+        "dnf_rate": 0.1,
+        "top5_kendall_vs_base": 0.6
+      }
+    ]
+  }
+}

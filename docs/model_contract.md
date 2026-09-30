@@ -1,0 +1,176 @@
+# Model contract — validation-first driver skill
+
+Single source of truth for **what every skill model must export**, **how we validate before promotion**, and **how we evaluate**. Headline model: **OrthogonalShapleyGNN**.
+
+---
+
+## Estimand
+
+For driver **D**, team **T**, race **R** (round k of season year):
+
+```text
+systematic(D,T,R) = driver(D,R) + constructor(T,R) + context(R)
+f(D,T,R)          = driver(D,R)   # exported skill readout (higher = better)
+skill_0_10        = 10 * sigmoid(alpha * (f - mu_train) / sigma_train)
+```
+
+- **Cumulative season skill** at round r: mean of `f(D,T,R)` over rounds 1…r only (**filtered / causal** mode).
+- Do **not** call outputs "pure skill" unless disentanglement gates pass.
+- **Context** = modeled race-level non-driver/non-constructor effects (grid, circuit/event terms). **Residual/chance** is separate and never folded into context.
+
+## Inference modes
+
+| Mode | Definition | Allowed uses |
+|------|------------|--------------|
+| `filtered` | Only races 1…R when scoring round R | Career gates, locked test, ranking export |
+| `smoothed` | Full-interval posterior / descriptive smoothing | Paper-style plots only; **never** headline gates |
+
+## Mandatory model capabilities
+
+1. **Per-race skill on [0, 10]** — anchored logistic calibration fit on **training years only**; uncertainty propagated through the same monotone map.
+2. **Temporal evolution** — race-level `f(D,T,R)` and cumulative as-of-round summaries.
+3. **Entity decomposition** — normalized **Shapley variance shares** for driver / constructor / context (sum to 100%); residual reported separately.
+
+## Architecture
+
+| Role | Model | File |
+|------|-------|------|
+| Graph substrate | Causal round-state `HeteroData` | `src/data/temporal_graph.py` |
+| **Primary skill GNN** | OrthogonalShapleyGNN — SAGE+MLP fusion + coalition Shapley | `src/models/orthogonal_shapley_gnn.py` |
+| **GNN ablation** | SkillGNN — PL ranking on race results | `src/models/skill_gnn.py` |
+| **GNN baseline (predictive)** | SAGE qualifying regressor (4/128) | `src/models/sage_regressor.py` |
+| **Benchmark BT** | Walk-forward race-level Bradley–Terry | `src/baselines/bradley_terry_skill.py` |
+| **Benchmark PL** | Walk-forward race-level Plackett–Luce | `src/baselines/plackett_luce_skill.py` |
+| **Benchmark Bayesian** | Lindner et al. state-space (Stan/NUTS) | `src/baselines/bayesian_ssm.py` |
+| Simple baseline | Teammate-residual | `src/baselines/teammate_residual.py` |
+
+Frozen abstract checkpoint: `output/orthogonal_shapley_model/` (Model A, arch v3, 4×128, seed 42).
+See [`docs/reproducibility.md`](reproducibility.md) and [`docs/orthogonal-shapley-approach.md`](orthogonal-shapley-approach.md).
+
+## Common export contract
+
+All skill sources implement `SkillExport` (`src/skill/contract.py`):
+
+**Race columns:** `driverId`, `season`, `round`, `raceId`, `constructorId`, `lineage_id`, `driver_name`, `constructor_name`, `raw_skill`, `skill_0_10`, `skill_lo`, `skill_hi`, `contrib_driver`, `contrib_constructor`, `contrib_context`, `contrib_residual`, `skill_source`, `inference_mode`, `as_of_round`
+
+**Season columns:** `driverId`, `season`, `skill_score`, `skill_0_10`, `skill_lo`, `skill_hi`, `skill_source`, `inference_mode`, `as_of_round`, `n_obs`, `support_bucket`
+
+Artifacts written under `output/skill_exports/{source}/` as `race_skill.parquet`, `season_skill.csv`, `metadata.json`.
+
+## Validation (headline — run **before** trusting any new model)
+
+### 1. Contract & data integrity
+- Temporal cutoff respected (`filtered` mode)
+- Lineage continuity (rebrands: Sauber → Audi, etc.)
+- Mobility / support flags
+
+### 2. Score behavior
+- [0,10] bounds, calibration anchors (~1/5/9 at −2/0/+2 train SD)
+- IQR, central mass, saturation diagnostics
+- Uncertainty width / coverage
+
+### 3. Locked test (2024–2025)
+- Race Plackett–Luce NLL and pairwise accuracy (true per-race, not global proxy)
+- Qualifying log-score / RMSE where supported
+- Bayesian: posterior predictive checks + MCMC diagnostics (R-hat, ESS, divergences)
+
+### 4. Disentanglement
+- Constructor leakage |ρ| < 0.3 (SkillGNN XAI)
+- Swap invariance on driver readout
+- Shapley driver/constructor/context shares
+
+### 5. Career validity (primary gate)
+
+See **`docs/career_validation_framework.md`** (v4) for full methodology. v4 leads with
+**three headline statistics** on **one fixed protocol** (era ≥ 2014 + model-free fixed
+cohort, so the same career transitions are scored across all four models). Everything
+below the headline is retained as diagnostics.
+
+**Protocol:** era window ≥ 2014; underrated cohort and `promoted` label defined once from
+`teammate_residual` (model-free) so the row set is identical across models.
+
+**Outcome:** rest-of-career mean tier score (infinite horizon; all future active seasons).
+
+| Headline gate | Criterion | JSON key |
+|---------------|-----------|----------|
+| **Partial ρ (continuous car control)** | ρ > 0; cluster CI low > 0 | `career.partial_rho_continuous` |
+| **Cox HR (censored time-to-promotion, eligible)** | HR > 1; cluster CI **excludes 1** | `survival.eligible.cox.hazard_ratio` |
+| **Locked-test ranking (2024–25)** | Orth ≤ BT PL-NLL (±0.01) and ≥ BT − 0.01 pairwise | `locked_test.{pl_nll, pairwise_acc}` |
+
+Locked-test comparability: BT/PL/Orthogonal are `filtered` (held-out); the Bayesian SSM
+is `smoothed`/in-sample (`walk_forward=False`) — annotate its ranking number as in-sample,
+do not treat it as a fair held-out comparison.
+
+| Diagnostic (non-headline) | Criterion |
+|---------------------------|-----------|
+| Underrated resolution rate | shared across models on a fixed cohort — non-discriminating |
+| Underrated promotion AUROC | ≥ BT; cluster CI low > 0.45 |
+| Partial Spearman (underrated stratum) | ≥ BT; cluster CI low > −0.1 (small-n) |
+| Partial ρ (tier control) | ρ ≥ 0.15 |
+| Within-season permutation p-value | era-robust null |
+| Eligible promotion AUROC (below S-tier at T) | diagnostic |
+
+**Do not gate on:** raw Spearman alone, all-driver moved-up AUROC, or resolution rate on
+a fixed cohort.
+
+### 6. Robustness
+- DNF policies (classified / finished / all entries)
+- ≥5 seeds where stochastic
+- Era windows: modern ≥2010 (primary), hybrid ≥1990, common ≥2014 (fair cross-model), full
+
+## Publication plots (CLI)
+
+**Abstract headline trio** (the three essential figures — see career framework v4 §4):
+
+| Figure | Statistic | Command |
+|--------|-----------|---------|
+| Fair-market forest (partial ρ + Cox HR, 4 models) | Stats 1 & 2 | `python src/experiments/plots/plot_validation_figures.py --benchmark-json output/validation_benchmark/benchmark.json` |
+| Time-to-promotion KM by skill tertile | Stat 2 | *(same command — emits `survival_km_<m>`)* |
+| Shapley attribution bars (Orthogonal only) | attribution | `python src/experiments/plots/plot_entity_attribution.py --source orthogonal_shapley --season 2024` |
+
+**Supporting plots:**
+
+| Plot | Command |
+|------|---------|
+| Team tier heatmap | `python src/experiments/plots/plot_team_tier_heatmap.py` |
+| Season skill trajectory | `python src/experiments/plots/plot_driver_season_skill.py` |
+| Multi-season rank panels | `python src/experiments/plots/plot_driver_rank_evolution.py` |
+
+All plots: seaborn styling, English labels, DB-backed proper names, PNG+SVG+PDF, sidecar metadata JSON.
+
+## Canonical commands
+
+Full seed / split detail: [`docs/reproducibility.md`](reproducibility.md).
+
+```bash
+# Build enriched DB (if missing — ships in-repo under data/enriched/rel-f1/)
+python -m src.data.pipeline build
+
+# Walk-forward Bradley–Terry baseline
+python src/experiments/run_bradley_terry.py --max-year 2025
+
+# Bayesian state-space (optional; needs CmdStan)
+python src/experiments/run_bayesian_ssm.py --start-year 2014 --end-year 2025
+
+# Primary model — OrthogonalShapleyGNN (SAGE+MLP + coalition Shapley)
+python src/experiments/train_orthogonal_shapley_gnn.py --seed 42
+python src/experiments/run_orthogonal_shapley_pipeline.py --stages all
+
+# Unified validation benchmark (career + locked 2024–2025 PL + Shapley)
+python src/experiments/run_validation_benchmark.py \
+  --sources orthogonal_shapley bradley_terry bayesian_ssm \
+  --horizon inf --min-year 2014 --fixed-cohort --era-windows
+
+# SkillGNN ablation (optional)
+python src/experiments/train_skill_gnn.py --seed 42
+python src/experiments/run_validation_benchmark.py --sources skill_gnn bradley_terry
+
+# Plots
+python src/experiments/plots/plot_validation_figures.py \
+  --benchmark-json output/validation_benchmark/benchmark.json
+python src/experiments/plots/plot_team_tier_heatmap.py --start-year 2014 --end-year 2025
+python src/experiments/plots/plot_driver_season_skill.py --source orthogonal_shapley --season 2024 --driver verstappen
+python src/experiments/plots/plot_driver_rank_evolution.py --source orthogonal_shapley --driver verstappen --driver hamilton --driver leclerc --driver norris --start-year 2018 --end-year 2024
+python src/experiments/plots/plot_entity_attribution.py --source orthogonal_shapley --season 2024
+python src/experiments/plots/plot_ssac27_abstract_figure.py
+```
